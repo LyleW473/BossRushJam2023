@@ -131,8 +131,8 @@ class Player(Generic, pygame.sprite.Sprite):
 
         # ---------------------------------------------------------------------------------
         # Set the image to be this animation frame and rotate it depending on the where the player's mouse is positioned
-
-        self.image = pygame.transform.rotate(current_animation_image, math.degrees(self.look_angle))
+        # Note: Rotozoom is for anti-aliasing when rotating the image
+        self.image = pygame.transform.rotozoom(surface = current_animation_image, angle = math.degrees(self.look_angle), scale = 1)
 
         # ---------------------------------------------------------------------------------
         # Changing the animation frame
