@@ -10,7 +10,7 @@ class Game:
         self.screen = pygame.display.get_surface()  
 
         # Create a surface for which all objects will be drawn onto. This surface is then scaled and drawn onto the main screen
-        self.scaled_surface = pygame.Surface((screen_width / 4, screen_height / 4))
+        self.scaled_surface = pygame.Surface((screen_width / 1.5, screen_height / 1.5))
 
         # Attribute which is monitored by the game states controller
         self.running = False
@@ -204,19 +204,19 @@ class Game:
             match self.camera_position[0]:
 
                 # If the camera is positioned at the start of the tile map and the object is within the boundaries of the screen
-                case 0 if world_tile.rect.x <= self.scaled_surface.get_width():
+                case 0 if world_tile.rect.right <= self.scaled_surface.get_width():
 
                     # Draw all tile objects on the screen
                     world_tile.draw(surface = self.scaled_surface, x = (world_tile.rect.x - self.camera_position[0]), y = (world_tile.rect.y - self.camera_position[1]))
 
                 # If the camera is positioned at the end of the tile map and the tile object is within the boundaries of the screen
-                case _ if (self.last_tile_position[0] - self.scaled_surface.get_width()) == self.camera_position[0] and world_tile.rect.x >= self.camera_position[0]:
+                case _ if (self.last_tile_position[0] - self.scaled_surface.get_width()) == self.camera_position[0] and world_tile.rect.right >= self.camera_position[0]:
 
                     # Draw all tile objects on the screen
                     world_tile.draw(surface = self.scaled_surface, x = (world_tile.rect.x - self.camera_position[0]), y = (world_tile.rect.y - self.camera_position[1]))
 
                 # If the camera is neither at the start or the end of the tile map and the object is within the boundaries of the screen
-                case _ if self.player.rect.left - ((self.scaled_surface.get_width() / 2) + self.tile_size)  <= world_tile.rect.x <= self.player.rect.right + (self.scaled_surface.get_width() / 2): 
+                case _ if self.player.rect.left - ((self.scaled_surface.get_width() / 2) + self.tile_size)  <= world_tile.rect.right <= self.player.rect.right + (self.scaled_surface.get_width() / 2): 
 
                     # Draw the tile object at the camera position
                     world_tile.draw(surface = self.scaled_surface, x = (world_tile.rect.x - self.camera_position[0]), y = (world_tile.rect.y - self.camera_position[1]))
@@ -237,9 +237,6 @@ class Game:
 
         pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.left - self.tile_size) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.left - self.tile_size) * 1 - self.camera_position[0], screen_height))
         pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.right + self.tile_size) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.right + self.tile_size) * 1 - self.camera_position[0], screen_height))
-
-
-        pygame.draw.rect(self.scaled_surface, "purple", (self.player.rect.x - self.camera_position[0], self.player.rect.y - self.camera_position[1], self.player.rect.width, self.player.rect.height), 0)
         
         # For each world tile in the world tiles
         for world_tile, world_tile_number in self.world_tiles_dict.items():

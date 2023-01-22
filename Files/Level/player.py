@@ -1,4 +1,4 @@
-import pygame, os
+import pygame, os, math
 from Global.generic import Generic
 from Global.settings import *
 
@@ -35,6 +35,12 @@ class Player(Generic, pygame.sprite.Sprite):
         self.dx = 0 # The distance the player can move based on if there were any collisions
         self.dy = 0 # The distance the player can move based on if there were any collisions
 
+        # ---------------------------------------------------------------------------------
+        # Angles
+        """
+        self.look_angle = 0
+        """
+
 
     # ---------------------------------------------------------------------------------
     # Animations
@@ -46,6 +52,7 @@ class Player(Generic, pygame.sprite.Sprite):
         self.current_animation_state = "Idle"
 
         # A dictionary that will hold all of the animations
+        # Note: The images were originally 24 pixels, but then scaled up to 48 pixels
         self.animations_dict = {"Normal": {"Idle": [pygame.image.load(f"graphics/Player/Normal/Idle/{i}.png") for i in range(len(os.listdir("graphics/Player/Normal/Idle")))],
                                         "Run": [pygame.image.load(f"graphics/Player/Normal/Run/{i}.png") for i in range(len(os.listdir("graphics/Player/Normal/Run")))],
                                         }}
@@ -56,13 +63,13 @@ class Player(Generic, pygame.sprite.Sprite):
         
         # Dictionary to hold the time between each animation frame for each animation 
         # Values are in ms
-        self.animation_frame_cooldowns_dict = {"Idle": 80,
-                                            "Run": 50}
+        self.animation_frame_cooldowns_dict = {"Idle": 200,
+                                            "Run": 200}
 
     def change_players_animation_state(self):
 
-        # If the player is running left or right
-        if pygame.key.get_pressed()[pygame.K_a] or pygame.key.get_pressed()[pygame.K_d]:
+        # If the player is moving left, right, up or down
+        if pygame.key.get_pressed()[pygame.K_a] or pygame.key.get_pressed()[pygame.K_d] or pygame.key.get_pressed()[pygame.K_w] or pygame.key.get_pressed()[pygame.K_s]:
 
             """ 
             Don't play the run animation and play the idle animation:
@@ -123,9 +130,9 @@ class Player(Generic, pygame.sprite.Sprite):
         current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.animation_index]
 
         # ---------------------------------------------------------------------------------
-        # Set the image to be this animation frame
+        # Set the image to be this animation frame and rotate it depending on the where the player's mouse is positioned
 
-        self.image = current_animation_image
+        self.image = pygame.transform.rotate(current_animation_image, math.degrees(self.look_angle))
 
         # ---------------------------------------------------------------------------------
         # Changing the animation frame
@@ -169,7 +176,13 @@ class Player(Generic, pygame.sprite.Sprite):
 
         # ---------------------------------------------------------------------------------
         # Draw the player onto the main screen
-        self.draw(surface = self.surface, x = (self.rect.x - self.camera_position[0]), y = (self.rect.y - self.camera_position[1]))
+
+        """
+        - The camera position must be subtracted so that the image is drawn within the limits of the screen.
+        - Half of the image width and height is subtracted so that the rotation of the player image is centered within the player rect.
+        """
+        pygame.draw.rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
+        self.draw(surface = self.surface, x = (self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), y = (self.rect.centery - self.camera_position[1]) - int(self.image.get_height() / 2))
 
     # ---------------------------------------------------------------------------------
     # Movement       
@@ -195,7 +208,7 @@ class Player(Generic, pygame.sprite.Sprite):
 
         # After re-arranging s = ut + 1/2(a)(t^2), v is given by the equation: (2s - a(t)^2) / 2t, where a is 0 because acceleration is constant
         time_to_travel_distance_at_final_movement_velocity = 0.5 # t
-        distance_travelled_at_final_movement_velocity = 3 * TILE_SIZE # s 
+        distance_travelled_at_final_movement_velocity = 4.5 * TILE_SIZE # s 
         # Full version: self.movement_suvat_v = ((2 * distance_travelled_at_final_movement_velocity) - (0 * (time_to_travel_distance_at_final_movement_velocity ** 2)) / (2 * time_to_travel_distance_at_final_movement_velocity))
         # Simplified version:
         self.movement_suvat_v = ((2 * distance_travelled_at_final_movement_velocity) / (2 * time_to_travel_distance_at_final_movement_velocity))
@@ -203,7 +216,7 @@ class Player(Generic, pygame.sprite.Sprite):
         # Calculate the acceleration needed for the player to reach self.movement_suvat_v within a given time span
 
         # After re-arranging v = u + at, a is given by the equation: (v - u) / t, where u is 0
-        time_to_reach_final_movement_velocity = 0.1
+        time_to_reach_final_movement_velocity = 0.15
         # Full version: self.movement_suvat_a = (self.movement_suvat_v - 0) / time_to_reach_final_movement_velocity
         # Simplified version:
         self.movement_suvat_a = self.movement_suvat_v / time_to_reach_final_movement_velocity
@@ -594,9 +607,42 @@ class Player(Generic, pygame.sprite.Sprite):
                 # Move the player by the movement distance
                 self.dy = self.movement_suvat_s
 
+    # ---------------------------------------------------------------------------------
+    # Angles
+
+    def find_mouse_position_and_angle(self):
+
+        # Retrieve the mouse position
+        """
+        - The scale multiplier refers to how much the surface that everything will be drawn onto has been scaled by 
+        """
+        mouse_position = pygame.mouse.get_pos()  
+        scale_multiplier = (screen_width / self.surface.get_width(), screen_height / self.surface.get_height())
+        self.mouse_position = ((mouse_position[0] / scale_multiplier[0]) + self.camera_position[0] , (mouse_position[1] / scale_multiplier[1]) + self.camera_position[1])
+
+        pygame.draw.line(self.surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), (self.mouse_position[0] - self.camera_position[0], self.mouse_position[1] - self.camera_position[1]))
+
+
+        # Find the distance between the mouse and the center of the player in their horizontal and vertical components
+        dx, dy = self.mouse_position[0] - self.rect.centerx, self.mouse_position[1] - self.rect.centery
+        
+        # Find the angle between the mouse and the center of the player
+        """
+        - Modulo is so that the value of angle will always be in between 0 and 2pi.
+        - If the angle is negative, it will be added to 2pi.
+        - "-dy" because the y axis is flipped in PYgame
+        """
+        self.look_angle = math.atan2(-dy, dx) % (2 * math.pi)
+
+        # print(math.degrees(self.look_angle))
+
+
     def run(self):
 
         #pygame.draw.line(self.surface, "white", (self.surface.get_width() / 2, 0), (self.surface.get_width() / 2, self.surface.get_height()))
+
+        # Find the mouse position and angle
+        self.find_mouse_position_and_angle()
 
         # Play animations
         self.play_animations()
