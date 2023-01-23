@@ -40,6 +40,16 @@ class Player(Generic, pygame.sprite.Sprite):
         """
         self.look_angle = 0
         """
+        # ---------------------------------------------------------------------------------
+        # Cursor guidelines
+
+        # Thickness of each segment
+        self.cursor_guidelines_segments_thickness = 5
+
+        # Surface
+        self.cursor_guidelines_surface = pygame.Surface((self.surface.get_width(), self.surface.get_height()))
+        self.cursor_guidelines_surface.set_colorkey("black")
+        self.cursor_guidelines_surface.set_alpha(90)
 
 
     # ---------------------------------------------------------------------------------
@@ -620,8 +630,6 @@ class Player(Generic, pygame.sprite.Sprite):
         scale_multiplier = (screen_width / self.surface.get_width(), screen_height / self.surface.get_height())
         self.mouse_position = ((mouse_position[0] / scale_multiplier[0]) + self.camera_position[0] , (mouse_position[1] / scale_multiplier[1]) + self.camera_position[1])
 
-        pygame.draw.line(self.surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), (self.mouse_position[0] - self.camera_position[0], self.mouse_position[1] - self.camera_position[1]))
-
 
         # Find the distance between the mouse and the center of the player in their horizontal and vertical components
         dx, dy = self.mouse_position[0] - self.rect.centerx, self.mouse_position[1] - self.rect.centery
@@ -634,8 +642,34 @@ class Player(Generic, pygame.sprite.Sprite):
         """
         self.look_angle = math.atan2(-dy, dx) % (2 * math.pi)
 
-        # print(math.degrees(self.look_angle))
+        # Draw the guidelines to the mouse cursor
+        self.draw_guidelines_to_cursor(dx, dy)
 
+    def draw_guidelines_to_cursor(self, dx, dy):
+
+        # Method to draw the guidelines to the mouse cursor / position
+
+        # The number of segments desired for the guidelines
+        number_of_segments = 6
+        
+        # Calculate the length of each segment 
+        segment_length_x = dx / (number_of_segments * 2)
+        segment_length_y = dy / (number_of_segments * 2)
+
+        # Fill the cursor guidelines surface with black. (The colour-key has been set to black)
+        self.cursor_guidelines_surface.fill("black")
+
+        # Draw
+        for i in range(1, (number_of_segments * 2) + 1, 2):     
+            pygame.draw.line(
+                surface = self.cursor_guidelines_surface, 
+                color = "white",
+                start_pos = ((self.rect.centerx - self.camera_position[0]) + (segment_length_x * i), (self.rect.centery - self.camera_position[1]) + (segment_length_y * i)),
+                end_pos = ((self.rect.centerx - self.camera_position[0]) + (segment_length_x * (i + 1)), (self.rect.centery - self.camera_position[1]) + (segment_length_y * (i + 1))),
+                width = self.cursor_guidelines_segments_thickness)
+
+        # Draw the cursor guidelines surface onto the main surface
+        self.surface.blit(self.cursor_guidelines_surface, (0, 0))
 
     def run(self):
 
