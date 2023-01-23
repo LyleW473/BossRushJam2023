@@ -81,7 +81,6 @@ class Menu:
         self.paused_menu_buttons.append(controls_button_2)
         self.paused_menu_buttons.append(quit_button_2)
 
-
     def mouse_position_updating(self):
 
         # Retrieve the mouse position

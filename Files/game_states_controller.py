@@ -129,6 +129,9 @@ class GameStatesController():
 
                             # "Esc" key
                             case pygame.K_ESCAPE:
+
+                                # Set the mouse cursor back to visible
+                                pygame.mouse.set_visible(True)
                     
                                 # Show the paused menu
                                 self.game.running = False
@@ -144,6 +147,10 @@ class GameStatesController():
 
             # If this attribute is False (This would be the case if the player went into the Paused menu and then clicked the "Continue" button)
             if self.game.running == False:
+                
+                # Hide the mouse cursor
+                pygame.mouse.set_visible(False)
+                
                 # Set the game's running attribute to True
                 self.game.running = True
 
