@@ -228,7 +228,7 @@ class Player(Generic, pygame.sprite.Sprite):
 
         # Calculate the velocity that the player moves at given a distance that the player travels within a given time span
 
-        # After re-arranging s = ut + 1/2(a)(t^2), v is given by the equation: (2s - a(t)^2) / 2t, where a is 0 because acceleration is constant
+        # After re-arranging s = vt + 1/2(a)(t^2), v is given by the equation: (2s - a(t)^2) / 2t, where a is 0 because acceleration is constant
         time_to_travel_distance_at_final_movement_velocity = 0.5 # t
         distance_travelled_at_final_movement_velocity = 4.5 * TILE_SIZE # s 
         # Full version: self.movement_suvat_v = ((2 * distance_travelled_at_final_movement_velocity) - (0 * (time_to_travel_distance_at_final_movement_velocity ** 2)) / (2 * time_to_travel_distance_at_final_movement_velocity))

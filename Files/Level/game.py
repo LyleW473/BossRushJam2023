@@ -283,7 +283,7 @@ class Game:
                 if pygame.sprite.spritecollide(bamboo_projectile, self.world_tiles_group, False, pygame.sprite.collide_mask):
                     self.bamboo_projectiles_group.remove(bamboo_projectile)
 
-    def handle_shooting(self, delta_time):
+    def handle_player_shooting(self, delta_time):
 
         # --------------------------------------------------------------------------------------
         # Handling shooting input
@@ -322,6 +322,13 @@ class Game:
 
         # Move the bamboo projectiles
         for bamboo_projectile in self.bamboo_projectiles_group:
+
+            # If the bamboo projectile does not have a delta time attribute yet (This is because this is called before the projectile's delta time can be updated)
+            if hasattr(bamboo_projectile, "delta_time") == False:
+                # Set a delta time attribute with the current delta time
+                bamboo_projectile.delta_time = delta_time
+
+            # Move the projectile
             bamboo_projectile.move_projectile()
 
     def run(self, delta_time):
@@ -347,7 +354,8 @@ class Game:
         # Run the player methods
         self.player.run()
 
-        self.handle_shooting(delta_time)
+        # Handle player shooting
+        self.handle_player_shooting(delta_time)
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame.transform.scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))
