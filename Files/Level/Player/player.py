@@ -54,6 +54,16 @@ class Player(Generic, pygame.sprite.Sprite):
         # Cursor images
         self.default_cursor_image = pygame.image.load("graphics/Cursors/Default.png").convert_alpha()
 
+        # ---------------------------------------------------------------------------------
+        # Shooting
+
+        # Note: Time and cooldowns are measured in milliseconds
+        self.current_weapon = "BambooAssaultRifle"
+        self.weapons = {
+                        "BambooLauncher": {},
+                        "BambooAssaultRifle": {"ShootingCooldown": 200, "PreviouslyShotTime": 0}
+                        }
+        
     # ---------------------------------------------------------------------------------
     # Animations
 
@@ -631,8 +641,7 @@ class Player(Generic, pygame.sprite.Sprite):
         mouse_position = pygame.mouse.get_pos()  
         scale_multiplier = (screen_width / self.surface.get_width(), screen_height / self.surface.get_height())
         self.mouse_position = ((mouse_position[0] / scale_multiplier[0]) + self.camera_position[0] , (mouse_position[1] / scale_multiplier[1]) + self.camera_position[1])
-        # Draw the new cursor
-        self.draw_new_cursor()
+
         # Find the distance between the mouse and the center of the player in their horizontal and vertical components
         dx, dy = self.mouse_position[0] - self.rect.centerx, self.mouse_position[1] - self.rect.centery
         
@@ -644,10 +653,12 @@ class Player(Generic, pygame.sprite.Sprite):
         """
         self.look_angle = math.atan2(-dy, dx) % (2 * math.pi)
 
+        # Draw the new cursor
+        # Blit the cursor image at the mouse position divided by the scale multiplier, subtracting half of the cursor image's width and height
+        self.surface.blit(self.default_cursor_image, ((self.mouse_position[0] - self.camera_position[0]) - (self.default_cursor_image.get_width()/ 2), (self.mouse_position[1] - self.camera_position[1]) - (self.default_cursor_image.get_height() / 2)))
+
         # Draw the guidelines to the mouse cursor
         self.draw_guidelines_to_cursor(dx, dy)
-
-
 
     def draw_guidelines_to_cursor(self, dx, dy):
 
@@ -674,13 +685,6 @@ class Player(Generic, pygame.sprite.Sprite):
 
         # Draw the cursor guidelines surface onto the main surface
         self.surface.blit(self.cursor_guidelines_surface, (0, 0))
-
-    def draw_new_cursor(self):
-        pygame.mouse.set_visible(True)
-
-        # Blit the cursor image at the mouse position divided by the scale multiplier, subtracting half of the cursor image's width and height
-        self.surface.blit(self.default_cursor_image, ((self.mouse_position[0] - self.camera_position[0]) - (self.default_cursor_image.get_width()/ 2), (self.mouse_position[1] - self.camera_position[1]) - (self.default_cursor_image.get_height() / 2)))
-
 
     def run(self):
 

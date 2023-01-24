@@ -1,7 +1,9 @@
 import pygame, os
+from math import sin, cos, degrees
 from Global.settings import *
 from Level.world_tile import WorldTile
-from Level.player import Player
+from Level.Player.player import Player
+from Level.Player.bamboo_projectiles import BambooProjectile
 
 class Game:
     def __init__(self):
@@ -36,7 +38,11 @@ class Game:
         # Groups
         self.all_tile_map_objects_group = pygame.sprite.Group() # Group for all tile map objects, including the player
         self.world_tiles_dict = {} # Dictionary used to hold all the world tiles 
+        self.world_tiles_group = pygame.sprite.Group()
         # self.player_group = pygame.sprite.GroupSingle(self.player) This was created inside the create_objects_tile_map method
+        self.bamboo_projectiles_group = pygame.sprite.Group() # Group for all bamboo projectiles for the player
+        self.bamboo_projectile_image = pygame.image.load("graphics/Projectiles/bamboo_projectile.png").convert_alpha()
+        
 
     # --------------------------------------------------------------------------------------
     # Misc methods
@@ -170,13 +176,14 @@ class Game:
                         world_tile = WorldTile(x = (column_index * self.tile_size), y = (row_index * self.tile_size), image = pygame.transform.smoothscale(self.tile_images[1], (self.tile_size, self.tile_size)))
 
                         # Add the world tile to the world tiles dictionary
-                        # The key is the world tile because we use pygame.rect.collidedict in other areas of the code, the value is the number of the world tile
-
-                        #self.world_tiles_dict[world_tile_counter] = world_tile
+                        # The key is the world tile because we use pygame.rect.collidedict in other areas of the code, the value is the number of the world tile (primarily for player and tile collisions)
                         self.world_tiles_dict[world_tile] = world_tile_counter
 
                         # Add it to the group of all tile map objects
                         self.all_tile_map_objects_group.add(world_tile)
+
+                        # Add it to the group of world tiles (For collisions with other objects, excluding the player)
+                        self.world_tiles_group.add(world_tile)
 
                         # Increment the world tile counter
                         world_tile_counter += 1
@@ -218,8 +225,16 @@ class Game:
                 # If the camera is neither at the start or the end of the tile map and the object is within the boundaries of the screen
                 case _ if self.player.rect.left - ((self.scaled_surface.get_width() / 2) + self.tile_size)  <= world_tile.rect.right <= self.player.rect.right + (self.scaled_surface.get_width() / 2): 
 
-                    # Draw the tile object at the camera position
+                    # Draw the tile object
                     world_tile.draw(surface = self.scaled_surface, x = (world_tile.rect.x - self.camera_position[0]), y = (world_tile.rect.y - self.camera_position[1]))
+
+        # ---------------------------------------------
+        # Bamboo projectiles
+
+        for bamboo_projectile in self.bamboo_projectiles_group:
+            # Draw the bamboo projectile 
+            pygame.draw.rect(self.scaled_surface, "white", (bamboo_projectile.rect.x - self.camera_position[0], bamboo_projectile.rect.y - self.camera_position[1], bamboo_projectile.rect.width, bamboo_projectile.rect.height), 0)
+            bamboo_projectile.draw(surface = self.scaled_surface, x = bamboo_projectile.rect.x - self.camera_position[0], y = bamboo_projectile.rect.y - self.camera_position[1])
 
     # --------------------------------------------------------------------------------------
     # Gameplay methods
@@ -238,7 +253,7 @@ class Game:
         pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.left - self.tile_size) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.left - self.tile_size) * 1 - self.camera_position[0], screen_height))
         pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.right + self.tile_size) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.right + self.tile_size) * 1 - self.camera_position[0], screen_height))
         
-        # For each world tile in the world tiles
+        # For each world tile in the world tiles dictionary
         for world_tile, world_tile_number in self.world_tiles_dict.items():
 
             # If the world tile is within 1 tiles of the player (horizontally and vertically)
@@ -256,14 +271,58 @@ class Game:
 
     def handle_collisions(self):
         
-        # Save for later (for enemies, etc.)
-        # # --------------------------------------------------------------------------------------
-        # # Look for a slightly less accurate collision check between the tile and the player sprite
-        # if pygame.sprite.spritecollide(self, self.world_tiles_group, False):
+        # --------------------------------------------------------------------------------------
+        # Bamboo projectiles 
 
-        #     # Create a list of all the tiles that the player collided (more accurate collision check)
-        #     if pygame.sprite.spritecollide(self, self.world_tiles_group, False, pygame.sprite.collide_mask):
-        pass
+        # For each bamboo projectile in the bamboo projectiles group
+        for bamboo_projectile in self.bamboo_projectiles_group:
+            
+            # Look for a slightly less accurate collision check between the tile and the player sprite
+            if pygame.sprite.spritecollide(bamboo_projectile, self.world_tiles_group, False):
+                # Create a list of all the tiles that the player collided (more accurate collision check)
+                if pygame.sprite.spritecollide(bamboo_projectile, self.world_tiles_group, False, pygame.sprite.collide_mask):
+                    self.bamboo_projectiles_group.remove(bamboo_projectile)
+
+    def handle_shooting(self, delta_time):
+
+        # --------------------------------------------------------------------------------------
+        # Handling shooting input
+
+        # If the left mouse button has been pressed
+        if pygame.mouse.get_pressed()[0] == True:
+            
+            # If the player's current weapon is the "BambooAssaultRifle"
+            if self.player.current_weapon ==  "BambooAssaultRifle":
+                # If there are less than x bamboo projectiles and if enough time has passed since the last time the player shot
+                if len(self.bamboo_projectiles_group) < 10 and (self.player.weapons["BambooAssaultRifle"]["PreviouslyShotTime"] >= self.player.weapons["BambooAssaultRifle"]["ShootingCooldown"]):
+                    
+                    # Create a bamboo projectile 
+                    bamboo_projectile = BambooProjectile(
+                                                        x = self.player.rect.centerx - (self.bamboo_projectile_image.get_width() / 2), 
+                                                        y = self.player.rect.centery - (self.bamboo_projectile_image.get_height() / 2), 
+                                                        angle = self.player.look_angle, 
+                                                        image = self.bamboo_projectile_image)
+
+                    # Add the bamboo projectile to the bamboo projectiles group
+                    self.bamboo_projectiles_group.add(bamboo_projectile)
+
+                    # Add it to the all tile map objects group (this is so that its delta time attribute can be updated)
+                    self.all_tile_map_objects_group.add(bamboo_projectile)
+
+                    # Set the previously shot time back to 0
+                    self.player.weapons["BambooAssaultRifle"]["PreviouslyShotTime"] = 0 
+
+        # If the previously shot time is less than the current weapon's shooting cooldown
+        if self.player.weapons[self.player.current_weapon]["PreviouslyShotTime"] < self.player.weapons[self.player.current_weapon]["ShootingCooldown"]:
+            # Increment the time passed since the last time the weapon was shot
+            self.player.weapons[self.player.current_weapon]["PreviouslyShotTime"] += 1000 * delta_time
+
+        # ---------------------------------------------------------------------------------
+        # Updating bamboo projectiles 
+
+        # Move the bamboo projectiles
+        for bamboo_projectile in self.bamboo_projectiles_group:
+            bamboo_projectile.move_projectile()
 
     def run(self, delta_time):
 
@@ -271,7 +330,7 @@ class Game:
         self.update_objects_delta_time(delta_time)
         
         # Fill the scaled surface with a colour
-        self.scaled_surface.fill("darkolivegreen")
+        self.scaled_surface.fill("gray23")
 
         # Update the camera position 
         self.update_camera_position()
@@ -279,14 +338,16 @@ class Game:
         # Draw all objects inside the tile map / level
         self.draw_tile_map_objects()
 
-        # # Handle collisions between all objects in the level
-        # self.handle_collisions()
+        # Handle collisions between all objects in the level
+        self.handle_collisions()
 
         # Find the player's neighbouring tiles
         self.find_neighbouring_tiles_to_player()
 
         # Run the player methods
         self.player.run()
+
+        self.handle_shooting(delta_time)
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame.transform.scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))
