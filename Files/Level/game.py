@@ -1,5 +1,5 @@
 import pygame, os
-from math import sin, cos, degrees
+from math import dist
 from Global.settings import *
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
@@ -41,7 +41,6 @@ class Game:
         self.world_tiles_group = pygame.sprite.Group()
         # self.player_group = pygame.sprite.GroupSingle(self.player) This was created inside the create_objects_tile_map method
         self.bamboo_projectiles_group = pygame.sprite.Group() # Group for all bamboo projectiles for the player
-        self.bamboo_projectile_image = pygame.image.load("graphics/Projectiles/bamboo_projectile.png").convert_alpha()
         
 
     # --------------------------------------------------------------------------------------
@@ -296,13 +295,13 @@ class Game:
                 # If there are less than x bamboo projectiles and if enough time has passed since the last time the player shot
                 if len(self.bamboo_projectiles_group) < 10 and (self.player.weapons["BambooAssaultRifle"]["PreviouslyShotTime"] >= self.player.weapons["BambooAssaultRifle"]["ShootingCooldown"]):
                     
-                    # Create a bamboo projectile 
+                    # Create a bamboo projectile, spawning it at the center of the player
                     bamboo_projectile = BambooProjectile(
-                                                        x = self.player.rect.centerx - (self.bamboo_projectile_image.get_width() / 2), 
-                                                        y = self.player.rect.centery - (self.bamboo_projectile_image.get_height() / 2), 
-                                                        angle = self.player.look_angle, 
-                                                        image = self.bamboo_projectile_image)
-
+                                                        x = self.player.rect.centerx,
+                                                        y = self.player.rect.centery,
+                                                        angle = self.player.look_angle,
+                                                        )
+                    
                     # Add the bamboo projectile to the bamboo projectiles group
                     self.bamboo_projectiles_group.add(bamboo_projectile)
 
