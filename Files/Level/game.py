@@ -22,8 +22,7 @@ class Game:
 
         # --------------------------------------------------------------------------------------
         # Tile map
-        self.tile_size = TILE_SIZE
-
+        
         # Load the tile map images
         self.load_tile_map_images()
 
@@ -161,7 +160,7 @@ class Game:
                     # Player
                     case 1:
                         # Create the player
-                        self.player = Player(x = (column_index * self.tile_size), y = (row_index * self.tile_size), surface = self.scaled_surface)
+                        self.player = Player(x = (column_index * TILE_SIZE), y = (row_index * TILE_SIZE), surface = self.scaled_surface)
 
                         # Add the player to its group
                         self.player_group = pygame.sprite.GroupSingle(self.player)
@@ -172,7 +171,7 @@ class Game:
                     # World tile 1
                     case 2:
                         # Create a world tile
-                        world_tile = WorldTile(x = (column_index * self.tile_size), y = (row_index * self.tile_size), image = pygame.transform.smoothscale(self.tile_images[1], (self.tile_size, self.tile_size)))
+                        world_tile = WorldTile(x = (column_index * TILE_SIZE), y = (row_index * TILE_SIZE), image = pygame.transform.smoothscale(self.tile_images[1], (TILE_SIZE, TILE_SIZE)))
 
                         # Add the world tile to the world tiles dictionary
                         # The key is the world tile because we use pygame.rect.collidedict in other areas of the code, the value is the number of the world tile (primarily for player and tile collisions)
@@ -188,7 +187,7 @@ class Game:
                         world_tile_counter += 1
 
         # Save the last tile position so that we can update the camera and limit the player's movement
-        self.last_tile_position = [len(non_transformed_tile_map[0]) * self.tile_size, len(non_transformed_tile_map) * self.tile_size]
+        self.last_tile_position = [len(non_transformed_tile_map[0]) * TILE_SIZE, len(non_transformed_tile_map) * TILE_SIZE]
         self.player.last_tile_position = self.last_tile_position
 
         # Save a copy of the world tiles dict for the player, this is so that we can control the gravity strength when at greater heights
@@ -222,7 +221,7 @@ class Game:
                     world_tile.draw(surface = self.scaled_surface, x = (world_tile.rect.x - self.camera_position[0]), y = (world_tile.rect.y - self.camera_position[1]))
 
                 # If the camera is neither at the start or the end of the tile map and the object is within the boundaries of the screen
-                case _ if self.player.rect.left - ((self.scaled_surface.get_width() / 2) + self.tile_size)  <= world_tile.rect.right <= self.player.rect.right + (self.scaled_surface.get_width() / 2): 
+                case _ if self.player.rect.left - ((self.scaled_surface.get_width() / 2) + TILE_SIZE)  <= world_tile.rect.right <= self.player.rect.right + (self.scaled_surface.get_width() / 2): 
 
                     # Draw the tile object
                     world_tile.draw(surface = self.scaled_surface, x = (world_tile.rect.x - self.camera_position[0]), y = (world_tile.rect.y - self.camera_position[1]))
@@ -246,17 +245,17 @@ class Game:
         pygame.draw.line(self.scaled_surface, "white", (0 - self.camera_position[0], self.player.rect.top - self.camera_position[1]), (screen_width, self.player.rect.top - self.camera_position[1]))
         pygame.draw.line(self.scaled_surface, "white", (0 - self.camera_position[0], self.player.rect.bottom - self.camera_position[1]), (screen_width, self.player.rect.bottom - self.camera_position[1]))
 
-        pygame.draw.line(self.scaled_surface, "red", (0 - self.camera_position[0], (self.player.rect.top - self.tile_size * 1) - self.camera_position[1]), (screen_width, (self.player.rect.top - self.tile_size * 1) - self.camera_position[1]))
-        pygame.draw.line(self.scaled_surface, "red", (0 - self.camera_position[0], (self.player.rect.bottom + self.tile_size * 1) - self.camera_position[1]), (screen_width, (self.player.rect.bottom + self.tile_size * 1) - self.camera_position[1]))
+        pygame.draw.line(self.scaled_surface, "red", (0 - self.camera_position[0], (self.player.rect.top - TILE_SIZE * 1) - self.camera_position[1]), (screen_width, (self.player.rect.top - TILE_SIZE * 1) - self.camera_position[1]))
+        pygame.draw.line(self.scaled_surface, "red", (0 - self.camera_position[0], (self.player.rect.bottom + TILE_SIZE * 1) - self.camera_position[1]), (screen_width, (self.player.rect.bottom + TILE_SIZE * 1) - self.camera_position[1]))
 
-        pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.left - self.tile_size) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.left - self.tile_size) * 1 - self.camera_position[0], screen_height))
-        pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.right + self.tile_size) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.right + self.tile_size) * 1 - self.camera_position[0], screen_height))
+        pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.left - TILE_SIZE) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.left - TILE_SIZE) * 1 - self.camera_position[0], screen_height))
+        pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.right + TILE_SIZE) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.right + TILE_SIZE) * 1 - self.camera_position[0], screen_height))
         
         # For each world tile in the world tiles dictionary
         for world_tile, world_tile_number in self.world_tiles_dict.items():
 
             # If the world tile is within 1 tiles of the player (horizontally and vertically)
-            if (self.player.rect.left  - (self.tile_size) <= world_tile.rect.centerx <= self.player.rect.right + (self.tile_size)) and (self.player.rect.top - (self.tile_size * 2) <= world_tile.rect.centery <= (self.player.rect.bottom + self.tile_size * 1)):
+            if (self.player.rect.left  - (TILE_SIZE) <= world_tile.rect.centerx <= self.player.rect.right + (TILE_SIZE)) and (self.player.rect.top - (TILE_SIZE * 2) <= world_tile.rect.centery <= (self.player.rect.bottom + TILE_SIZE * 1)):
 
                 # Add it to the player's neighbouring tiles dictionary
                 self.player.neighbouring_tiles_dict[world_tile] = world_tile_number

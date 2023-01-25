@@ -94,13 +94,38 @@ class Player(Generic, pygame.sprite.Sprite):
         if pygame.key.get_pressed()[pygame.K_a] or pygame.key.get_pressed()[pygame.K_d] or pygame.key.get_pressed()[pygame.K_w] or pygame.key.get_pressed()[pygame.K_s]:
 
             """ 
-            Don't play the run animation and play the idle animation:
+            Play the idle animation:
                 - If the player is at the beginning or end of the tile map
                 or 
-                - If the player moving will collide with the a neighbouring tile
+                - If the player is colliding with a neighbouring tile in the direction that the player is going in
+                - If there are two directions the player is going and there is a collision on both directions
+                - If the player isn't pressing any of the movement input keys (The elif statement)
             """
+            # If this dictionary does not already exist
+            if hasattr(self, "direction_collisions") == False:
+                # Create a dictionary that holds the collisions in the direction that the player is facing
+                self.direction_collisions = {
+                                            "Left": pygame.Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height),
+                                            "Right": pygame.Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height),
+                                            "Up": pygame.Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height),
+                                            "Down": pygame.Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
+                                            }
+            # If this dictionary already exists
+            else:
+                # Update the dictionary's rect values
+                self.direction_collisions["Left"]  = pygame.Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height)
+                self.direction_collisions["Right"] = pygame.Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height)
+                self.direction_collisions["Up"] = pygame.Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height)
+                self.direction_collisions["Down"]  = pygame.Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
+
+            # Create a tuple of the directions the player is currently moving in
+            current_directions = [key for key in self.direction_variables_dict.keys() if self.direction_variables_dict[key] == True]
+            print(current_directions)
+
             if (self.rect.x == 0 or self.rect.right == self.last_tile_position[0]) or \
-                (pygame.Rect(self.rect.x - 1, self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict) != None or pygame.Rect(self.rect.x + 1, self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict) != None):
+                len(current_directions) == 1 and self.direction_collisions[current_directions[0]] != None and self.direction_collisions[current_directions[0]].collidedict(self.neighbouring_tiles_dict) != None or \
+                len(current_directions) == 2 and (self.direction_collisions[current_directions[0]] != None and self.direction_collisions[current_directions[1]] != None) and \
+                (self.direction_collisions[current_directions[0]].collidedict(self.neighbouring_tiles_dict) != None and self.direction_collisions[current_directions[1]].collidedict(self.neighbouring_tiles_dict) != None):
 
                 # If the current animation state has not been set to "Idle" yet
                 if self.current_animation_state != "Idle":
@@ -123,18 +148,19 @@ class Player(Generic, pygame.sprite.Sprite):
                     self.animation_index = 0
 
         # If the player has stopped running left or right
-        elif pygame.key.get_pressed()[pygame.K_a] == False and pygame.key.get_pressed()[pygame.K_d] == False:
+        elif pygame.key.get_pressed()[pygame.K_a] == False and pygame.key.get_pressed()[pygame.K_d] == False and pygame.key.get_pressed()[pygame.K_w] == False and pygame.key.get_pressed()[pygame.K_s] == False:
+
             # If the current animation state has not been set to "Idle" yet
             if self.current_animation_state != "Idle":
                 
-                # If the player has stopped running
-                if self.current_animation_state == "Run":
-                    # Set the current animation state to "Idle"
-                    self.current_animation_state = "Idle"
+                # # If the player has stopped running
+                # if self.current_animation_state == "Run":
+                # Set the current animation state to "Idle"
+                self.current_animation_state = "Idle"
 
-                    # Reset the animation frame counter and index
-                    self.animation_frame_counter = 0
-                    self.animation_index = 0
+                # Reset the animation frame counter and index
+                self.animation_frame_counter = 0
+                self.animation_index = 0
 
     def play_animations(self):
         
