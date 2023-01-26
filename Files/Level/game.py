@@ -1,5 +1,4 @@
 import pygame, os
-from math import dist
 from Global.settings import *
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
@@ -12,7 +11,8 @@ class Game:
         self.screen = pygame.display.get_surface()  
 
         # Create a surface for which all objects will be drawn onto. This surface is then scaled and drawn onto the main screen
-        self.scaled_surface = pygame.Surface((screen_width / 1.5, screen_height / 1.5))
+        scale_multiplier = 3
+        self.scaled_surface = pygame.Surface((screen_width / scale_multiplier, screen_height / scale_multiplier))
 
         # Attribute which is monitored by the game states controller
         self.running = False
