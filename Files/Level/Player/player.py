@@ -70,7 +70,7 @@ class Player(Generic, pygame.sprite.Sprite):
 
     def load_animations(self):
 
-        # Set the current player version 
+        # Set the default player version, state and player direction 
         self.current_player_element = "Normal"
         self.current_animation_state = "Idle"
         self.player_direction = ["Down"]
@@ -78,20 +78,20 @@ class Player(Generic, pygame.sprite.Sprite):
         # A dictionary that will hold all of the animations
         self.animations_dict = {"Normal": {
         "Idle": {
-            "Up":[pygame.image.load(f"graphics/Player/Normal/Idle/Up/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Up")))],
-            "UpLeft":[pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Idle/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Idle/UpRight")))],
-            "UpRight":[pygame.image.load(f"graphics/Player/Normal/Idle/UpRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/UpRight")))],
-            "Down":[pygame.image.load(f"graphics/Player/Normal/Idle/Down/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Down")))],
-            "DownLeft":[pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Idle/DownRight")))],
-            "DownRight":[pygame.image.load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Downright")))],
             "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Idle/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Idle/Right")))],
-            "Right":[pygame.image.load(f"graphics/Player/Normal/Idle/Right/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Right")))],
+            "Right": [pygame.image.load(f"graphics/Player/Normal/Idle/Right/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Right")))],
+            "Up": [pygame.image.load(f"graphics/Player/Normal/Idle/Up/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Up")))],
+            "Up Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Idle/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Idle/UpRight")))],
+            "Up Right": [pygame.image.load(f"graphics/Player/Normal/Idle/UpRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/UpRight")))],
+            "Down": [pygame.image.load(f"graphics/Player/Normal/Idle/Down/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Down")))],
+            "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Idle/DownRight")))],
+            "Down Right": [pygame.image.load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Downright")))],
                 },
                                         
     
     
         "Run": {
-            "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Right")))],
+            "Left": [pygame.transform.flip(surface = pygame.image.load( f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Right")))],
             "Right": [pygame.image.load(f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Right")))],
             "Up": [pygame.image.load(f"graphics/Player/Normal/Run/Body/Up/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Up")))],
             "Down": [pygame.image.load(f"graphics/Player/Normal/Run/Body/Down/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Down")))],
@@ -100,20 +100,16 @@ class Player(Generic, pygame.sprite.Sprite):
                                }
 
         self.head_dict = {"Normal": {
-
-"Up": [pygame.image.load(f"graphics/Player/Normal/Run/Head/Up/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Up")))],
-"UpLeft": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Head/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/UpRight")))],
-"UpRight": [pygame.image.load(f"graphics/Player/Normal/Run/Head/UpRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/UpRight")))],
-"Down": [pygame.image.load(f"graphics/Player/Normal/Run/Head/Down/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Down")))],
-"DownLeft": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Head/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/DownRight")))],
-"DownRight": [pygame.image.load(f"graphics/Player/Normal/Run/Head/DownRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/DownRight")))],
-"Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Head/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Right")))],
-"Right": [pygame.image.load(f"graphics/Player/Normal/Run/Head/Right/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Right")))],      
+            "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Head/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Right")))],
+            "Right": [pygame.image.load(f"graphics/Player/Normal/Run/Head/Right/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Right")))],   
+            "Up": [pygame.image.load(f"graphics/Player/Normal/Run/Head/Up/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Up")))],
+            "Up Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Head/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/UpRight")))],
+            "Up Right": [pygame.image.load(f"graphics/Player/Normal/Run/Head/UpRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/UpRight")))],
+            "Down": [pygame.image.load(f"graphics/Player/Normal/Run/Head/Down/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Down")))],
+            "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Head/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/DownRight")))],
+            "Down Right": [pygame.image.load(f"graphics/Player/Normal/Run/Head/DownRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/DownRight")))],   
                                     }
-
-
                         }
-                        
 
         # Create attributes used for the animations
         self.animation_index = 0 # Tracks which animation frame to show
@@ -219,31 +215,31 @@ class Player(Generic, pygame.sprite.Sprite):
         match self.look_angle:
             # Right
             case _ if (0 <= math.degrees(self.look_angle) < segment_offset) or ((360 - segment_offset) <= math.degrees(self.look_angle) < 360):
-                current_head_direction = "Right"
+                current_look_direction = "Right"
             # UpRight
             case _ if (segment_offset <= math.degrees(self.look_angle) < segment_offset + 45):
-                current_head_direction = "UpRight"
+                current_look_direction = "Up Right"
             # Up
             case _ if (90 - segment_offset) <= math.degrees(self.look_angle) < (90 + segment_offset):
-                current_head_direction = "Up"
+                current_look_direction = "Up"
             # UpLeft
             case _ if (90 + segment_offset) <= math.degrees(self.look_angle) < (90 + segment_offset + 45):
-                current_head_direction = "UpLeft"
+                current_look_direction = "Up Left"
             # Left
             case _ if (180 - segment_offset) <= math.degrees(self.look_angle) < (180 + segment_offset):
-                current_head_direction = "Left"
+                current_look_direction = "Left"
             # DownLeft
             case _ if (180 + segment_offset) <= math.degrees(self.look_angle) < (180 + segment_offset + 45):
-                current_head_direction = "DownLeft"
+                current_look_direction = "Down Left"
             # Down
             case _ if (270 - segment_offset) <= math.degrees(self.look_angle) < (270 + segment_offset):
-                current_head_direction = "Down" 
+                current_look_direction = "Down" 
             # DownRight
             case _ if (270 + segment_offset) <= math.degrees(self.look_angle) < (270 + segment_offset + 45):
-                current_head_direction = "DownRight"
+                current_look_direction = "Down Right"
 
         # --------------------------------------
-        # Assigning animation list
+        # Assigning animation list and image
 
         """ Temporary variables to store the: 
             - Current player animation state's list, e.g. The list containing the images of the "Idle" animation
@@ -256,10 +252,10 @@ class Player(Generic, pygame.sprite.Sprite):
                 current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
                 current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
             
-            # If there are two directions the player is going in (i.e UpLeft, UpRight, DownLeft, DownRight)
+            # If there are two directions the player is going in (i.e Up Left, Up Right, Down Left, Down Right)
             elif len(self.player_direction) > 1:
-                # Concatenate the strings (e.g. UpRight)
-                two_direction = self.player_direction[1] + self.player_direction[0]
+                # Concatenate the strings (e.g. Up Right
+                two_direction = self.player_direction[0] + " " + self.player_direction[1]
                 current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][two_direction]
                 current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][two_direction][self.animation_index]
 
@@ -267,7 +263,7 @@ class Player(Generic, pygame.sprite.Sprite):
         if self.current_animation_state == "Run":
             """ 
             Note: Only the first player direction is checked, therefore if the playing was moving Up and Right, the player direction would be ["Right", "Up"], as the x direction is checked before the y direction.
-            - If the player is running Right, the body will face Right as long as the player looks between Up, UpRight, Right and DownRight, Down. Otherwise, the body will face in the direction the player is pointing towards.
+            - If the player is running Right, the body will face Right as long as the player looks between Up, Up Right, Right and Down Right, Down. Otherwise, the body will face in the direction the player is pointing towards.
               (The same applies for all directions i.e. Up, Down, Left and Right)
             """
             # Moving up or down
@@ -380,7 +376,7 @@ class Player(Generic, pygame.sprite.Sprite):
 
             # ---------------------------------------------------------------------------------
             # Assigning the head image
-            head_image = self.head_dict[self.current_player_element][current_head_direction][self.animation_index]
+            head_image = self.head_dict[self.current_player_element][current_look_direction][self.animation_index]
         
             # ---------------------------------------------------------------------------------
             # Drawing the torso and the head
@@ -393,15 +389,15 @@ class Player(Generic, pygame.sprite.Sprite):
 
             # Adjusting the head image depending on the direction the player is looking towards
             # Note: This is because for some directions, the head may be placed too high or too low
-            match current_head_direction:
+            match current_look_direction:
                 # Up
-                case _ if current_head_direction == "UpLeft" or current_head_direction == "Up" or current_head_direction == "UpRight":
+                case _ if current_look_direction == "Up Left" or current_look_direction == "Up" or current_look_direction == "Up Right":
                     head_adjustment_y = 2
                 # Down
-                case _ if current_head_direction == "DownLeft" or current_head_direction == "Down" or current_head_direction == "DownRight":
+                case _ if current_look_direction == "Down Left" or current_look_direction == "Down" or current_look_direction == "Down Right":
                     head_adjustment_y = 3
                 # Left or right
-                case _ if current_head_direction == "Left" or current_head_direction == "Right":
+                case _ if current_look_direction == "Left" or current_look_direction == "Right":
                     head_adjustment_y = 0
 
             # Draw the head on top the torso
@@ -409,17 +405,33 @@ class Player(Generic, pygame.sprite.Sprite):
 
         # If the current animation state is "Idle" and the player is pressing the left mouse button
         elif self.current_animation_state == "Idle":
+
             # If the player is pressing the left mouse button
             if pygame.mouse.get_pressed()[0] == True:
                 """ There is an error where the animation index is not reset when switching to this "shooting idle" animation. 
                 Therefore, if the animation index + 1 is greater than the number of frames in the current animation list, the animation index should be reset.
                 """
-                if (self.animation_index + 1) > len(self.animations_dict[self.current_player_element]["Idle"][current_head_direction]):
+                if (self.animation_index + 1) > len(self.animations_dict[self.current_player_element]["Idle"][current_look_direction]):
                     # Reset the animation index
                     self.animation_index = 0
 
+                # ------------------------------------------------------------------------------------------------------------
+                # Updating the player direction so that the player will point to that direction once the player stops shooting
+
+                # Count the number of capital letters inside the string
+                capital_letter_count = sum(map(str.isupper, current_look_direction))
+
+                # If there is only 1 capital letter, then current direction is one direction e.g. Right
+                if capital_letter_count == 1:
+                    self.player_direction = [current_look_direction]
+
+                # If there are 2 capital letters, then the current direction is two directions e.g Up Left
+                elif capital_letter_count == 2:
+                    # Set the player direction into a list consisting of the two directions the player is facing. E.g. ["Up", "Left"]
+                    self.player_direction = current_look_direction.split()
+
                 # Set the image to be the images that correspond with the direction that the player is facing
-                self.image = self.animations_dict[self.current_player_element]["Idle"][current_head_direction][self.animation_index]
+                self.image = self.animations_dict[self.current_player_element]["Idle"][current_look_direction][self.animation_index]
 
             # Draw the idle animation
             self.draw(surface = self.surface, x = (self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), y = (self.rect.centery - self.camera_position[1]) - int(self.image.get_height() / 2))
@@ -434,7 +446,7 @@ class Player(Generic, pygame.sprite.Sprite):
 
         """
         # Dictionary that holds which direction the player is currently facing 
-        self.direction_variables_dict = {"Left": False, "Right": False, "Up": False, "Down": False}
+        self.direction_variables_dict = {"Up": False, "Down": False ,"Left": False, "Right": False}
 
         # ---------------------------------------
         # Movement
