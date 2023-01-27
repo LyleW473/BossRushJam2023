@@ -1,6 +1,7 @@
 import pygame, os, math
 from Global.generic import Generic
 from Global.settings import *
+from random import choice
 
 class Player(Generic, pygame.sprite.Sprite):
     def __init__(self, x, y, surface):
@@ -19,8 +20,8 @@ class Player(Generic, pygame.sprite.Sprite):
         # Load the animation images
         self.load_animations()
 
-        # Inherit from the Generic class, which has basic attributes and methods.
-        Generic.__init__(self, x = x, y = y, image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index])
+        # Inherit from the Generic class, which has basic attributes and methods (The image is set to the thinnest image)
+        Generic.__init__(self, x = x, y = y, image = self.animations_dict[self.current_player_element]["Idle"]["Right"][self.animation_index])
 
         # Inherit from pygame's sprite class
         pygame.sprite.Sprite.__init__(self) 
@@ -90,8 +91,10 @@ class Player(Generic, pygame.sprite.Sprite):
     
     
         "Run": {
-                "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Body/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Body")))],
-                "Right": [pygame.image.load(f"graphics/Player/Normal/Run/Body/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body")))]   
+            "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Right")))],
+            "Right": [pygame.image.load(f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Right")))],
+            "Up": [pygame.image.load(f"graphics/Player/Normal/Run/Body/Up/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Up")))],
+            "Down": [pygame.image.load(f"graphics/Player/Normal/Run/Body/Down/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Down")))],
                }
                                          }
                                }
@@ -202,6 +205,46 @@ class Player(Generic, pygame.sprite.Sprite):
         # Increment the animation frame counter based on time
         self.animation_frame_counter += 1000 * self.delta_time
 
+        # --------------------------------------
+        # Identifying the direction that the player is looking toward.
+        """ 
+        Note: This is used to:
+            - Assign which idle animation should be playing if the player is shooting depending on where the player is shooting
+            - Assign the correct head onto the torso depending on where the player is looking
+        
+        Note 2: 360 / 8 (8 directions), = 45, offset everything by half of that so that each direction has a cone like radius 
+        """
+        segment_offset = 45 / 2
+
+        match self.look_angle:
+            # Right
+            case _ if (0 <= math.degrees(self.look_angle) < segment_offset) or ((360 - segment_offset) <= math.degrees(self.look_angle) < 360):
+                current_head_direction = "Right"
+            # UpRight
+            case _ if (segment_offset <= math.degrees(self.look_angle) < segment_offset + 45):
+                current_head_direction = "UpRight"
+            # Up
+            case _ if (90 - segment_offset) <= math.degrees(self.look_angle) < (90 + segment_offset):
+                current_head_direction = "Up"
+            # UpLeft
+            case _ if (90 + segment_offset) <= math.degrees(self.look_angle) < (90 + segment_offset + 45):
+                current_head_direction = "UpLeft"
+            # Left
+            case _ if (180 - segment_offset) <= math.degrees(self.look_angle) < (180 + segment_offset):
+                current_head_direction = "Left"
+            # DownLeft
+            case _ if (180 + segment_offset) <= math.degrees(self.look_angle) < (180 + segment_offset + 45):
+                current_head_direction = "DownLeft"
+            # Down
+            case _ if (270 - segment_offset) <= math.degrees(self.look_angle) < (270 + segment_offset):
+                current_head_direction = "Down" 
+            # DownRight
+            case _ if (270 + segment_offset) <= math.degrees(self.look_angle) < (270 + segment_offset + 45):
+                current_head_direction = "DownRight"
+
+        # --------------------------------------
+        # Assigning animation list
+
         """ Temporary variables to store the: 
             - Current player animation state's list, e.g. The list containing the images of the "Idle" animation
             - The current animation image
@@ -224,28 +267,60 @@ class Player(Generic, pygame.sprite.Sprite):
         if self.current_animation_state == "Run":
             """ 
             Note: Only the first player direction is checked, therefore if the playing was moving Up and Right, the player direction would be ["Right", "Up"], as the x direction is checked before the y direction.
-            - If the player is running right or left, the body will point to whichever direction was pressed.
-            - If the player is attempting to run up or down, depending on where the mouse is positioned, the player's body will be point towards that direction
+            - If the player is running Right, the body will face Right as long as the player looks between Up, UpRight, Right and DownRight, Down. Otherwise, the body will face in the direction the player is pointing towards.
+              (The same applies for all directions i.e. Up, Down, Left and Right)
             """
-            # Moving left or right
-            if self.player_direction[0] == "Right" or self.player_direction[0] == "Left":
-                current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
-                current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
-
             # Moving up or down
-            elif self.player_direction[0] == "Up" or self.player_direction[0] == "Down":
-                
-                # Mouse looking right
-                if 0 <= math.degrees(self.look_angle) < 90 or 270 <= math.degrees(self.look_angle) < 360:
-                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state]["Right"]
-                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state]["Right"][self.animation_index]
-                
-                # Mouse looking left
-                elif 90 <= math.degrees(self.look_angle) < 270:
-                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state]["Left"]
-                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state]["Left"][self.animation_index]
+            if self.player_direction[0] == "Up" or self.player_direction[0] == "Down":
 
-        #print(self.current_player_element, self.current_animation_state, self.player_direction, len(current_player_state_animation_list), self.animation_index) 
+                # If the player is looking towards any direction in front of where they are moving
+                # E.g. Moving down and looking Left, DownLeft, Down, DownRight, Right
+                if (self.player_direction[0] == "Down" and 180 <= math.degrees(self.look_angle) < 360) or (self.player_direction[0] == "Up" and 0 <= math.degrees(self.look_angle) < 180):
+                    # Set the body (torso) to point towards where the player is moving
+                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
+                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
+
+                # If the player is looking towards the opposite direction of where the player is moving towards
+                else:
+                    if 0 <= math.degrees(self.look_angle) < 180 :
+                        body_direction = "Up"
+                    elif 180 <= math.degrees(self.look_angle) < 360:
+                        body_direction = "Down"
+                    
+                    # Set the body (torso) to point towards where the player is looking towards (with the mouse)
+                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction]
+                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction][self.animation_index]
+
+            # Moving left or right
+            if self.player_direction[0] == "Left" or self.player_direction[0] == "Right":
+                # If the player is looking towards any direction in front of where they are moving
+                # E.g. Moving Left and looking Up, UpLeft, Left, DownLeft, Down
+                if self.player_direction[0] == "Right" and (0 <= math.degrees(self.look_angle) < 90 or 270 <= math.degrees(self.look_angle) < 360) or \
+                    self.player_direction[0] == "Left" and (90 <= math.degrees(self.look_angle) < 270):
+
+                    # Set the body (torso) to point towards where the player is moving
+                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
+                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
+                
+                # If the player is looking towards the opposite direction of where the player is moving towards
+                else:
+                    # If the player is looking left
+                    if self.player_direction[0] == "Left":
+                        if math.degrees(self.look_angle) <= 90 :
+                            body_direction = "Up"
+                        elif math.degrees(self.look_angle) >= 270:
+                            body_direction = "Down"
+                    
+                    # If the player is looking right
+                    elif self.player_direction[0] == "Right":
+                        if 180 <= math.degrees(self.look_angle) <= 270:
+                            body_direction = "Down"
+                        elif 90 <= math.degrees(self.look_angle) < 180:
+                            body_direction = "Up"
+
+                    # Set the body (torso) to point towards where the player is looking towards (with the mouse)
+                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction]
+                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction][self.animation_index]
 
         # ---------------------------------------------------------------------------------
         # Set the image to be this animation frame
@@ -299,62 +374,56 @@ class Player(Generic, pygame.sprite.Sprite):
         - Half of the image width and height is subtracted so that the rotation of the player image is centered within the player rect.
         """
         #pygame.draw.rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
-
-        # If the current animation state is "Idle"
-        if self.current_animation_state == "Idle":
-            # Draw the idle animation
-            self.draw(surface = self.surface, x = (self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), y = (self.rect.centery - self.camera_position[1]) - int(self.image.get_height() / 2))
         
         # If the current animation state is "Run"
-        elif self.current_animation_state == "Run":
+        if self.current_animation_state == "Run":
 
             # ---------------------------------------------------------------------------------
-            # Identifying which head should be drawn onto the torso
-
-            # Note: 360 / 8 (8 directions), = 45, offset everything by half of that so that each direction has a cone like radius 
-            segment_offset = 45 / 2
-
-            match self.look_angle:
-                # Right
-                case _ if (0 <= math.degrees(self.look_angle) < segment_offset) or ((360 - segment_offset) <= math.degrees(self.look_angle) < 360):
-                    current_head_direction = "Right"
-                # UpRight
-                case _ if (segment_offset <= math.degrees(self.look_angle) < segment_offset + 45):
-                    current_head_direction = "UpRight"
-                # Up
-                case _ if (90 - segment_offset) <= math.degrees(self.look_angle) < (90 + segment_offset):
-                    current_head_direction = "Up"
-                # UpLeft
-                case _ if (90 + segment_offset) <= math.degrees(self.look_angle) < (90 + segment_offset + 45):
-                    current_head_direction = "UpLeft"
-                # Left
-                case _ if (180 - segment_offset) <= math.degrees(self.look_angle) < (180 + segment_offset):
-                    current_head_direction = "Left"
-                # DownLeft
-                case _ if (180 + segment_offset) <= math.degrees(self.look_angle) < (180 + segment_offset + 45):
-                    current_head_direction = "DownLeft"
-                # Down
-                case _ if (270 - segment_offset) <= math.degrees(self.look_angle) < (270 + segment_offset):
-                    current_head_direction = "Down" 
-                # DownRight
-                case _ if (270 + segment_offset) <= math.degrees(self.look_angle) < (270 + segment_offset + 45):
-                    current_head_direction = "DownRight"
-
-            # ---------------------------------------------------------------------------------
-            # Drawing the head on to of the torso
-
-            # Temporary variable for the head image
+            # Assigning the head image
             head_image = self.head_dict[self.current_player_element][current_head_direction][self.animation_index]
-            
+        
+            # ---------------------------------------------------------------------------------
+            # Drawing the torso and the head
+
             # Temporary variable for the position that the torso should be drawn at
             torso_position = ((self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), (self.rect.midbottom[1] - self.image.get_height() - self.camera_position[1]))
 
             # Draw the torso at the bottom of the player rect
             self.draw(surface = self.surface, x = torso_position[0], y = torso_position[1])
 
-            # Draw the head on top the torso
-            self.surface.blit(head_image, ((self.rect.centerx - self.camera_position[0]) - int(head_image.get_width()/ 2), torso_position[1] - head_image.get_height()))
+            # Adjusting the head image depending on the direction the player is looking towards
+            # Note: This is because for some directions, the head may be placed too high or too low
+            match current_head_direction:
+                # Up
+                case _ if current_head_direction == "UpLeft" or current_head_direction == "Up" or current_head_direction == "UpRight":
+                    head_adjustment_y = 2
+                # Down
+                case _ if current_head_direction == "DownLeft" or current_head_direction == "Down" or current_head_direction == "DownRight":
+                    head_adjustment_y = 3
+                # Left or right
+                case _ if current_head_direction == "Left" or current_head_direction == "Right":
+                    head_adjustment_y = 0
 
+            # Draw the head on top the torso
+            self.surface.blit(head_image, ((self.rect.centerx - self.camera_position[0]) - int(head_image.get_width()/ 2), head_adjustment_y + torso_position[1] - head_image.get_height()))
+
+        # If the current animation state is "Idle" and the player is pressing the left mouse button
+        elif self.current_animation_state == "Idle":
+            # If the player is pressing the left mouse button
+            if pygame.mouse.get_pressed()[0] == True:
+                """ There is an error where the animation index is not reset when switching to this "shooting idle" animation. 
+                Therefore, if the animation index + 1 is greater than the number of frames in the current animation list, the animation index should be reset.
+                """
+                if (self.animation_index + 1) > len(self.animations_dict[self.current_player_element]["Idle"][current_head_direction]):
+                    # Reset the animation index
+                    self.animation_index = 0
+
+                # Set the image to be the images that correspond with the direction that the player is facing
+                self.image = self.animations_dict[self.current_player_element]["Idle"][current_head_direction][self.animation_index]
+
+            # Draw the idle animation
+            self.draw(surface = self.surface, x = (self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), y = (self.rect.centery - self.camera_position[1]) - int(self.image.get_height() / 2))
+    
     # ---------------------------------------------------------------------------------
     # Movement       
 
@@ -860,9 +929,6 @@ class Player(Generic, pygame.sprite.Sprite):
 
         # Track player movement
         self.handle_player_movement()
-
-        # # Play animations
-        # self.play_animations()
 
         # # Create / update a mask for pixel - perfect collisions (Uncomment later when adding collisions with objects other than tiles)
         # self.mask = pygame.mask.from_surface(self.image)
