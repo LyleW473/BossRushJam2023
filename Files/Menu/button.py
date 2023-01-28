@@ -1,32 +1,36 @@
 import pygame, random
 from Global.settings import * 
-from Global.generic import Generic
 
-class Button(Generic):
-    def __init__(self, x, y, image, surface):
+class Button:
+    def __init__(self, rect_info_dict, purpose, surface):
         
-        # Generic
+        # Surface the button will be drawn onto
         self.surface = surface
-
-        # Inherit basic attributes from Generic class
-        super().__init__(x = x,y = y, image = image)
+        
+        # Create a rect at the positions passed into the class
+        self.rect = pygame.Rect(
+                                rect_info_dict["x"] - (rect_info_dict["button_measurements"][0] / 2), 
+                                rect_info_dict["y"] - (rect_info_dict["button_measurements"][1] / 2), 
+                                rect_info_dict["button_measurements"][0],
+                                rect_info_dict["button_measurements"][1]
+                                )
+        # Purpose of the button (e.g. Play, Controls, Quit, etc.)
+        self.purpose = purpose
 
         # -------------------------------------
         # Border animations
 
-        # Note: Buttons are 400 x 120 pixels wide
-
         # Tuple that stores the co-ordinates of the four corners of the button
         self.button_points = (
                         (self.rect.x, self.rect.y), 
-                        (self.rect.x + self.image.get_width(), self.rect.y), 
-                        (self.rect.x + self.image.get_width(), self.rect.y + self.image.get_height()),
-                        (self.rect.x, self.rect.y + self.image.get_height())
+                        (self.rect.x + rect_info_dict["button_measurements"][0], self.rect.y), 
+                        (self.rect.x + rect_info_dict["button_measurements"][0], self.rect.y + rect_info_dict["button_measurements"][1]),
+                        (self.rect.x, self.rect.y + rect_info_dict["button_measurements"][1])
                         )
 
         # Speed that the animation travels on the button
-        self.border_animation_max_x_speed = self.image.get_width() / 5
-        self.border_animation_max_y_speed = self.image.get_height() 
+        self.border_animation_max_x_speed = rect_info_dict["button_measurements"][0] / 5
+        self.border_animation_max_y_speed = rect_info_dict["button_measurements"][1]
 
         # Radius of the animation
         self.border_animation_radius = 7
@@ -105,5 +109,5 @@ class Button(Generic):
     def draw(self):
 
         # Draw the button onto the surface
-        self.surface.blit(self.image, (self.rect))
+        pygame.draw.rect(surface = self.surface, color = "red", rect = self.rect, width = 0)
         

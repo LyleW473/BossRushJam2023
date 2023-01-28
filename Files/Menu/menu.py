@@ -6,7 +6,7 @@ class Menu:
     def __init__(self):
 
         # Screen
-        self.screen = pygame.display.get_surface()
+        self.surface = pygame.display.get_surface()
 
         # ------------------------------------------------------------------------------------------------------------------------------------------------
         # Buttons
@@ -33,8 +33,6 @@ class Menu:
         # ----------------------------------------------------------------------------------
         # Button highlighting
 
-        
-
         self.button_highlighting_info_dict = {
                                                 "maximum_highlight_colour": (255, 255, 255),
                                                 "minimum_highlight_colour": (60, 60, 60), 
@@ -49,46 +47,51 @@ class Menu:
 
     def create_buttons(self):
 
-        # Create lists for all menus in the game
-        self.main_menu_buttons = []
-        self.controls_menu_buttons = []
-        self.paused_menu_buttons = []
+        # Width and height of buttons
+        default_button_measurements = (400, 90)
 
-        # Images
-        play_button_image = pygame.image.load("graphics/MenuButtons/play_button.png").convert()
-        controls_button_image = pygame.image.load("graphics/MenuButtons/controls_button.png").convert()
-        quit_button_image = pygame.image.load("graphics/MenuButtons/quit_button.png").convert()
-        back_button_image = pygame.image.load("graphics/MenuButtons/back_button.png").convert()
-        continue_button_image = pygame.image.load("graphics/MenuButtons/continue_button.png").convert()
+        # Values are: x pos, y pos, button spacing 
+        default_positions = (screen_width / 2, 300)
 
+        # Value for button spacing
+        button_spacing =  (0, 150)
+
+        """A dictionary used to contain all the information for each menu:
+        - Each menu:
+            - The purpose of each button
+            - A buttons list to store the created buttons
+            - The starting positions of the buttons
+            - The button spacing between each 
+        """
+        self.menu_buttons_dict = {
+            
+            "main_menu": {"ButtonPurposes": ("Play", "Controls", "Quit"), "ButtonsList": [], "StartingPositions": default_positions, "ButtonSpacing": button_spacing},
+            "paused_menu": {"ButtonPurposes": ("Continue", "Controls", "Quit"), "ButtonsList": [], "StartingPositions": default_positions, "ButtonSpacing": button_spacing},
+            "controls_menu": {"ButtonPurposes": ["Back"], "ButtonsList": [], "StartingPositions": (default_positions[0], screen_height - 150), "ButtonSpacing": (0, 0)}
+                                    }
         # ------------------------------------------------------------------------
-        # Main menu
-        play_button = Button(x = (screen_width / 2) - (play_button_image.get_width() / 2) , y = 200 ,  image = play_button_image, surface = self.screen)
-        controls_button = Button(x = (screen_width / 2) - (controls_button_image.get_width() / 2), y = 400,  image = controls_button_image, surface = self.screen)
-        quit_button = Button(x = (screen_width / 2) - (quit_button_image.get_width() / 2), y = 600,  image = quit_button_image, surface = self.screen)
-        
-        # Add the buttons to the main menu buttons list
-        self.main_menu_buttons.append(play_button)
-        self.main_menu_buttons.append(controls_button)
-        self.main_menu_buttons.append(quit_button)
 
-        # ------------------------------------------------------------------------
-        # Controls menu
-        back_button = Button(x = (screen_width / 2) - (back_button_image.get_width() / 2), y = 600, image = back_button_image, surface = self.screen)
+        # For each menu
+        for menu in self.menu_buttons_dict:
 
-        # Add the buttons to the controls menu buttons list
-        self.controls_menu_buttons.append(back_button)
-
-        # ------------------------------------------------------------------------
-        # Paused menu
-        continue_button = Button(x = (screen_width / 2) - (continue_button_image.get_width() / 2), y = 200, image = continue_button_image, surface = self.screen)
-        controls_button_2 = Button(x = (screen_width / 2) - (controls_button_image.get_width() / 2), y = 400, image = controls_button_image, surface = self.screen)
-        quit_button_2 = Button(x = (screen_width / 2) - (quit_button_image.get_width() / 2), y = 600, image = quit_button_image, surface = self.screen)
-
-        # Add the buttons to the paused menu buttons list
-        self.paused_menu_buttons.append(continue_button)
-        self.paused_menu_buttons.append(controls_button_2)
-        self.paused_menu_buttons.append(quit_button_2)
+            # For each button purpose in the list of button purposes 
+            for index, button_purpose in enumerate(self.menu_buttons_dict[menu]["ButtonPurposes"]):
+                
+                """  Create the button, passing parameters:
+                - A rect info dict containing the x and y positions and the measurements of the button 
+                - The purpose of the button (e.g. "Play" button)
+                - The surface that the button will be drawn onto
+                """
+                self.menu_buttons_dict[menu]["ButtonsList"].append(
+                                            Button(
+                                                rect_info_dict = {
+                                                                    "x": self.menu_buttons_dict[menu]["StartingPositions"][0], 
+                                                                    "y" : self.menu_buttons_dict[menu]["StartingPositions"][1] + (self.menu_buttons_dict[menu]["ButtonSpacing"][1] * index) ,
+                                                                    "button_measurements": default_button_measurements}, 
+                                                purpose = button_purpose,
+                                                surface = self.surface
+                                                )
+                                            )
 
     def mouse_position_updating(self):
 
@@ -101,7 +104,7 @@ class Menu:
     def animate_background(self):
 
         # Fill the screen with black
-        self.screen.fill("black")
+        self.surface.fill("black")
 
     def highlight_button(self, menu_buttons_list):
         
@@ -161,10 +164,10 @@ class Menu:
                                                                         self.button_highlighting_info_dict["highlight_width"] * 2,
                                                                         self.button_highlighting_info_dict["highlight_width"] * 2)
 
-            print(self.button_highlighting_info_dict["highlight_colour"])
+
             # Draw the highlight border "rect"
             pygame.draw.rect(
-                            surface = self.screen, 
+                            surface = self.surface, 
                             color = self.button_highlighting_info_dict["highlight_colour"], 
                             rect = inflated_button_to_highlight_rect, 
                             width = self.button_highlighting_info_dict["highlight_width"]
@@ -182,6 +185,9 @@ class Menu:
         # If the player is in x menu
         if menu_state == True:
 
+            # Highlight the button if the player's mouse is hovering over the button
+            self.highlight_button(menu_buttons_list = menu_buttons_list)
+            
             # For all buttons in the menu's button list
             for button in menu_buttons_list:
                 
@@ -191,11 +197,9 @@ class Menu:
                 # Draw the button
                 button.draw()
 
-                # # Play the button's border animation
-                # button.play_border_animations()
+                # Play the button's border animation
+                button.play_border_animations()
 
-            # Highlight the button if the player's mouse is hovering over the button
-            self.highlight_button(menu_buttons_list = menu_buttons_list)
     
     def run(self, delta_time):
 
@@ -218,7 +222,7 @@ class Menu:
         if self.show_main_menu == True: 
 
             # Draw and update the buttons
-            self.update_buttons(menu_state = self.show_main_menu, menu_buttons_list = self.main_menu_buttons)
+            self.update_buttons(menu_state = self.show_main_menu, menu_buttons_list = self.menu_buttons_dict["main_menu"]["ButtonsList"])
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
             if pygame.mouse.get_pressed()[0] == True and self.left_mouse_button_released == True:
@@ -227,20 +231,21 @@ class Menu:
                     self.left_mouse_button_released = False   
 
                     # Look for collisions between the mouse rect and the rect of any button inside the list
-                    button_collision = self.mouse_rect.collidelist(self.main_menu_buttons)
+                    button_collision = self.mouse_rect.collidelist(self.menu_buttons_dict["main_menu"]["ButtonsList"])
 
-                    # Check for which button was clicked
-                    match button_collision:
-
+                    # Check for which button was clicked by looking at the purpose of the button
+                    match self.menu_buttons_dict["main_menu"]["ButtonsList"][button_collision].purpose:
+                        
                         # If the mouse collided with the "Play" button 
-                        case 0:
+                        case "Play":
                             # Set all menus to False, which will be detected by the game states controller, moving into the actual game
                             self.show_main_menu = False
                             self.show_controls_menu = False
                             self.show_paused_menu = False
 
                         # If the mouse collided with the "Controls" button 
-                        case 1:
+                        case "Controls":
+
                             # Set the previous menu to be this menu so that we can come back to this menu when the "Back" button is clicked
                             self.previous_menu = "Main"
 
@@ -249,7 +254,7 @@ class Menu:
                             self.show_controls_menu = True
                         
                         # If the mouse collided with the "Quit" button 
-                        case 2:
+                        case "Quit":
                             # Exit the program
                             pygame.quit()
                             sys.exit()
@@ -260,7 +265,7 @@ class Menu:
         elif self.show_controls_menu == True:
 
             # Draw and update the buttons
-            self.update_buttons(menu_state = self.show_controls_menu, menu_buttons_list = self.controls_menu_buttons)
+            self.update_buttons(menu_state = self.show_controls_menu, menu_buttons_list = self.menu_buttons_dict["controls_menu"]["ButtonsList"])
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
             if pygame.mouse.get_pressed()[0] == 1 and self.left_mouse_button_released == True:
@@ -269,13 +274,13 @@ class Menu:
                 self.left_mouse_button_released = False          
 
                 # Look for collisions between the mouse rect and the rect of any button inside the list
-                button_collision = self.mouse_rect.collidelist(self.controls_menu_buttons)
+                button_collision = self.mouse_rect.collidelist(self.menu_buttons_dict["controls_menu"]["ButtonsList"])
 
                 # Check for which button was clicked
-                match button_collision:
+                match self.menu_buttons_dict["controls_menu"]["ButtonsList"][button_collision].purpose:
 
                     # If the mouse collided with the "Back" button
-                    case 0:
+                    case "Back":
 
                         # Check which menu the controls menu was entered from
                         match self.previous_menu:        
@@ -299,7 +304,7 @@ class Menu:
         elif self.show_paused_menu == True:
 
             # Draw and update the buttons
-            self.update_buttons(menu_state = self.show_paused_menu, menu_buttons_list = self.paused_menu_buttons)
+            self.update_buttons(menu_state = self.show_paused_menu, menu_buttons_list = self.menu_buttons_dict["paused_menu"]["ButtonsList"])
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
             if pygame.mouse.get_pressed()[0] == 1 and self.left_mouse_button_released == True:
@@ -308,18 +313,18 @@ class Menu:
                 self.left_mouse_button_released = False          
 
                 # Look for collisions between the mouse rect and the rect of any button inside the list
-                button_collision = self.mouse_rect.collidelist(self.paused_menu_buttons)
+                button_collision = self.mouse_rect.collidelist(self.menu_buttons_dict["paused_menu"]["ButtonsList"])
 
                 # Check for which button was clicked
-                match button_collision:
+                match self.menu_buttons_dict["paused_menu"]["ButtonsList"][button_collision].purpose:
 
                      # If the mouse collided with the "Continue" button
-                    case 0: 
+                    case "Continue": 
                         # Stop showing the paused menu
                         self.show_paused_menu = False
 
                     # If the mouse collided with the "Controls" button
-                    case 1:
+                    case "Controls":
                         # Set the previous menu to be this menu so that we can come back to this menu when the "Back" button is clicked
                         self.previous_menu = "Paused"
 
@@ -328,7 +333,7 @@ class Menu:
                         self.show_controls_menu = True
 
                     # If the mouse collided with the "Quit" button 
-                    case 2:
+                    case "Quit":
                         # Exit the program
                         pygame.quit()
                         sys.exit()
