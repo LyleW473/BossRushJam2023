@@ -3,6 +3,7 @@ from Global.settings import *
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
 from Level.Player.bamboo_projectiles import BambooProjectile
+from math import sin, cos, degrees, atan2, pi, dist
 
 class Game:
     def __init__(self):
@@ -41,7 +42,6 @@ class Game:
         # self.player_group = pygame.sprite.GroupSingle(self.player) This was created inside the create_objects_tile_map method
         self.bamboo_projectiles_group = pygame.sprite.Group() # Group for all bamboo projectiles for the player
         
-
     # --------------------------------------------------------------------------------------
     # Misc methods
 
@@ -231,7 +231,7 @@ class Game:
 
         for bamboo_projectile in self.bamboo_projectiles_group:
             # Draw the bamboo projectile 
-            pygame.draw.rect(self.scaled_surface, "white", (bamboo_projectile.rect.x - self.camera_position[0], bamboo_projectile.rect.y - self.camera_position[1], bamboo_projectile.rect.width, bamboo_projectile.rect.height), 0)
+            # pygame.draw.rect(self.scaled_surface, "white", (bamboo_projectile.rect.x - self.camera_position[0], bamboo_projectile.rect.y - self.camera_position[1], bamboo_projectile.rect.width, bamboo_projectile.rect.height), 0)
             bamboo_projectile.draw(surface = self.scaled_surface, x = bamboo_projectile.rect.x - self.camera_position[0], y = bamboo_projectile.rect.y - self.camera_position[1])
 
     # --------------------------------------------------------------------------------------
@@ -242,15 +242,15 @@ class Game:
         # Used to find the closest tiles to the player to check for collisions (Used for greater performance, as we are only checking for collisions with tiles near the player)
 
         # Grid lines to show neighbouring tiles
-        pygame.draw.line(self.scaled_surface, "white", (0 - self.camera_position[0], self.player.rect.top - self.camera_position[1]), (screen_width, self.player.rect.top - self.camera_position[1]))
-        pygame.draw.line(self.scaled_surface, "white", (0 - self.camera_position[0], self.player.rect.bottom - self.camera_position[1]), (screen_width, self.player.rect.bottom - self.camera_position[1]))
+        # pygame.draw.line(self.scaled_surface, "white", (0 - self.camera_position[0], self.player.rect.top - self.camera_position[1]), (screen_width, self.player.rect.top - self.camera_position[1]))
+        # pygame.draw.line(self.scaled_surface, "white", (0 - self.camera_position[0], self.player.rect.bottom - self.camera_position[1]), (screen_width, self.player.rect.bottom - self.camera_position[1]))
 
-        pygame.draw.line(self.scaled_surface, "red", (0 - self.camera_position[0], (self.player.rect.top - TILE_SIZE * 1) - self.camera_position[1]), (screen_width, (self.player.rect.top - TILE_SIZE * 1) - self.camera_position[1]))
-        pygame.draw.line(self.scaled_surface, "red", (0 - self.camera_position[0], (self.player.rect.bottom + TILE_SIZE * 1) - self.camera_position[1]), (screen_width, (self.player.rect.bottom + TILE_SIZE * 1) - self.camera_position[1]))
+        # pygame.draw.line(self.scaled_surface, "red", (0 - self.camera_position[0], (self.player.rect.top - TILE_SIZE * 1) - self.camera_position[1]), (screen_width, (self.player.rect.top - TILE_SIZE * 1) - self.camera_position[1]))
+        # pygame.draw.line(self.scaled_surface, "red", (0 - self.camera_position[0], (self.player.rect.bottom + TILE_SIZE * 1) - self.camera_position[1]), (screen_width, (self.player.rect.bottom + TILE_SIZE * 1) - self.camera_position[1]))
 
-        pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.left - TILE_SIZE) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.left - TILE_SIZE) * 1 - self.camera_position[0], screen_height))
-        pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.right + TILE_SIZE) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.right + TILE_SIZE) * 1 - self.camera_position[0], screen_height))
-        
+        # pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.left - TILE_SIZE) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.left - TILE_SIZE) * 1 - self.camera_position[0], screen_height))
+        # pygame.draw.line(self.scaled_surface, "pink", ((self.player.rect.right + TILE_SIZE) * 1 - self.camera_position[0], 0 - self.camera_position[1]), ((self.player.rect.right + TILE_SIZE) * 1 - self.camera_position[0], screen_height))
+
         # For each world tile in the world tiles dictionary
         for world_tile, world_tile_number in self.world_tiles_dict.items():
 
@@ -286,19 +286,25 @@ class Game:
         # --------------------------------------------------------------------------------------
         # Handling shooting input
 
+        pygame.draw.circle(self.scaled_surface, "white", (self.player.rect.centerx - self.camera_position[0], self.player.rect.centery - self.camera_position[1]), 50, 1)
         # If the left mouse button has been pressed
         if pygame.mouse.get_pressed()[0] == True:
             
             # If the player's current weapon is the "BambooAssaultRifle"
             if self.player.current_weapon ==  "BambooAssaultRifle":
                 # If there are less than x bamboo projectiles and if enough time has passed since the last time the player shot
-                if len(self.bamboo_projectiles_group) < 10 and (self.player.weapons["BambooAssaultRifle"]["PreviouslyShotTime"] >= self.player.weapons["BambooAssaultRifle"]["ShootingCooldown"]):
+                if len(self.bamboo_projectiles_group) < 10000 and (self.player.weapons["BambooAssaultRifle"]["PreviouslyShotTime"] >= self.player.weapons["BambooAssaultRifle"]["ShootingCooldown"]):
                     
-                    # Create a bamboo projectile, spawning it at the center of the player
+                    # Distance to place the projectile at the tip of the gun
+                    hypot_distance = 45
+                    distance_x = hypot_distance * cos(self.player.look_angle)
+                    distance_y = -(hypot_distance * sin(self.player.look_angle))
+
+                    # Create a bamboo projectile, spawning it at the tip of the gun (Starts at the center of the player but has an added distance which displaces it to right in front of the gun)
                     bamboo_projectile = BambooProjectile(
-                                                        x = self.player.rect.centerx,
-                                                        y = self.player.rect.centery,
-                                                        angle = self.player.look_angle,
+                                                        x = distance_x + self.player.rect.centerx,
+                                                        y = distance_y + self.player.rect.centery,
+                                                        angle = self.player.look_angle
                                                         )
                     
                     # Add the bamboo projectile to the bamboo projectiles group
@@ -329,6 +335,42 @@ class Game:
             # Move the projectile
             bamboo_projectile.move_projectile()
 
+    def draw_player_weapon(self):
+        
+        # If the player is pressing the left mouse button
+        if pygame.mouse.get_pressed()[0]:
+
+            # Assign the weapon image
+            weapon_image = self.player.weapons[self.player.current_weapon]["Images"][self.player.current_look_direction]
+            
+            # The following distance will ensure that the weapon is always "hypot_distance" away from the center of the player
+            hypot_distance = 10
+            distance_x = hypot_distance * cos(self.player.look_angle)
+            distance_y = hypot_distance * sin(self.player.look_angle)
+            
+            # Depending on the current look direction, 
+            match self.player.current_look_direction:
+                
+                # (For up and down, the weapon is centered more with a "-5")
+                case _ if self.player.current_look_direction == "Up" or self.player.current_look_direction == "Down":
+                    self.weapon_position = (
+                        ((self.player.rect.centerx - 5)) + distance_x, 
+                        ((self.player.rect.centery - (weapon_image.get_height() / 2))) - distance_y
+                    )
+                # All other directions
+                case _:
+                    self.weapon_position = (
+                        ((self.player.rect.centerx - (weapon_image.get_width() / 2))) + distance_x, 
+                        ((self.player.rect.centery - (weapon_image.get_height() / 2))) - distance_y
+                    )
+                    
+
+            pygame.draw.circle(self.scaled_surface, "white", (self.player.rect.centerx - self.camera_position[0], self.player.rect.centery - self.camera_position[1]), hypot_distance, 1)
+            # Draw the weapon at the position
+            self.scaled_surface.blit(weapon_image, (self.weapon_position[0] - self.camera_position[0], self.weapon_position[1] - self.camera_position[1]))
+
+
+        
     def run(self, delta_time):
 
         # Update the delta time of all objects 
@@ -351,6 +393,8 @@ class Game:
 
         # Run the player methods
         self.player.run()
+
+        self.draw_player_weapon()
 
         # Handle player shooting
         self.handle_player_shooting(delta_time)

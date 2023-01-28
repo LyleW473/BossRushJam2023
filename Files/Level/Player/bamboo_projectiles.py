@@ -4,10 +4,12 @@ from math import sin, cos, degrees
 from Global.settings import *
 
 class BambooProjectile(Generic, pygame.sprite.Sprite):
+    # Projectile image of all bamboo projectiles
+    projectile_image = pygame.image.load("graphics/Projectiles/bamboo_projectile.png")
+
     def __init__(self, x, y, angle):
 
         # The angle that the projectile will travel in
-        self.angle = angle
 
         # The total distance travelled (including the horizontal and vertical components)
         desired_distance_travelled = 6 * TILE_SIZE
@@ -26,13 +28,12 @@ class BambooProjectile(Generic, pygame.sprite.Sprite):
         self.delta_time = 0
         """
         # Inherit from the Generic class, which has basic attributes and methods.
-        Generic.__init__(self, x = x, y = y, image = pygame.transform.rotozoom(surface = pygame.image.load("graphics/Projectiles/bamboo_projectile.png").convert_alpha(), angle = degrees(self.angle), scale = 1))
+        Generic.__init__(self, x = x, y = y, image = pygame.transform.rotozoom(surface = BambooProjectile.projectile_image.convert_alpha(), angle = degrees(angle), scale = 1))
 
         # Inherit from pygame's sprite class
         pygame.sprite.Sprite.__init__(self)
 
         """ Override the rect position, and instead position the center of the projectile at the x and y co-ordinate:
-        - The x and y co-ordinate are positioned at the center of the player, so this will always place the projectile in the center of the player, regardless of the angle the projectile is looking towards.
         - As the image is rotated, the image may be resized, therefore this ensures that the center of the projectile will always be at the center of the player.
         """
         self.rect.centerx = x
