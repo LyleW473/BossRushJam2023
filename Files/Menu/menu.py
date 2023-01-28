@@ -27,23 +27,25 @@ class Menu:
         self.previous_menu = None 
 
         # ------------------------------------------------------------------------------------------------------------------------------------------------
-        # Animated background variables
-        self.arc_height = 300
-        self.arc_width = 800
-        self.arc_x = 200
-        self.arc_y = (screen_height / 2) - (self.arc_height / 2)
-        self.arc_starting_angle = 0.5
-        self.arc_finishing_angle = 3.14
-        self.arc_angle_increment_speed = 40
-
-        # Dictionaries for the white/red arcs
-        self.white_arc_dictionary = {i:[self.arc_x, self.arc_y, self.arc_width - (i * 40), self.arc_height - (i * 15), self.arc_starting_angle + (0.314 * (i * 2)), self.arc_finishing_angle, 1] for i in range(0, 4 + 1)}
-        self.red_arc_dictionary = {i:[self.arc_x, self.arc_y, self.arc_width - (i * 40), self.arc_height - (i * 15), self.arc_finishing_angle, self.arc_starting_angle - (0.314 * (i * 2)), 1] for i in range(0, 4 + 1)}
-        self.arc_movement_direction = 1 # 1 = Moving right, -1 = Moving left
-
-        # ------------------------------------------------------------------------------------------------------------------------------------------------
         # Mouse
         self.left_mouse_button_released = True # Attribute used to track if the left mouse button is released so that 
+
+        # ----------------------------------------------------------------------------------
+        # Button highlighting
+
+        
+
+        self.button_highlighting_info_dict = {
+                                                "maximum_highlight_colour": (255, 255, 255),
+                                                "minimum_highlight_colour": (60, 60, 60), 
+                                                "highlight_colour": [255, 255, 255],
+                                                "highlight_decrease": True,
+                                                "highlight_width": 10,
+                                                "highlight_gradient": 0
+        }
+        # Settings for how long the button highlight takes to decrease and increase
+        button_highlight_decrease_time = 1.75 * (1000) # Time in milliseconds
+        self.button_highlighting_info_dict["highlight_gradient"] = (max(self.button_highlighting_info_dict["minimum_highlight_colour"]) - max(self.button_highlighting_info_dict["maximum_highlight_colour"])) / button_highlight_decrease_time
 
     def create_buttons(self):
 
@@ -52,11 +54,18 @@ class Menu:
         self.controls_menu_buttons = []
         self.paused_menu_buttons = []
 
+        # Images
+        play_button_image = pygame.image.load("graphics/MenuButtons/play_button.png").convert()
+        controls_button_image = pygame.image.load("graphics/MenuButtons/controls_button.png").convert()
+        quit_button_image = pygame.image.load("graphics/MenuButtons/quit_button.png").convert()
+        back_button_image = pygame.image.load("graphics/MenuButtons/back_button.png").convert()
+        continue_button_image = pygame.image.load("graphics/MenuButtons/continue_button.png").convert()
+
         # ------------------------------------------------------------------------
         # Main menu
-        play_button = Button((screen_width / 2) - 200 , 200 , pygame.image.load("graphics/MenuButtons/play_button.png"), surface = self.screen)
-        controls_button = Button((screen_width / 2) - 200, 400, pygame.image.load("graphics/MenuButtons/controls_button.png"), surface = self.screen)
-        quit_button = Button((screen_width / 2) - 200, 600, pygame.image.load("graphics/MenuButtons/quit_button.png"), surface = self.screen)
+        play_button = Button(x = (screen_width / 2) - (play_button_image.get_width() / 2) , y = 200 ,  image = play_button_image, surface = self.screen)
+        controls_button = Button(x = (screen_width / 2) - (controls_button_image.get_width() / 2), y = 400,  image = controls_button_image, surface = self.screen)
+        quit_button = Button(x = (screen_width / 2) - (quit_button_image.get_width() / 2), y = 600,  image = quit_button_image, surface = self.screen)
         
         # Add the buttons to the main menu buttons list
         self.main_menu_buttons.append(play_button)
@@ -65,16 +74,16 @@ class Menu:
 
         # ------------------------------------------------------------------------
         # Controls menu
-        self.back_button = Button((screen_width / 2) - 200, 600, pygame.image.load("graphics/MenuButtons/back_button.png"), surface = self.screen)
+        back_button = Button(x = (screen_width / 2) - (back_button_image.get_width() / 2), y = 600, image = back_button_image, surface = self.screen)
 
         # Add the buttons to the controls menu buttons list
-        self.controls_menu_buttons.append(self.back_button)
+        self.controls_menu_buttons.append(back_button)
 
         # ------------------------------------------------------------------------
         # Paused menu
-        continue_button = Button((screen_width / 2) - 200, 200, pygame.image.load("graphics/MenuButtons/continue_button.png"), surface = self.screen)
-        controls_button_2 = Button((screen_width / 2) - 200, 400, pygame.image.load("graphics/MenuButtons/controls_button.png"), surface = self.screen)
-        quit_button_2 = Button((screen_width / 2) - 200, 600, pygame.image.load("graphics/MenuButtons/quit_button.png"), surface = self.screen)
+        continue_button = Button(x = (screen_width / 2) - (continue_button_image.get_width() / 2), y = 200, image = continue_button_image, surface = self.screen)
+        controls_button_2 = Button(x = (screen_width / 2) - (controls_button_image.get_width() / 2), y = 400, image = controls_button_image, surface = self.screen)
+        quit_button_2 = Button(x = (screen_width / 2) - (quit_button_image.get_width() / 2), y = 600, image = quit_button_image, surface = self.screen)
 
         # Add the buttons to the paused menu buttons list
         self.paused_menu_buttons.append(continue_button)
@@ -94,43 +103,80 @@ class Menu:
         # Fill the screen with black
         self.screen.fill("black")
 
-        for red_arc, arc_info in self.red_arc_dictionary.items():
-            # Draw red arcs onto the screen
-            pygame.draw.arc(self.screen, "red", (arc_info[0], arc_info[1], arc_info[2], arc_info[3]), arc_info[4], arc_info[5])
+    def highlight_button(self, menu_buttons_list):
+        
+        # If the mouse rect is colliding with a button (-1 means empty space)
+        index_of_button_to_highlight = self.mouse_rect.collidelist(menu_buttons_list)
+        if index_of_button_to_highlight != -1:
 
-            # If the starting angle is not equal to the finishing angle
-            if arc_info[4] != arc_info[5]:
-                # Increment the starting and finishing angle
-                arc_info[4] += 0.0314 * (self.arc_angle_increment_speed - 10) * self.delta_time
-                arc_info[5] += 0.0314 * (self.arc_angle_increment_speed - 10) * self.delta_time
+            # If we should decrease the highlight colour
+            if self.button_highlighting_info_dict["highlight_decrease"] == True:
 
-            # Moving the arc across the screen
-            arc_info[0] += 50 * self.arc_movement_direction * self.delta_time
+                # If the current highlight colour is less than or equal to the minimum highlight colour
+                if tuple(self.button_highlighting_info_dict["highlight_colour"]) <= self.button_highlighting_info_dict["minimum_highlight_colour"]:
+                    # Start increasing the highlight colour
+                    self.button_highlighting_info_dict["highlight_decrease"] = False
 
-            # If the arc has reached the far right or far left of the screen
-            if (arc_info[0] >= screen_width + 200) or (arc_info[0] <= 0 - arc_info[2] - 200):
-                # Turn around and move towards the other side of the screen
-                self.arc_movement_direction *= -1
+                # If the current highlight colour is not the same as the minimum highlight colour
+                else:
+                    for index, highlight_colour in enumerate(self.button_highlighting_info_dict["highlight_colour"]):
 
-        for white_arc, arc_info in self.white_arc_dictionary.items():
-            # Draw red arcs onto the screen
-            pygame.draw.arc(self.screen, "white", (arc_info[0], arc_info[1], arc_info[2], arc_info[3]), arc_info[4], arc_info[5])
+                        # If decreasing the current highlight colour is greater than the minimum highlight colour, decrease the highlight colour 
+                        if highlight_colour + (self.button_highlighting_info_dict["highlight_gradient"] * (self.delta_time * 1000)) > self.button_highlighting_info_dict["minimum_highlight_colour"][index]:
+                            # The gradient is negative so add to decrease the colour
+                            self.button_highlighting_info_dict["highlight_colour"][index] += self.button_highlighting_info_dict["highlight_gradient"] * (self.delta_time * 1000)
 
-            # Spinning the arcs
-            # If the starting angle is not equal to the finishing angle
-            if arc_info[4] != arc_info[5]:
-                # Increment the starting and finishing angle
-                arc_info[4] += 0.02 * self.arc_angle_increment_speed * self.delta_time
-                arc_info[5] += 0.02 * self.arc_angle_increment_speed * self.delta_time
+                        # If decreasing the current highlight colour is less than the minimum highlight colour
+                        else:
+                            # Set the current highlight colour to be the minimum highlight colour and exit the for loop
+                            self.button_highlighting_info_dict["highlight_colour"] = list(self.button_highlighting_info_dict["minimum_highlight_colour"])
+                            break
+            
+            # If we should increase the highlight colour
+            else:
+                
+                # If the current highlight colour is greater than or equal to the maximum highlight colour
+                if tuple(self.button_highlighting_info_dict["highlight_colour"]) >= self.button_highlighting_info_dict["maximum_highlight_colour"]:
+                    # Start decreasing the highlight colour
+                    self.button_highlighting_info_dict["highlight_decrease"] = True
+                
+                # If the current highlight colour is not the same as the maximum highlight colour
+                else:
+                    for index, highlight_colour in enumerate(self.button_highlighting_info_dict["highlight_colour"]):
 
-            # Moving the arc across the screen
-            arc_info[0] += 50 * self.arc_movement_direction * self.delta_time
+                        # If increasing the current highlight colour is greater than the maximum highlight colour, increase the highlight colour 
+                        if highlight_colour - (self.button_highlighting_info_dict["highlight_gradient"] * (self.delta_time * 1000)) < self.button_highlighting_info_dict["maximum_highlight_colour"][index]:
+                            # The gradient is negative so subtract to increase the colour
+                            self.button_highlighting_info_dict["highlight_colour"][index] -= self.button_highlighting_info_dict["highlight_gradient"] * (self.delta_time * 1000)
+                        
+                        # If increasing the current highlight colour is greater than the maximum highlight colour
+                        else:
+                            self.button_highlighting_info_dict["highlight_colour"] = list(self.button_highlighting_info_dict["maximum_highlight_colour"])
+                            break
 
-            # If the arc has reached the far right or far left of the screen
-            if (arc_info[0] >= screen_width + 200) or (arc_info[0] <= 0 - arc_info[2] - 200):
-                # Turn around and move towards the other side of the screen
-                self.arc_movement_direction *= -1
-    
+            # Temporary variables for readability
+            # The button is inflated with the highlight width x 2 so that the highlight will be highlighting the border of the button
+            button_to_highlight = menu_buttons_list[index_of_button_to_highlight]
+            inflated_button_to_highlight_rect = button_to_highlight.rect.inflate(
+                                                                        self.button_highlighting_info_dict["highlight_width"] * 2,
+                                                                        self.button_highlighting_info_dict["highlight_width"] * 2)
+
+            print(self.button_highlighting_info_dict["highlight_colour"])
+            # Draw the highlight border "rect"
+            pygame.draw.rect(
+                            surface = self.screen, 
+                            color = self.button_highlighting_info_dict["highlight_colour"], 
+                            rect = inflated_button_to_highlight_rect, 
+                            width = self.button_highlighting_info_dict["highlight_width"]
+                            )
+        
+        # If the player's mouse is not on any of the buttons
+        else:
+            # If the current highlight colour is not the same as the maximum highlight colour
+            if tuple(self.button_highlighting_info_dict["highlight_colour"]) != self.button_highlighting_info_dict["maximum_highlight_colour"]:
+                # Set the current highlight colour to be the same as the maximum highlight colour 
+                self.button_highlighting_info_dict["highlight_colour"] = list(self.button_highlighting_info_dict["maximum_highlight_colour"])
+        
     def update_buttons(self, menu_state, menu_buttons_list):
         
         # If the player is in x menu
@@ -145,8 +191,11 @@ class Menu:
                 # Draw the button
                 button.draw()
 
-                # Play the button's border animation
-                button.play_border_animations()
+                # # Play the button's border animation
+                # button.play_border_animations()
+
+            # Highlight the button if the player's mouse is hovering over the button
+            self.highlight_button(menu_buttons_list = menu_buttons_list)
     
     def run(self, delta_time):
 
@@ -172,7 +221,7 @@ class Menu:
             self.update_buttons(menu_state = self.show_main_menu, menu_buttons_list = self.main_menu_buttons)
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
-            if pygame.mouse.get_pressed()[0] == 1 and self.left_mouse_button_released == True:
+            if pygame.mouse.get_pressed()[0] == True and self.left_mouse_button_released == True:
 
                     # Set the left mouse button as not released
                     self.left_mouse_button_released = False   
