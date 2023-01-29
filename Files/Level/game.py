@@ -139,11 +139,15 @@ class Game:
 
     def load_tile_map_images(self):
 
+        # Loads the images of all the world tiles
+
         # Create a dictionary filled with all of the tiles' images
         # Note: Start at index 1 because the "0" tile represents nothing. 
         self.tile_images = {i + 1: pygame.image.load(f"graphics/Tiles/{i + 1}.png").convert() for i in range(0, len(os.listdir("graphics/Tiles")))} 
 
     def create_objects_tile_map(self, non_transformed_tile_map):
+
+        # Creates the objects tile map
         # Note: The objects tile map is created by the gamestates controller within the load_level method
 
         # Counter used as the key in self.world_tiles_dict, (e.g. Tile 1, Tile 2, Tile 3...)
@@ -268,7 +272,9 @@ class Game:
                     self.player.neighbouring_tiles_dict.pop(world_tile)
 
     def handle_collisions(self):
-        
+
+        # Handles collisions between objects (including the player). Collisions between the world tiles and the player are within the Player class.
+
         # --------------------------------------------------------------------------------------
         # Bamboo projectiles 
 
@@ -282,6 +288,8 @@ class Game:
                     self.bamboo_projectiles_group.remove(bamboo_projectile)
 
     def handle_player_shooting(self, delta_time):
+
+        # Handles the functionality behind shooting for the player
 
         # --------------------------------------------------------------------------------------
         # Handling shooting input
@@ -336,6 +344,8 @@ class Game:
             bamboo_projectile.move_projectile()
 
     def draw_player_weapon(self):
+
+        # Draws the weapon onto main surface
         
         # If the player is pressing the left mouse button
         if pygame.mouse.get_pressed()[0]:
@@ -369,8 +379,6 @@ class Game:
             # Draw the weapon at the position
             self.scaled_surface.blit(weapon_image, (self.weapon_position[0] - self.camera_position[0], self.weapon_position[1] - self.camera_position[1]))
 
-
-        
     def run(self, delta_time):
 
         # Update the delta time of all objects 

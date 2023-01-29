@@ -14,9 +14,14 @@ class Menu:
 
         # Game states
 
-        self.show_main_menu = True 
-        self.show_controls_menu = False 
-        self.show_paused_menu = False 
+        """ Existing menus:
+        - Main
+        - Controls
+        - Paused
+        """
+
+        # Stores the current menu that should be shown to the player
+        self.current_menu = "main_menu"
         
         # Store the previous menu so that we can go back to previous menus when the "Back" button is clicked
         self.previous_menu = None 
@@ -28,21 +33,6 @@ class Menu:
         # ------------------------------------------------------------------------------------------------------------------------------------------------
         # Buttons
 
-        # ----------------------------------------------------------------------------------
-        # Button highlighting
-
-        self.button_highlighting_info_dict = {
-                                                "maximum_highlight_colour": (255, 255, 255),
-                                                "minimum_highlight_colour": (60, 60, 60), 
-                                                "highlight_colour": [255, 255, 255],
-                                                "highlight_decrease": True,
-                                                "highlight_width": 10,
-                                                "highlight_gradient": 0
-        }
-        # Settings for how long the button highlight takes to decrease and increase
-        button_highlight_decrease_time = 1.75 * (1000) # Time in milliseconds
-        self.button_highlighting_info_dict["highlight_gradient"] = (max(self.button_highlighting_info_dict["minimum_highlight_colour"]) - max(self.button_highlighting_info_dict["maximum_highlight_colour"])) / button_highlight_decrease_time
-    
         # Create the buttons
         self.create_buttons()
 
@@ -67,6 +57,10 @@ class Menu:
             "paused_menu": {"ButtonPurposes": ("Continue", "Controls", "Quit"), "ButtonsList": [], "StartingPositions": (screen_width / 2, 350), "ButtonSpacing": button_spacing},
             "controls_menu": {"ButtonPurposes": ["Back"], "ButtonsList": [], "StartingPositions": (screen_width / 2, screen_height - 150), "ButtonSpacing": (0, 0)}
                                     }
+
+        # Index of the last button changed (i.e. the buttons' alpha level and size)
+        self.index_of_last_button_changed = None
+
         # ------------------------------------------------------------------------
 
         # For each menu
@@ -95,133 +89,86 @@ class Menu:
 
     def mouse_position_updating(self):
 
+        # Creates a mouse rect and updates the mouse rect depending on the mouse position 
+
         # Retrieve the mouse position
         self.mouse_position = pygame.mouse.get_pos()
 
-        # Define the mouse rect and draw it onto the screen (For collisions with drawing tiles)
-        self.mouse_rect = pygame.Rect(self.mouse_position[0], self.mouse_position[1], 1, 1)
+        # If a mouse rect has not been created already
+        if hasattr(self, "mouse_rect") == False:
+            # Create the mouse rect
+            self.mouse_rect = pygame.Rect(self.mouse_position[0], self.mouse_position[1], 1, 1)
+        # If a mouse rect already exists
+        else:
+            # Update the x and y positions of the mouse rect
+            self.mouse_rect.x, self.mouse_rect.y = self.mouse_position[0], self.mouse_position[1]
+            print(self.mouse_rect)
 
     def animate_background(self):
+        
+        # WORK IN PROGRESS
 
         # Fill the surface with a colour
         self.surface.fill((40, 40, 40))
 
-    def highlight_button(self, menu_buttons_list):
+    def update_buttons(self, menu_buttons_list):
+
+        """
+        - Updates delta time of buttons
+        - Performs changes on the size and alpha level of the buttons if hovered over
+        - Draws the button onto the main surface
+        - Highlights the button if hovered over
+        - Plays the border animations for the buttons
+        """
         
-        # If the mouse rect is colliding with a button (-1 means empty space)
-        index_of_button_to_highlight = self.mouse_rect.collidelist(menu_buttons_list)
-        if index_of_button_to_highlight != -1:
+        # Find the index of the button inside the menu buttons list if the mouse is hovering over the button
+        button_collision_index = self.mouse_rect.collidelist(menu_buttons_list)
 
-            # If we should decrease the highlight colour
-            if self.button_highlighting_info_dict["highlight_decrease"] == True:
+        # Hovering over any button
+        if button_collision_index != -1:
 
-                # If the current highlight colour is less than or equal to the minimum highlight colour
-                if tuple(self.button_highlighting_info_dict["highlight_colour"]) <= self.button_highlighting_info_dict["minimum_highlight_colour"]:
-                    # Start increasing the highlight colour
-                    self.button_highlighting_info_dict["highlight_decrease"] = False
+            # If no button has been "changed" yet
+            if self.index_of_last_button_changed == None:
+                # Change the size and alpha level of the current button being hovered over
+                menu_buttons_list[button_collision_index].change_button_size(inflate = True)
+                menu_buttons_list[button_collision_index].change_alpha_level(increase = True)
 
-                # If the current highlight colour is not the same as the minimum highlight colour
-                else:
-                    for index, highlight_colour in enumerate(self.button_highlighting_info_dict["highlight_colour"]):
+                # Save the index of the last button changed inside menu_buttons_List
+                self.index_of_last_button_changed = button_collision_index
 
-                        # If decreasing the current highlight colour is greater than the minimum highlight colour, decrease the highlight colour 
-                        if highlight_colour + (self.button_highlighting_info_dict["highlight_gradient"] * (self.delta_time * 1000)) > self.button_highlighting_info_dict["minimum_highlight_colour"][index]:
-                            # The gradient is negative so add to decrease the colour
-                            self.button_highlighting_info_dict["highlight_colour"][index] += self.button_highlighting_info_dict["highlight_gradient"] * (self.delta_time * 1000)
+        # Hovering over empty space
+        elif button_collision_index == -1:
+            # Reset the size and alpha level of the last button that was "changed"
+            self.reset_button_size_and_alpha(menu_buttons_list = menu_buttons_list)
 
-                        # If decreasing the current highlight colour is less than the minimum highlight colour
-                        else:
-                            # Set the current highlight colour to be the minimum highlight colour and exit the for loop
-                            self.button_highlighting_info_dict["highlight_colour"] = list(self.button_highlighting_info_dict["minimum_highlight_colour"])
-                            break
-            
-            # If we should increase the highlight colour
-            else:
-                
-                # If the current highlight colour is greater than or equal to the maximum highlight colour
-                if tuple(self.button_highlighting_info_dict["highlight_colour"]) >= self.button_highlighting_info_dict["maximum_highlight_colour"]:
-                    # Start decreasing the highlight colour
-                    self.button_highlighting_info_dict["highlight_decrease"] = True
-                
-                # If the current highlight colour is not the same as the maximum highlight colour
-                else:
-                    for index, highlight_colour in enumerate(self.button_highlighting_info_dict["highlight_colour"]):
+        # For all buttons in the menu's button list
+        for button in menu_buttons_list:
 
-                        # If increasing the current highlight colour is greater than the maximum highlight colour, increase the highlight colour 
-                        if highlight_colour - (self.button_highlighting_info_dict["highlight_gradient"] * (self.delta_time * 1000)) < self.button_highlighting_info_dict["maximum_highlight_colour"][index]:
-                            # The gradient is negative so subtract to increase the colour
-                            self.button_highlighting_info_dict["highlight_colour"][index] -= self.button_highlighting_info_dict["highlight_gradient"] * (self.delta_time * 1000)
-                        
-                        # If increasing the current highlight colour is greater than the maximum highlight colour
-                        else:
-                            self.button_highlighting_info_dict["highlight_colour"] = list(self.button_highlighting_info_dict["maximum_highlight_colour"])
-                            break
+            # Update the delta time of the button
+            button.delta_time = self.delta_time
 
-            # Temporary variables for readability
-            # The button is inflated with the highlight width x 2 so that the highlight will be highlighting the border of the button
-            button_to_highlight = menu_buttons_list[index_of_button_to_highlight]
-            inflated_button_to_highlight_rect = button_to_highlight.rect.inflate(
-                                                                        self.button_highlighting_info_dict["highlight_width"] * 2,
-                                                                        self.button_highlighting_info_dict["highlight_width"] * 2)
+            # Draw the button
+            button.draw()
 
-
-            # Draw the highlight border "rect"
-            pygame.draw.rect(
-                            surface = self.surface, 
-                            color = self.button_highlighting_info_dict["highlight_colour"], 
-                            rect = inflated_button_to_highlight_rect, 
-                            width = self.button_highlighting_info_dict["highlight_width"]
-                            )
-        
-        # If the player's mouse is not on any of the buttons
-        else:
-            # If the current highlight colour is not the same as the maximum highlight colour
-            if tuple(self.button_highlighting_info_dict["highlight_colour"]) != self.button_highlighting_info_dict["maximum_highlight_colour"]:
-                # Set the current highlight colour to be the same as the maximum highlight colour 
-                self.button_highlighting_info_dict["highlight_colour"] = list(self.button_highlighting_info_dict["maximum_highlight_colour"])
-        
-    def update_buttons(self, menu_state, menu_buttons_list):
-        
-        # If the player is in x menu
-        if menu_state == True:
-            
             # Highlight the button if the player's mouse is hovering over the button
-            self.highlight_button(menu_buttons_list = menu_buttons_list)
+            button.highlight(mouse_rect = self.mouse_rect)
 
-            # For all buttons in the menu's button list
-            for button in menu_buttons_list:
+            # Play the button's border animation
+            button.play_border_animations()
 
-                # If the mouse rect is colliding with the button
-                if self.mouse_rect.colliderect(button.rect):
-                    
-                    # Inflate the button
-                    button.inflate_button(boolean_check = True)
+    def reset_button_size_and_alpha(self, menu_buttons_list):
 
-                    # If the current alpha level of the button alpha surface is not at the maximum alpha level
-                    if button.button_alpha_surface.get_alpha() != button.button_alpha_surface_maximum_alpha_level:
-                        # Set the alpha level of the surface to the maximum alpha level set
-                        button.button_alpha_surface.set_alpha(button.button_alpha_surface_maximum_alpha_level)
+        # Resets the last button that was "changed" (i.e. Alpha level increased and button size was increased)
 
-                # If the mouse rect is not colliding with the button
-                elif self.mouse_rect.colliderect(button.rect) == False:
+        # If the index of the last button changed is not None
+        if self.index_of_last_button_changed != None:
+            # Reset the size of the button and the alpha level back to its default
+            menu_buttons_list[self.index_of_last_button_changed].change_button_size(inflate = False)
+            menu_buttons_list[self.index_of_last_button_changed].change_alpha_level(increase = False)
+            print(menu_buttons_list[self.index_of_last_button_changed].purpose)
 
-                    # Deflate the button back to its original size if it isn't already at its original size
-                    button.inflate_button(boolean_check = False)
-
-                    # If the current alpha level of the button alpha surface is not at the minimum alpha level 
-                    if button.button_alpha_surface.get_alpha() != button.button_alpha_surface_minimum_alpha_level:
-                        # Set the alpha level of the surface to the minimum alpha level set
-                        button.button_alpha_surface.set_alpha(button.button_alpha_surface_minimum_alpha_level)
-                    
-                
-                # Update the delta time of the button
-                button.delta_time = self.delta_time
-
-                # Draw the button
-                button.draw()
-
-                # Play the button's border animation
-                button.play_border_animations()
+            # Set the index of the last button changed back to None
+            self.index_of_last_button_changed = None
 
     def run(self, delta_time):
 
@@ -241,10 +188,10 @@ class Menu:
         # ---------------------------------------------
         # Main menu
 
-        if self.show_main_menu == True: 
+        if self.current_menu == "main_menu": 
 
             # Draw and update the buttons
-            self.update_buttons(menu_state = self.show_main_menu, menu_buttons_list = self.menu_buttons_dict["main_menu"]["ButtonsList"])
+            self.update_buttons(menu_buttons_list = self.menu_buttons_dict["main_menu"]["ButtonsList"])
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
             if pygame.mouse.get_pressed()[0] == True and self.left_mouse_button_released == True:
@@ -259,26 +206,26 @@ class Menu:
                     # Note: This check is so that we check the purpose of the button at index -1
                     if button_collision != -1:
 
+                        # Reset the last changed button to its default "settings"
+                        self.reset_button_size_and_alpha(menu_buttons_list = self.menu_buttons_dict["main_menu"]["ButtonsList"])
+
                         # Check for which button was clicked by looking at the purpose of the button
                         match self.menu_buttons_dict["main_menu"]["ButtonsList"][button_collision].purpose:
                             
                             # If the mouse collided with the "Play" button 
                             case "Play":
-                                # Set all menus to False, which will be detected by the game states controller, moving into the actual game
-                                self.show_main_menu = False
-                                self.show_controls_menu = False
-                                self.show_paused_menu = False
+                                # Set the current menu to None, which will be detected by the game states controller, moving into the actual game
+                                self.current_menu = None
 
                             # If the mouse collided with the "Controls" button 
                             case "Controls":
 
                                 # Set the previous menu to be this menu so that we can come back to this menu when the "Back" button is clicked
-                                self.previous_menu = "Main"
+                                self.previous_menu = "main_menu"
 
                                 # Show the controls menu
-                                self.show_main_menu = False
-                                self.show_controls_menu = True
-                            
+                                self.current_menu = "controls_menu"
+
                             # If the mouse collided with the "Quit" button 
                             case "Quit":
                                 # Exit the program
@@ -288,10 +235,10 @@ class Menu:
         # ---------------------------------------------
         # Controls menu
 
-        elif self.show_controls_menu == True:
+        elif self.current_menu == "controls_menu":
 
             # Draw and update the buttons
-            self.update_buttons(menu_state = self.show_controls_menu, menu_buttons_list = self.menu_buttons_dict["controls_menu"]["ButtonsList"])
+            self.update_buttons(menu_buttons_list = self.menu_buttons_dict["controls_menu"]["ButtonsList"])
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
             if pygame.mouse.get_pressed()[0] == 1 and self.left_mouse_button_released == True:
@@ -305,9 +252,13 @@ class Menu:
                 # If the player did not click on empty space
                 # Note: This check is so that we check the purpose of the button at index -1
                 if button_collision != -1:
+
+                    # Reset the last changed button to its default "settings"
+                    self.reset_button_size_and_alpha(menu_buttons_list = self.menu_buttons_dict["controls_menu"]["ButtonsList"])
+
                     # Check for which button was clicked
                     match self.menu_buttons_dict["controls_menu"]["ButtonsList"][button_collision].purpose:
-
+                        
                         # If the mouse collided with the "Back" button
                         case "Back":
 
@@ -315,25 +266,22 @@ class Menu:
                             match self.previous_menu:        
 
                                 # From the main menu
-                                case "Main":
-                                    # Show the main menu again
-                                    self.show_main_menu = True
+                                case "main_menu":
+                                    # Show the main menu
+                                    self.current_menu = "main_menu"
                                 
                                 # From the paused menu
-                                case "Paused":
-                                    # Show the paused menu again
-                                    self.show_paused_menu = True
-
-                            # Stop showing the controls menu
-                            self.show_controls_menu = False
+                                case "paused_menu":
+                                    # Show the paused menu
+                                    self.current_menu = "paused_menu"
 
         # ---------------------------------------------
         # Paused menu
 
-        elif self.show_paused_menu == True:
+        elif self.current_menu == "paused_menu":
 
             # Draw and update the buttons
-            self.update_buttons(menu_state = self.show_paused_menu, menu_buttons_list = self.menu_buttons_dict["paused_menu"]["ButtonsList"])
+            self.update_buttons(menu_buttons_list = self.menu_buttons_dict["paused_menu"]["ButtonsList"])
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
             if pygame.mouse.get_pressed()[0] == 1 and self.left_mouse_button_released == True:
@@ -348,23 +296,25 @@ class Menu:
                 # Note: This check is so that we check the purpose of the button at index -1
                 if button_collision != -1:
 
+                    # Reset the last changed button to its default "settings"
+                    self.reset_button_size_and_alpha(menu_buttons_list = self.menu_buttons_dict["paused_menu"]["ButtonsList"])
+
                     # Check for which button was clicked
                     match self.menu_buttons_dict["paused_menu"]["ButtonsList"][button_collision].purpose:
 
                         # If the mouse collided with the "Continue" button
                         case "Continue": 
                             # Stop showing the paused menu
-                            self.show_paused_menu = False
+                            self.current_menu = None
 
                         # If the mouse collided with the "Controls" button
                         case "Controls":
                             # Set the previous menu to be this menu so that we can come back to this menu when the "Back" button is clicked
-                            self.previous_menu = "Paused"
+                            self.previous_menu = "paused_menu"
 
                             # Show the controls menu
-                            self.show_paused_menu = False
-                            self.show_controls_menu = True
-
+                            self.current_menu = "controls_menu"
+                        
                         # If the mouse collided with the "Quit" button 
                         case "Quit":
                             # Exit the program

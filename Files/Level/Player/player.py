@@ -4,6 +4,7 @@ from Global.settings import *
 from random import choice
 
 class Player(Generic, pygame.sprite.Sprite):
+    
     def __init__(self, x, y, surface):
         
         # Surface that the player is drawn onto
@@ -83,6 +84,8 @@ class Player(Generic, pygame.sprite.Sprite):
     # Animations
 
     def load_animations(self):
+        
+        # Loads the animation images for the player and places them inside their respective dictionaries.
 
         # Set the default player version, state , player direction and look direction
         self.current_player_element = "Normal"
@@ -102,8 +105,6 @@ class Player(Generic, pygame.sprite.Sprite):
             "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Idle/DownRight")))],
             "Down Right": [pygame.image.load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Downright")))],
                 },
-                                        
-    
     
         "Run": {
             "Left": [pygame.transform.flip(surface = pygame.image.load( f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Right")))],
@@ -136,6 +137,8 @@ class Player(Generic, pygame.sprite.Sprite):
                                             "Run": 100}
 
     def change_players_animation_state(self):
+
+        # Changes the player's animation state if the conditions are met
 
         # If the player is moving left, right, up or down
         if pygame.key.get_pressed()[pygame.K_a] or pygame.key.get_pressed()[pygame.K_d] or pygame.key.get_pressed()[pygame.K_w] or pygame.key.get_pressed()[pygame.K_s]:
@@ -209,6 +212,8 @@ class Player(Generic, pygame.sprite.Sprite):
                 self.animation_index = 0
 
     def play_animations(self):
+
+        # Plays the animations of the player
 
         # Check whether we need to change the player's animation state based on what the player is doing
         self.change_players_animation_state()
@@ -456,6 +461,8 @@ class Player(Generic, pygame.sprite.Sprite):
 
     def declare_movement_attributes(self):
 
+        # Declares all the movement attributes (used to avoid "crowding" in the init method)
+
         """
         self.delta_time = delta_time (Used for framerate independence)
 
@@ -501,7 +508,7 @@ class Player(Generic, pygame.sprite.Sprite):
     
     def update_direction_variables(self):
 
-        # Method to update the direction variables inside the dictionary. The "true direction" refers to the direction that the player is attempting to move towards.
+        # Updates the direction variables inside the dictionary direction variables dictionary. Creates a list of the direction the player is moving towards.
 
         # Left
         if pygame.key.get_pressed()[pygame.K_a] == False:
@@ -530,7 +537,7 @@ class Player(Generic, pygame.sprite.Sprite):
 
     def movement_acceleration(self):
 
-        # Method that executes the movement acceleration of the player
+        # Executes the movement acceleration of the player
 
         # If the current velocity has not reached the final velocity set for the player
         if self.movement_suvat_u < self.movement_suvat_v:
@@ -544,6 +551,8 @@ class Player(Generic, pygame.sprite.Sprite):
         self.movement_suvat_s = ((self.movement_suvat_u * self.delta_time) + (0.5 * self.movement_suvat_a * (self.delta_time ** 2)))
 
     def handle_player_movement(self):
+
+        # Handles the movement of the player
 
         # (For floating point accuracy)
         next_position_x = self.rect.x
@@ -617,6 +626,7 @@ class Player(Generic, pygame.sprite.Sprite):
                     next_position_x += self.dx
                     self.rect.x = round(next_position_x)
 
+        # If the "w" key is pressed
         if pygame.key.get_pressed()[pygame.K_w] and pygame.key.get_pressed()[pygame.K_s] == False:
 
             # If the player is decelerating currently
@@ -650,6 +660,7 @@ class Player(Generic, pygame.sprite.Sprite):
                     next_position_y -= self.dy
                     self.rect.y = round(next_position_y)
 
+        # If the "s" key is pressed
         elif pygame.key.get_pressed()[pygame.K_s] and pygame.key.get_pressed()[pygame.K_w] == False:
 
             # If the player is decelerating currently
@@ -785,6 +796,8 @@ class Player(Generic, pygame.sprite.Sprite):
     # Collisions      
                           
     def handle_tile_collisions(self):
+        
+        # Handles tile collisions
 
         # ---------------------------------------------------------------------------------
         # Horizontal collisions
@@ -885,6 +898,8 @@ class Player(Generic, pygame.sprite.Sprite):
 
     def find_mouse_position_and_angle(self):
 
+        # Finds the mouse position according to the position inside the tile map. Finds the angle between the center of the player and the mouse.
+
         # Retrieve the mouse position
         """
         - The scale multiplier refers to how much the surface that everything will be drawn onto has been scaled by 
@@ -913,7 +928,7 @@ class Player(Generic, pygame.sprite.Sprite):
 
     def draw_guidelines_to_cursor(self, dx, dy):
 
-        # Method to draw the guidelines to the mouse cursor / position
+        # Draws the guidelines to the mouse cursor / position
 
         # The number of segments desired for the guidelines
         number_of_segments = 6

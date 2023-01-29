@@ -135,7 +135,7 @@ class GameStatesController():
                     
                                 # Show the paused menu
                                 self.game.running = False
-                                self.menu.show_paused_menu = True
+                                self.menu.current_menu = "paused_menu"
                                     
     def run(self, delta_time):
         
@@ -143,7 +143,7 @@ class GameStatesController():
         self.event_loop()
 
         # If none of the menus are being shown
-        if self.menu.show_main_menu == False and self.menu.show_controls_menu == False and self.menu.show_paused_menu == False:
+        if self.menu.current_menu == None:
 
             # If this attribute is False (This would be the case if the player went into the Paused menu and then clicked the "Continue" button)
             if self.game.running == False:

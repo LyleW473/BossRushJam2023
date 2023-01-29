@@ -45,7 +45,7 @@ class BambooProjectile(Generic, pygame.sprite.Sprite):
 
     def move_projectile(self):
 
-        # Method to move the projectile using physics
+        # Moves the projectile
 
         # Horizontal movement
         self.new_position_x += self.horizontal_gradient * self.delta_time
