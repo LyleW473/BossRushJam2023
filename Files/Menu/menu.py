@@ -4,16 +4,11 @@ from Global.settings import *
 
 class Menu:
     def __init__(self):
+        # Initialise fonts
+        pygame.font.init()
 
         # Screen
         self.surface = pygame.display.get_surface()
-
-        # ------------------------------------------------------------------------------------------------------------------------------------------------
-        # Buttons
-        # Note: Measurements of all buttons are: (400 x 125) pixels
-
-        # Create the buttons
-        self.create_buttons()
     
         # ------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -30,6 +25,9 @@ class Menu:
         # Mouse
         self.left_mouse_button_released = True # Attribute used to track if the left mouse button is released so that 
 
+        # ------------------------------------------------------------------------------------------------------------------------------------------------
+        # Buttons
+
         # ----------------------------------------------------------------------------------
         # Button highlighting
 
@@ -44,14 +42,14 @@ class Menu:
         # Settings for how long the button highlight takes to decrease and increase
         button_highlight_decrease_time = 1.75 * (1000) # Time in milliseconds
         self.button_highlighting_info_dict["highlight_gradient"] = (max(self.button_highlighting_info_dict["minimum_highlight_colour"]) - max(self.button_highlighting_info_dict["maximum_highlight_colour"])) / button_highlight_decrease_time
+    
+        # Create the buttons
+        self.create_buttons()
 
     def create_buttons(self):
 
         # Width and height of buttons
         default_button_measurements = (400, 90)
-
-        # Values are: x pos, y pos, button spacing 
-        default_positions = (screen_width / 2, 300)
 
         # Value for button spacing
         button_spacing =  (0, 150)
@@ -65,9 +63,9 @@ class Menu:
         """
         self.menu_buttons_dict = {
             
-            "main_menu": {"ButtonPurposes": ("Play", "Controls", "Quit"), "ButtonsList": [], "StartingPositions": default_positions, "ButtonSpacing": button_spacing},
-            "paused_menu": {"ButtonPurposes": ("Continue", "Controls", "Quit"), "ButtonsList": [], "StartingPositions": default_positions, "ButtonSpacing": button_spacing},
-            "controls_menu": {"ButtonPurposes": ["Back"], "ButtonsList": [], "StartingPositions": (default_positions[0], screen_height - 150), "ButtonSpacing": (0, 0)}
+            "main_menu": {"ButtonPurposes": ("Play", "Controls", "Quit"), "ButtonsList": [], "StartingPositions": (screen_width / 2, 450), "ButtonSpacing": button_spacing},
+            "paused_menu": {"ButtonPurposes": ("Continue", "Controls", "Quit"), "ButtonsList": [], "StartingPositions": (screen_width / 2, 350), "ButtonSpacing": button_spacing},
+            "controls_menu": {"ButtonPurposes": ["Back"], "ButtonsList": [], "StartingPositions": (screen_width / 2, screen_height - 150), "ButtonSpacing": (0, 0)}
                                     }
         # ------------------------------------------------------------------------
 
@@ -80,6 +78,7 @@ class Menu:
                 """  Create the button, passing parameters:
                 - A rect info dict containing the x and y positions and the measurements of the button 
                 - The purpose of the button (e.g. "Play" button)
+                - The font of the button text and the size
                 - The surface that the button will be drawn onto
                 """
                 self.menu_buttons_dict[menu]["ButtonsList"].append(
@@ -89,6 +88,7 @@ class Menu:
                                                                     "y" : self.menu_buttons_dict[menu]["StartingPositions"][1] + (self.menu_buttons_dict[menu]["ButtonSpacing"][1] * index) ,
                                                                     "button_measurements": default_button_measurements}, 
                                                 purpose = button_purpose,
+                                                text_font = pygame.font.Font("graphics/Fonts/menu_buttons_font.ttf", 50),
                                                 surface = self.surface
                                                 )
                                             )
@@ -103,8 +103,8 @@ class Menu:
 
     def animate_background(self):
 
-        # Fill the screen with black
-        self.surface.fill("black")
+        # Fill the surface with a colour
+        self.surface.fill((40, 40, 40))
 
     def highlight_button(self, menu_buttons_list):
         
@@ -184,12 +184,35 @@ class Menu:
         
         # If the player is in x menu
         if menu_state == True:
-
+            
             # Highlight the button if the player's mouse is hovering over the button
             self.highlight_button(menu_buttons_list = menu_buttons_list)
-            
+
             # For all buttons in the menu's button list
             for button in menu_buttons_list:
+
+                # If the mouse rect is colliding with the button
+                if self.mouse_rect.colliderect(button.rect):
+                    
+                    # Inflate the button
+                    button.inflate_button(boolean_check = True)
+
+                    # If the current alpha level of the button alpha surface is not at the maximum alpha level
+                    if button.button_alpha_surface.get_alpha() != button.button_alpha_surface_maximum_alpha_level:
+                        # Set the alpha level of the surface to the maximum alpha level set
+                        button.button_alpha_surface.set_alpha(button.button_alpha_surface_maximum_alpha_level)
+
+                # If the mouse rect is not colliding with the button
+                elif self.mouse_rect.colliderect(button.rect) == False:
+
+                    # Deflate the button back to its original size if it isn't already at its original size
+                    button.inflate_button(boolean_check = False)
+
+                    # If the current alpha level of the button alpha surface is not at the minimum alpha level 
+                    if button.button_alpha_surface.get_alpha() != button.button_alpha_surface_minimum_alpha_level:
+                        # Set the alpha level of the surface to the minimum alpha level set
+                        button.button_alpha_surface.set_alpha(button.button_alpha_surface_minimum_alpha_level)
+                    
                 
                 # Update the delta time of the button
                 button.delta_time = self.delta_time
@@ -200,7 +223,6 @@ class Menu:
                 # Play the button's border animation
                 button.play_border_animations()
 
-    
     def run(self, delta_time):
 
         # Update delta time 
@@ -233,31 +255,35 @@ class Menu:
                     # Look for collisions between the mouse rect and the rect of any button inside the list
                     button_collision = self.mouse_rect.collidelist(self.menu_buttons_dict["main_menu"]["ButtonsList"])
 
-                    # Check for which button was clicked by looking at the purpose of the button
-                    match self.menu_buttons_dict["main_menu"]["ButtonsList"][button_collision].purpose:
-                        
-                        # If the mouse collided with the "Play" button 
-                        case "Play":
-                            # Set all menus to False, which will be detected by the game states controller, moving into the actual game
-                            self.show_main_menu = False
-                            self.show_controls_menu = False
-                            self.show_paused_menu = False
+                    # If the player did not click on empty space
+                    # Note: This check is so that we check the purpose of the button at index -1
+                    if button_collision != -1:
 
-                        # If the mouse collided with the "Controls" button 
-                        case "Controls":
+                        # Check for which button was clicked by looking at the purpose of the button
+                        match self.menu_buttons_dict["main_menu"]["ButtonsList"][button_collision].purpose:
+                            
+                            # If the mouse collided with the "Play" button 
+                            case "Play":
+                                # Set all menus to False, which will be detected by the game states controller, moving into the actual game
+                                self.show_main_menu = False
+                                self.show_controls_menu = False
+                                self.show_paused_menu = False
 
-                            # Set the previous menu to be this menu so that we can come back to this menu when the "Back" button is clicked
-                            self.previous_menu = "Main"
+                            # If the mouse collided with the "Controls" button 
+                            case "Controls":
 
-                            # Show the controls menu
-                            self.show_main_menu = False
-                            self.show_controls_menu = True
-                        
-                        # If the mouse collided with the "Quit" button 
-                        case "Quit":
-                            # Exit the program
-                            pygame.quit()
-                            sys.exit()
+                                # Set the previous menu to be this menu so that we can come back to this menu when the "Back" button is clicked
+                                self.previous_menu = "Main"
+
+                                # Show the controls menu
+                                self.show_main_menu = False
+                                self.show_controls_menu = True
+                            
+                            # If the mouse collided with the "Quit" button 
+                            case "Quit":
+                                # Exit the program
+                                pygame.quit()
+                                sys.exit()
 
         # ---------------------------------------------
         # Controls menu
@@ -276,27 +302,30 @@ class Menu:
                 # Look for collisions between the mouse rect and the rect of any button inside the list
                 button_collision = self.mouse_rect.collidelist(self.menu_buttons_dict["controls_menu"]["ButtonsList"])
 
-                # Check for which button was clicked
-                match self.menu_buttons_dict["controls_menu"]["ButtonsList"][button_collision].purpose:
+                # If the player did not click on empty space
+                # Note: This check is so that we check the purpose of the button at index -1
+                if button_collision != -1:
+                    # Check for which button was clicked
+                    match self.menu_buttons_dict["controls_menu"]["ButtonsList"][button_collision].purpose:
 
-                    # If the mouse collided with the "Back" button
-                    case "Back":
+                        # If the mouse collided with the "Back" button
+                        case "Back":
 
-                        # Check which menu the controls menu was entered from
-                        match self.previous_menu:        
+                            # Check which menu the controls menu was entered from
+                            match self.previous_menu:        
 
-                            # From the main menu
-                            case "Main":
-                                # Show the main menu again
-                                self.show_main_menu = True
-                            
-                            # From the paused menu
-                            case "Paused":
-                                # Show the paused menu again
-                                self.show_paused_menu = True
+                                # From the main menu
+                                case "Main":
+                                    # Show the main menu again
+                                    self.show_main_menu = True
+                                
+                                # From the paused menu
+                                case "Paused":
+                                    # Show the paused menu again
+                                    self.show_paused_menu = True
 
-                        # Stop showing the controls menu
-                        self.show_controls_menu = False
+                            # Stop showing the controls menu
+                            self.show_controls_menu = False
 
         # ---------------------------------------------
         # Paused menu
@@ -315,25 +344,29 @@ class Menu:
                 # Look for collisions between the mouse rect and the rect of any button inside the list
                 button_collision = self.mouse_rect.collidelist(self.menu_buttons_dict["paused_menu"]["ButtonsList"])
 
-                # Check for which button was clicked
-                match self.menu_buttons_dict["paused_menu"]["ButtonsList"][button_collision].purpose:
+                # If the player did not click on empty space
+                # Note: This check is so that we check the purpose of the button at index -1
+                if button_collision != -1:
 
-                     # If the mouse collided with the "Continue" button
-                    case "Continue": 
-                        # Stop showing the paused menu
-                        self.show_paused_menu = False
+                    # Check for which button was clicked
+                    match self.menu_buttons_dict["paused_menu"]["ButtonsList"][button_collision].purpose:
 
-                    # If the mouse collided with the "Controls" button
-                    case "Controls":
-                        # Set the previous menu to be this menu so that we can come back to this menu when the "Back" button is clicked
-                        self.previous_menu = "Paused"
+                        # If the mouse collided with the "Continue" button
+                        case "Continue": 
+                            # Stop showing the paused menu
+                            self.show_paused_menu = False
 
-                        # Show the controls menu
-                        self.show_paused_menu = False
-                        self.show_controls_menu = True
+                        # If the mouse collided with the "Controls" button
+                        case "Controls":
+                            # Set the previous menu to be this menu so that we can come back to this menu when the "Back" button is clicked
+                            self.previous_menu = "Paused"
 
-                    # If the mouse collided with the "Quit" button 
-                    case "Quit":
-                        # Exit the program
-                        pygame.quit()
-                        sys.exit()
+                            # Show the controls menu
+                            self.show_paused_menu = False
+                            self.show_controls_menu = True
+
+                        # If the mouse collided with the "Quit" button 
+                        case "Quit":
+                            # Exit the program
+                            pygame.quit()
+                            sys.exit()
