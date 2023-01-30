@@ -102,7 +102,6 @@ class Menu:
         else:
             # Update the x and y positions of the mouse rect
             self.mouse_rect.x, self.mouse_rect.y = self.mouse_position[0], self.mouse_position[1]
-            print(self.mouse_rect)
 
     def animate_background(self):
         
@@ -165,7 +164,6 @@ class Menu:
             # Reset the size of the button and the alpha level back to its default
             menu_buttons_list[self.index_of_last_button_changed].change_button_size(inflate = False)
             menu_buttons_list[self.index_of_last_button_changed].change_alpha_level(increase = False)
-            print(menu_buttons_list[self.index_of_last_button_changed].purpose)
 
             # Set the index of the last button changed back to None
             self.index_of_last_button_changed = None

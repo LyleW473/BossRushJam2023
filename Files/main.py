@@ -8,8 +8,7 @@ class Main:
 
         # Pygame set-up
         pygame.init()
-
-        # Set the caption
+ 
         pygame.display.set_caption("BossRush2023")
 
         # Set the screen to be full screen 

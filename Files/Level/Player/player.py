@@ -1,7 +1,6 @@
 import pygame, os, math
 from Global.generic import Generic
 from Global.settings import *
-from random import choice
 
 class Player(Generic, pygame.sprite.Sprite):
     
@@ -60,13 +59,19 @@ class Player(Generic, pygame.sprite.Sprite):
         # Shooting
 
         # Note: Time and cooldowns are measured in milliseconds
-        self.current_weapon = "BambooAssaultRifle"
-        self.weapons = {
-                        "BambooLauncher": {},
+        self.current_tool_equipped = "BambooAssaultRifle"
+        self.tools  =  {
+                        "BuildingTool": {
+                                        "Images": { 
+                                            "IconImage": pygame.image.load(f"graphics/Weapons/BambooAR/Up.png").convert_alpha()
+                                                  }
+                                        },
+
                         "BambooAssaultRifle": {
                             "ShootingCooldown": 150,
                             "PreviouslyShotTime": 0, 
                             "Images" : {
+                                "IconImage": pygame.image.load(f"graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
                                 "Left": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/Right.png").convert_alpha(), flip_x = True, flip_y = False),
                                 "Right": pygame.image.load(f"graphics/Weapons/BambooAR/Right.png").convert_alpha(),
                                 "Up": pygame.image.load(f"graphics/Weapons/BambooAR/Up.png").convert_alpha(),
@@ -75,11 +80,14 @@ class Player(Generic, pygame.sprite.Sprite):
                                 "Down": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/Up.png").convert_alpha(), flip_x = False, flip_y = True),
                                 "Down Left": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/DownRight.png").convert_alpha(), flip_x = True, flip_y = False),
                                 "Down Right": pygame.image.load(f"graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
-                            }   
+                                        }     },
+                    
+                        "BambooLauncher": {
+                                            "Images": {
+                                                "IconImage": pygame.image.load(f"graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
+                                                      }
+                                          },
                         }
-
-
-        }
     # ---------------------------------------------------------------------------------
     # Animations
 

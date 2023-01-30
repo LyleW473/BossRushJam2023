@@ -3,7 +3,8 @@ from Global.settings import *
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
 from Level.Player.bamboo_projectiles import BambooProjectile
-from math import sin, cos, degrees, atan2, pi, dist
+from Level.game_ui import GameUI
+from math import sin, cos
 
 class Game:
     def __init__(self):
@@ -33,6 +34,11 @@ class Game:
 
         # Camera modes
         self.camera_mode = None # Can either be: Static, Follow
+
+        # --------------------------------------------------------------------------------------
+        # Game UI
+
+        self.game_ui = GameUI(surface = self.scaled_surface, scale_multiplier = scale_multiplier)
 
         # --------------------------------------------------------------------------------------
         # Groups
@@ -299,9 +305,9 @@ class Game:
         if pygame.mouse.get_pressed()[0] == True:
             
             # If the player's current weapon is the "BambooAssaultRifle"
-            if self.player.current_weapon ==  "BambooAssaultRifle":
+            if self.player.current_tool_equipped ==  "BambooAssaultRifle":
                 # If there are less than x bamboo projectiles and if enough time has passed since the last time the player shot
-                if len(self.bamboo_projectiles_group) < 10000 and (self.player.weapons["BambooAssaultRifle"]["PreviouslyShotTime"] >= self.player.weapons["BambooAssaultRifle"]["ShootingCooldown"]):
+                if len(self.bamboo_projectiles_group) < 10000 and (self.player.tools["BambooAssaultRifle"]["PreviouslyShotTime"] >= self.player.tools["BambooAssaultRifle"]["ShootingCooldown"]):
                     
                     # Distance to place the projectile at the tip of the gun
                     hypot_distance = 45
@@ -322,12 +328,12 @@ class Game:
                     self.all_tile_map_objects_group.add(bamboo_projectile)
 
                     # Set the previously shot time back to 0
-                    self.player.weapons["BambooAssaultRifle"]["PreviouslyShotTime"] = 0 
+                    self.player.tools["BambooAssaultRifle"]["PreviouslyShotTime"] = 0 
 
         # If the previously shot time is less than the current weapon's shooting cooldown
-        if self.player.weapons[self.player.current_weapon]["PreviouslyShotTime"] < self.player.weapons[self.player.current_weapon]["ShootingCooldown"]:
+        if self.player.tools[self.player.current_tool_equipped]["PreviouslyShotTime"] < self.player.tools[self.player.current_tool_equipped]["ShootingCooldown"]:
             # Increment the time passed since the last time the weapon was shot
-            self.player.weapons[self.player.current_weapon]["PreviouslyShotTime"] += 1000 * delta_time
+            self.player.tools[self.player.current_tool_equipped]["PreviouslyShotTime"] += 1000 * delta_time
 
         # ---------------------------------------------------------------------------------
         # Updating bamboo projectiles 
@@ -351,7 +357,7 @@ class Game:
         if pygame.mouse.get_pressed()[0]:
 
             # Assign the weapon image
-            weapon_image = self.player.weapons[self.player.current_weapon]["Images"][self.player.current_look_direction]
+            weapon_image = self.player.tools[self.player.current_tool_equipped]["Images"][self.player.current_look_direction]
             
             # The following distance will ensure that the weapon is always "hypot_distance" away from the center of the player
             hypot_distance = 10
@@ -379,10 +385,23 @@ class Game:
             # Draw the weapon at the position
             self.scaled_surface.blit(weapon_image, (self.weapon_position[0] - self.camera_position[0], self.weapon_position[1] - self.camera_position[1]))
 
+    # --------------------------------------------------------------------------------------
+    # Game UI methods
+    def update_game_ui(self, delta_time):
+
+        # Update the delta time
+        self.game_ui.delta_time = delta_time
+
+        # Update the game UI's player tools dictionary 
+        self.game_ui.player_tools = self.player.tools
+
     def run(self, delta_time):
 
         # Update the delta time of all objects 
-        self.update_objects_delta_time(delta_time)
+        self.update_objects_delta_time(delta_time = delta_time)
+
+        # Update the game UI
+        self.update_game_ui(delta_time = delta_time)
         
         # Fill the scaled surface with a colour
         self.scaled_surface.fill("gray23")
@@ -402,10 +421,14 @@ class Game:
         # Run the player methods
         self.player.run()
 
+        # Draw the player weapon onto the screen
         self.draw_player_weapon()
 
         # Handle player shooting
         self.handle_player_shooting(delta_time)
+        
+        # Run the game UI 
+        self.game_ui.run()
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame.transform.scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))
