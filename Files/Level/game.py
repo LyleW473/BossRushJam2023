@@ -2,7 +2,6 @@ import pygame, os
 from Global.settings import *
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
-from Level.Player.bamboo_projectiles import BambooProjectile
 from Level.game_ui import GameUI
 from math import sin, cos
 
@@ -308,110 +307,6 @@ class Game:
                 if pygame.sprite.spritecollide(bamboo_projectile, self.world_tiles_group, False, pygame.sprite.collide_mask):
                     self.bamboo_projectiles_group.remove(bamboo_projectile)
 
-    def handle_player_shooting(self, delta_time):
-
-        # Handles the functionality behind shooting for the player
-
-        # --------------------------------------------------------------------------------------
-        # Handling shooting input
-
-        # pygame.draw.circle(self.scaled_surface, "white", (self.player.rect.centerx - self.camera_position[0], self.player.rect.centery - self.camera_position[1]), 50, 1)
-
-        # If the current tool equipped by the player is not the building tool
-        if self.player.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
-
-            # If the left mouse button has been pressed and the player has enough resources to shoot
-            if pygame.mouse.get_pressed()[0] == True and \
-                self.player.player_gameplay_info_dict["AmountOfBambooResource"] - self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["BambooResourceDepletionAmount"]:
-
-                # If the player's current weapon is the "BambooAssaultRifle"
-                if self.player.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooAssaultRifle":
-
-                    # If there are less than x bamboo projectiles and if enough time has passed since the last time the player shot
-                    if len(self.bamboo_projectiles_group) < 10000 and (self.player.tools["BambooAssaultRifle"]["PreviouslyShotTime"] >= self.player.tools["BambooAssaultRifle"]["ShootingCooldown"]):
-                        
-                        # Distance to place the projectile at the tip of the gun
-                        hypot_distance = 45
-                        distance_x = hypot_distance * cos(self.player.look_angle)
-                        distance_y = -(hypot_distance * sin(self.player.look_angle))
-
-                        # Create a bamboo projectile, spawning it at the tip of the gun (Starts at the center of the player but has an added distance which displaces it to right in front of the gun)
-                        bamboo_projectile = BambooProjectile(
-                                                            x = distance_x + self.player.rect.centerx,
-                                                            y = distance_y + self.player.rect.centery,
-                                                            angle = self.player.look_angle
-                                                            )
-                        
-                        # Add the bamboo projectile to the bamboo projectiles group
-                        self.bamboo_projectiles_group.add(bamboo_projectile)
-
-                        # Add it to the all tile map objects group (this is so that its delta time attribute can be updated)
-                        self.all_tile_map_objects_group.add(bamboo_projectile)
-
-                        # Set the previously shot time back to 0
-                        self.player.tools["BambooAssaultRifle"]["PreviouslyShotTime"] = 0 
-
-                        # Remove the amount of bamboo resource set for the bamboo assault rifle
-                        self.player.player_gameplay_info_dict["AmountOfBambooResource"] -= self.player.tools["BambooAssaultRifle"]["BambooResourceDepletionAmount"]
-
-            # If the previously shot time is less than the current weapon's shooting cooldown
-            if self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["PreviouslyShotTime"] < self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["ShootingCooldown"]:
-                # Increment the time passed since the last time the weapon was shot
-                self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["PreviouslyShotTime"] += 1000 * delta_time
-
-        # ---------------------------------------------------------------------------------
-        # Updating bamboo projectiles 
-
-        # Move the bamboo projectiles
-        for bamboo_projectile in self.bamboo_projectiles_group:
-
-            # If the bamboo projectile does not have a delta time attribute yet (This is because this is called before the projectile's delta time can be updated)
-            if hasattr(bamboo_projectile, "delta_time") == False:
-                # Set a delta time attribute with the current delta time
-                bamboo_projectile.delta_time = delta_time
-
-            # Move the projectile
-            bamboo_projectile.move_projectile()
-
-    def draw_player_weapon(self):
-
-        # Draws the weapon onto main surface
-        
-        # If the player is pressing the left mouse button
-        if pygame.mouse.get_pressed()[0]:
-
-            if self.player.player_gameplay_info_dict["CurrentToolEquipped"] == "BuildingTool":
-                weapon_image = self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["Images"]["Up"]
-
-            if self.player.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
-                # Assign the weapon image
-                weapon_image = self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["Images"][self.player.current_look_direction]
-            
-            # The following distance will ensure that the weapon is always "hypot_distance" away from the center of the player
-            hypot_distance = 10
-            distance_x = hypot_distance * cos(self.player.look_angle)
-            distance_y = hypot_distance * sin(self.player.look_angle)
-            
-            # Depending on the current look direction, 
-            match self.player.current_look_direction:
-                
-                # (For up and down, the weapon is centered more with a "-5")
-                case _ if self.player.current_look_direction == "Up" or self.player.current_look_direction == "Down":
-                    self.weapon_position = (
-                        ((self.player.rect.centerx - 5)) + distance_x, 
-                        ((self.player.rect.centery - (weapon_image.get_height() / 2))) - distance_y
-                    )
-                # All other directions
-                case _:
-                    self.weapon_position = (
-                        ((self.player.rect.centerx - (weapon_image.get_width() / 2))) + distance_x, 
-                        ((self.player.rect.centery - (weapon_image.get_height() / 2))) - distance_y
-                    )
-                    
-            # Draw the weapon at the position
-            # pygame.draw.circle(self.scaled_surface, "white", (self.player.rect.centerx - self.camera_position[0], self.player.rect.centery - self.camera_position[1]), hypot_distance, 1)
-            self.scaled_surface.blit(weapon_image, (self.weapon_position[0] - self.camera_position[0], self.weapon_position[1] - self.camera_position[1]))
-
     # --------------------------------------------------------------------------------------
     # Game UI methods
 
@@ -445,12 +340,6 @@ class Game:
 
         # Run the player methods
         self.player.run()
-
-        # Draw the player weapon onto the screen
-        self.draw_player_weapon()
-
-        # Handle player shooting
-        self.handle_player_shooting(delta_time)
         
         # Run the game UI 
         self.game_ui.run()

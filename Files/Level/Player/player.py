@@ -1,7 +1,9 @@
-import pygame, os, math
+import pygame, os
 from Global.generic import Generic
 from Global.settings import *
 from Level.Player.building_tile import BuildingTile
+from Level.Player.bamboo_projectiles import BambooProjectile
+from math import degrees, sin, cos, atan2, pi, dist
 
 class Player(Generic, pygame.sprite.Sprite):
     
@@ -102,7 +104,7 @@ class Player(Generic, pygame.sprite.Sprite):
                                 "Down Right": pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
                                         },
                             "ShootingCooldown": 150,
-                            "PreviouslyShotTime": 0,
+                            "ShootingCooldownTimer": 150, # 150 so that the player starts off being unable to shoot (after pressing the play button)
                             "BambooResourceDepletionAmount": 0.5
                                         
                                              },
@@ -270,28 +272,28 @@ class Player(Generic, pygame.sprite.Sprite):
 
         match self.look_angle:
             # Right
-            case _ if (0 <= math.degrees(self.look_angle) < segment_offset) or ((360 - segment_offset) <= math.degrees(self.look_angle) < 360):
+            case _ if (0 <= degrees(self.look_angle) < segment_offset) or ((360 - segment_offset) <= degrees(self.look_angle) < 360):
                 self.current_look_direction = "Right"
             # UpRight
-            case _ if (segment_offset <= math.degrees(self.look_angle) < segment_offset + 45):
+            case _ if (segment_offset <= degrees(self.look_angle) < segment_offset + 45):
                 self.current_look_direction = "Up Right"
             # Up
-            case _ if (90 - segment_offset) <= math.degrees(self.look_angle) < (90 + segment_offset):
+            case _ if (90 - segment_offset) <= degrees(self.look_angle) < (90 + segment_offset):
                 self.current_look_direction = "Up"
             # UpLeft
-            case _ if (90 + segment_offset) <= math.degrees(self.look_angle) < (90 + segment_offset + 45):
+            case _ if (90 + segment_offset) <= degrees(self.look_angle) < (90 + segment_offset + 45):
                 self.current_look_direction = "Up Left"
             # Left
-            case _ if (180 - segment_offset) <= math.degrees(self.look_angle) < (180 + segment_offset):
+            case _ if (180 - segment_offset) <= degrees(self.look_angle) < (180 + segment_offset):
                 self.current_look_direction = "Left"
             # DownLeft
-            case _ if (180 + segment_offset) <= math.degrees(self.look_angle) < (180 + segment_offset + 45):
+            case _ if (180 + segment_offset) <= degrees(self.look_angle) < (180 + segment_offset + 45):
                 self.current_look_direction = "Down Left"
             # Down
-            case _ if (270 - segment_offset) <= math.degrees(self.look_angle) < (270 + segment_offset):
+            case _ if (270 - segment_offset) <= degrees(self.look_angle) < (270 + segment_offset):
                 self.current_look_direction = "Down" 
             # DownRight
-            case _ if (270 + segment_offset) <= math.degrees(self.look_angle) < (270 + segment_offset + 45):
+            case _ if (270 + segment_offset) <= degrees(self.look_angle) < (270 + segment_offset + 45):
                 self.current_look_direction = "Down Right"
 
         # --------------------------------------
@@ -327,16 +329,16 @@ class Player(Generic, pygame.sprite.Sprite):
 
                 # If the player is looking towards any direction in front of where they are moving
                 # E.g. Moving down and looking Left, DownLeft, Down, DownRight, Right
-                if (self.player_direction[0] == "Down" and 180 <= math.degrees(self.look_angle) < 360) or (self.player_direction[0] == "Up" and 0 <= math.degrees(self.look_angle) < 180):
+                if (self.player_direction[0] == "Down" and 180 <= degrees(self.look_angle) < 360) or (self.player_direction[0] == "Up" and 0 <= degrees(self.look_angle) < 180):
                     # Set the body (torso) to point towards where the player is moving
                     current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
                     current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
 
                 # If the player is looking towards the opposite direction of where the player is moving towards
                 else:
-                    if 0 <= math.degrees(self.look_angle) < 180 :
+                    if 0 <= degrees(self.look_angle) < 180 :
                         body_direction = "Up"
-                    elif 180 <= math.degrees(self.look_angle) < 360:
+                    elif 180 <= degrees(self.look_angle) < 360:
                         body_direction = "Down"
                     
                     # Set the body (torso) to point towards where the player is looking towards (with the mouse)
@@ -347,8 +349,8 @@ class Player(Generic, pygame.sprite.Sprite):
             if self.player_direction[0] == "Left" or self.player_direction[0] == "Right":
                 # If the player is looking towards any direction in front of where they are moving
                 # E.g. Moving Left and looking Up, UpLeft, Left, DownLeft, Down
-                if self.player_direction[0] == "Right" and (0 <= math.degrees(self.look_angle) < 90 or 270 <= math.degrees(self.look_angle) < 360) or \
-                    self.player_direction[0] == "Left" and (90 <= math.degrees(self.look_angle) < 270):
+                if self.player_direction[0] == "Right" and (0 <= degrees(self.look_angle) < 90 or 270 <= degrees(self.look_angle) < 360) or \
+                    self.player_direction[0] == "Left" and (90 <= degrees(self.look_angle) < 270):
 
                     # Set the body (torso) to point towards where the player is moving
                     current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
@@ -358,16 +360,16 @@ class Player(Generic, pygame.sprite.Sprite):
                 else:
                     # If the player is looking left
                     if self.player_direction[0] == "Left":
-                        if math.degrees(self.look_angle) <= 90 :
+                        if degrees(self.look_angle) <= 90 :
                             body_direction = "Up"
-                        elif math.degrees(self.look_angle) >= 270:
+                        elif degrees(self.look_angle) >= 270:
                             body_direction = "Down"
                     
                     # If the player is looking right
                     elif self.player_direction[0] == "Right":
-                        if 180 <= math.degrees(self.look_angle) <= 270:
+                        if 180 <= degrees(self.look_angle) <= 270:
                             body_direction = "Down"
-                        elif 90 <= math.degrees(self.look_angle) < 180:
+                        elif 90 <= degrees(self.look_angle) < 180:
                             body_direction = "Up"
 
                     # Set the body (torso) to point towards where the player is looking towards (with the mouse)
@@ -953,7 +955,7 @@ class Player(Generic, pygame.sprite.Sprite):
         - If the angle is negative, it will be added to 2pi.
         - "-dy" because the y axis is flipped in PYgame
         """
-        self.look_angle = math.atan2(-dy, dx) % (2 * math.pi)
+        self.look_angle = atan2(-dy, dx) % (2 * pi)
 
         # Draw the new cursor
         # Blit the cursor image at the mouse position divided by the scale multiplier, subtracting half of the cursor image's width and height
@@ -1000,7 +1002,49 @@ class Player(Generic, pygame.sprite.Sprite):
             # Switch to the tool
             self.player_gameplay_info_dict["CurrentToolEquipped"] = tool
     
-    def build(self):
+    def draw_player_tool(self):
+
+        # Draws the weapon onto main surface
+        
+        # If the player is pressing the left mouse button
+        if pygame.mouse.get_pressed()[0]:
+
+            if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BuildingTool":
+                tool_image = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]["Images"]["Up"]
+
+            if self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
+                # Assign the weapon image
+                tool_image = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]["Images"][self.current_look_direction]
+            
+            # The following distance will ensure that the weapon is always "hypot_distance" away from the center of the player
+            hypot_distance = 10
+            distance_x = hypot_distance * cos(self.look_angle)
+            distance_y = hypot_distance * sin(self.look_angle)
+            
+            # Depending on the current look direction, 
+            match self.current_look_direction:
+                
+                # (For up and down, the weapon is centered more with a "-5")
+                case _ if self.current_look_direction == "Up" or self.current_look_direction == "Down":
+                    self.weapon_position = (
+                        ((self.rect.centerx - 5)) + distance_x, 
+                        ((self.rect.centery - (tool_image.get_height() / 2))) - distance_y
+                    )
+                # All other directions
+                case _:
+                    self.weapon_position = (
+                        ((self.rect.centerx - (tool_image.get_width() / 2))) + distance_x, 
+                        ((self.rect.centery - (tool_image.get_height() / 2))) - distance_y
+                    )
+                    
+            # Draw the weapon at the position
+            # pygame.draw.circle(self.scaled_surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), hypot_distance, 1)
+            self.surface.blit(tool_image, (self.weapon_position[0] - self.camera_position[0], self.weapon_position[1] - self.camera_position[1]))
+
+    # ---------------------------------------
+    # Building 
+
+    def handle_building(self):
         
         # If the player currently has the building tool equipped
         if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BuildingTool":
@@ -1024,8 +1068,8 @@ class Player(Generic, pygame.sprite.Sprite):
             # If the player pressed the right mouse button and there is an existing building tile
             if pygame.mouse.get_pressed()[2] and len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) > 0:
                 
-                # If there is no timer set or 
-                if self.tools["BuildingTool"]["LastTileRemovedTimer"] == None or self.tools["BuildingTool"]["LastTileRemovedTimer"] >= self.tools["BuildingTool"]["RemovalCooldown"]:
+                # If enough time has passed since the player last removed a building tile
+                if self.tools["BuildingTool"]["LastTileRemovedTimer"] == None:
 
                     # The building tile to remove should be the last building tile placed down
                     building_tile_to_remove = self.tools["BuildingTool"]["ExistingBuildingTilesDict"][len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) - 1]
@@ -1052,6 +1096,7 @@ class Player(Generic, pygame.sprite.Sprite):
 
                     # Refund half of the bamboo resource depletion amount set
                     self.player_gameplay_info_dict["AmountOfBambooResource"] += (self.tools["BuildingTool"]["BambooResourceDepletionAmount"] * 0.5)
+            
             # --------------------------------------
             # Checking for placement of building tiles
 
@@ -1075,7 +1120,7 @@ class Player(Generic, pygame.sprite.Sprite):
                                     )   
 
                 # If the distance between the center of the player and the center of the empty tile at the mouse position less than the maximum distance
-                if self.tools["BuildingTool"]["MinimumPlacingDistance"] < math.dist(self.rect.center, empty_tile_center) < self.tools["BuildingTool"]["MaximumPlacingDistance"]:
+                if self.tools["BuildingTool"]["MinimumPlacingDistance"] < dist(self.rect.center, empty_tile_center) < self.tools["BuildingTool"]["MaximumPlacingDistance"]:
                     # Highlight the empty tile as green
                     pygame.draw.rect(
                                     surface = self.surface,
@@ -1115,8 +1160,8 @@ class Player(Generic, pygame.sprite.Sprite):
                 # If the distance between the center of the player and the center of the empty tile at the mouse position:
                 # - Less than or equal to the minimum distance
                 # - Greater than or equal to the maximum distance
-                elif math.dist(self.rect.center, empty_tile_center) <= self.tools["BuildingTool"]["MinimumPlacingDistance"] or \
-                     math.dist(self.rect.center, empty_tile_center) >= self.tools["BuildingTool"]["MaximumPlacingDistance"]:
+                elif dist(self.rect.center, empty_tile_center) <= self.tools["BuildingTool"]["MinimumPlacingDistance"] or \
+                     dist(self.rect.center, empty_tile_center) >= self.tools["BuildingTool"]["MaximumPlacingDistance"]:
 
                     # Highlight the empty tile as red
                     pygame.draw.rect(
@@ -1129,7 +1174,81 @@ class Player(Generic, pygame.sprite.Sprite):
                                                         empty_tile_rect_info[3]),
                                     width = 1                
                                     )   
+    
+    # ---------------------------------------
+    # Shooting
 
+    def handle_shooting(self):
+
+        # Handles the functionality behind shooting for the player
+
+        # --------------------------------------------------------------------------------------
+        # Handling shooting input
+
+        # pygame.draw.circle(self.scaled_surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), 50, 1)
+
+        # If the current tool equipped by the player is not the building tool
+        if self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
+            
+            # --------------------------------------
+            # Updating shooting cooldown timers
+            
+            # The current weapon selected (as a temp variable)
+            current_weapon = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]
+
+            # If there is a timer that has been set to start counting and the timer is greater than 0 (counts down from the shooting cooldown)
+            if current_weapon["ShootingCooldownTimer"] != None and current_weapon["ShootingCooldownTimer"] > 0:
+                # Increase the timer
+                current_weapon["ShootingCooldownTimer"] -= 1000 * self.delta_time
+
+            # If there is a timer that has been set to start counting and the timer is less than or equal to 0 (counts down from the shooting cooldown)
+            elif current_weapon["ShootingCooldownTimer"] != None and current_weapon["ShootingCooldownTimer"] <= 0:
+                # Set the shooting cooldown timer back to None
+                current_weapon["ShootingCooldownTimer"] = None
+
+            # If the left mouse button has been pressed and the player has enough resources to shoot
+            if pygame.mouse.get_pressed()[0] == True and self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon["BambooResourceDepletionAmount"]:
+
+                # If the player's current weapon is the "BambooAssaultRifle"
+                if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooAssaultRifle":
+
+                    # If enough time has passed since the last time the player shot
+                    if self.tools["BambooAssaultRifle"]["ShootingCooldownTimer"] == None:
+                        
+                        # Distance to place the projectile at the tip of the gun
+                        hypot_distance = 45
+                        distance_x = hypot_distance * cos(self.look_angle)
+                        distance_y = -(hypot_distance * sin(self.look_angle))
+
+                        # Create a bamboo projectile, spawning it at the tip of the gun (Starts at the center of the player but has an added distance which displaces it to right in front of the gun)
+                        bamboo_projectile = BambooProjectile(
+                                                            x = distance_x + self.rect.centerx,
+                                                            y = distance_y + self.rect.centery,
+                                                            angle = self.look_angle
+                                                            )
+                        
+                        # Add the bamboo projectile to the bamboo projectiles group
+                        self.sprite_groups["BambooProjectiles"].add(bamboo_projectile)
+
+                        # Set the shooting cooldown timer to the shooting cooldown set
+                        self.tools["BambooAssaultRifle"]["ShootingCooldownTimer"] = self.tools["BambooAssaultRifle"]["ShootingCooldown"]
+
+                        # Remove the amount of bamboo resource set for the bamboo assault rifle
+                        self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BambooAssaultRifle"]["BambooResourceDepletionAmount"]
+    
+
+        # ---------------------------------------------------------------------------------
+        # Updating bamboo projectiles 
+
+        # For all bamboo projectiles
+        for bamboo_projectile in self.sprite_groups["BambooProjectiles"]:
+
+            # Update the bamboo projectile's delta time
+            bamboo_projectile.delta_time = self.delta_time
+
+            # Move the projectile
+            bamboo_projectile.move_projectile()
+    
     def run(self):
 
         #pygame.draw.line(self.surface, "white", (self.surface.get_width() / 2, 0), (self.surface.get_width() / 2, self.surface.get_height()))
@@ -1150,8 +1269,14 @@ class Player(Generic, pygame.sprite.Sprite):
         # Track player movement
         self.handle_player_movement()
 
-        # If the player has the building tool out, if the conditions are met, build (and more)
-        self.build() 
+        # Draw the player tool
+        self.draw_player_tool()
+
+        # Handle player building
+        self.handle_building() 
+
+        # Handle player shooting
+        self.handle_shooting()
 
         # # Create / update a mask for pixel - perfect collisions (Uncomment later when adding collisions with objects other than tiles)
         # self.mask = pygame.mask.from_surface(self.image)
