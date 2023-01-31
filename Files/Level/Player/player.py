@@ -1,10 +1,11 @@
 import pygame, os, math
 from Global.generic import Generic
 from Global.settings import *
+from Level.Player.building_tile import BuildingTile
 
 class Player(Generic, pygame.sprite.Sprite):
     
-    def __init__(self, x, y, surface):
+    def __init__(self, x, y, surface, sprite_groups):
         
         # Surface that the player is drawn onto
         self.surface = surface
@@ -56,38 +57,53 @@ class Player(Generic, pygame.sprite.Sprite):
         self.default_cursor_image = pygame.image.load("graphics/Cursors/Default.png").convert_alpha()
 
         # ---------------------------------------------------------------------------------
-        # Shooting
+        # Shooting, building etc.
 
         # Note: Time and cooldowns are measured in milliseconds
         self.current_tool_equipped = "BambooAssaultRifle"
         self.tools  =  {
                         "BuildingTool": {
                                         "Images": { 
-                                            "IconImage": pygame.image.load(f"graphics/Weapons/BambooAR/Up.png").convert_alpha()
-                                                  }
+                                            "IconImage": pygame.image.load("graphics/Weapons/BuildingTool/IconImage.png").convert_alpha(),
+                                            "Up": pygame.image.load("graphics/Weapons/BuildingTool/Default.png").convert_alpha(),
+                                            "TileImage": pygame.image.load("graphics/Weapons/BuildingTool/BuildingTile.png").convert()
+                                                  },
+                                        "MaximumBuildingTileHP": 100,
+                                        "MaximumPlacingDistance": 5 * TILE_SIZE,
+                                        "MinimumPlacingDistance": 2 * TILE_SIZE,
+                                        "ExistingBuildingTilesDict": {},
+                                        "RemovalCooldown": 200,
+                                        "LastTileRemovedTimer": None
+
                                         },
 
                         "BambooAssaultRifle": {
                             "ShootingCooldown": 150,
                             "PreviouslyShotTime": 0, 
                             "Images" : {
-                                "IconImage": pygame.image.load(f"graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
+                                "IconImage": pygame.image.load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
                                 "Left": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/Right.png").convert_alpha(), flip_x = True, flip_y = False),
-                                "Right": pygame.image.load(f"graphics/Weapons/BambooAR/Right.png").convert_alpha(),
-                                "Up": pygame.image.load(f"graphics/Weapons/BambooAR/Up.png").convert_alpha(),
-                                "Up Left": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),"UpLeft": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),
-                                "Up Right": pygame.image.load(f"graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
-                                "Down": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/Up.png").convert_alpha(), flip_x = False, flip_y = True),
-                                "Down Left": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/DownRight.png").convert_alpha(), flip_x = True, flip_y = False),
-                                "Down Right": pygame.image.load(f"graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
+                                "Right": pygame.image.load("graphics/Weapons/BambooAR/Right.png").convert_alpha(),
+                                "Up": pygame.image.load("graphics/Weapons/BambooAR/Up.png").convert_alpha(),
+                                "Up Left": pygame.transform.flip(surface = pygame.image.load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),"UpLeft": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),
+                                "Up Right": pygame.image.load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
+                                "Down": pygame.transform.flip(surface = pygame.image.load("graphics/Weapons/BambooAR/Up.png").convert_alpha(), flip_x = False, flip_y = True),
+                                "Down Left": pygame.transform.flip(surface = pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha(), flip_x = True, flip_y = False),
+                                "Down Right": pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
                                         }     },
                     
                         "BambooLauncher": {
+                                            "ShootingCooldown": 0, 
+                                            "PreviouslyShotTime": 0,
                                             "Images": {
-                                                "IconImage": pygame.image.load(f"graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
+                                                "IconImage": pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
                                                       }
                                           },
                         }
+        
+        # The sprite groups that the player interacts with
+        self.sprite_groups = sprite_groups
+
     # ---------------------------------------------------------------------------------
     # Animations
 
@@ -960,6 +976,139 @@ class Player(Generic, pygame.sprite.Sprite):
         # Draw the cursor guidelines surface onto the main surface
         self.surface.blit(self.cursor_guidelines_surface, (0, 0))
 
+    # ---------------------------------------------------------------------------------
+    # Gameplay
+    def switch_tool(self, tool):
+
+        # Switches between tools
+        
+        # If the current tool is not the tool the player wants to switch to
+        if self.current_tool_equipped != tool:
+            # Switch to the tool
+            self.current_tool_equipped = tool
+    
+    def highlight_tiles_while_building(self):
+        
+        # If the player currently has the building tool equipped
+        if self.current_tool_equipped == "BuildingTool":
+            
+            # --------------------------------------
+            # Updating building tool removal timer
+
+            # If there is a timer that has been set to start counting and the timer is less than the removal cooldown
+            if self.tools["BuildingTool"]["LastTileRemovedTimer"] != None and self.tools["BuildingTool"]["LastTileRemovedTimer"] < self.tools["BuildingTool"]["RemovalCooldown"]:
+                # Increase the timer
+                self.tools["BuildingTool"]["LastTileRemovedTimer"] += 1000 * self.delta_time
+            
+            # If there is a timer that has been set to start counting and the timer is greater than or equal to the removal cooldown of building tiles
+            elif self.tools["BuildingTool"]["LastTileRemovedTimer"] != None and self.tools["BuildingTool"]["LastTileRemovedTimer"] >= self.tools["BuildingTool"]["RemovalCooldown"]:
+                # Set the last tile removed timer back to None
+                self.tools["BuildingTool"]["LastTileRemovedTimer"] = None
+            
+            # --------------------------------------
+            # Checking for input to remove building tiles
+
+            # If the player pressed the right mouse button and there is an existing building tile
+            if pygame.mouse.get_pressed()[2] and len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) > 0:
+                
+                # If there is no timer set or 
+                if self.tools["BuildingTool"]["LastTileRemovedTimer"] == None or self.tools["BuildingTool"]["LastTileRemovedTimer"] >= self.tools["BuildingTool"]["RemovalCooldown"]:
+
+                    # The building tile to remove should be the last building tile placed down
+                    building_tile_to_remove = self.tools["BuildingTool"]["ExistingBuildingTilesDict"][len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) - 1]
+
+                    # Remove the building tile from the world tiles group
+                    self.sprite_groups["WorldTiles"].remove(building_tile_to_remove)
+
+                    # Remove the building tile from the world tiles dictionary
+                    self.world_tiles_dict.pop(building_tile_to_remove)
+
+                    # "Create" an empty tile where the building tile was
+                    self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
+
+                    # Remove the building tile from the existing building tiles dictionary
+                    self.tools["BuildingTool"]["ExistingBuildingTilesDict"].pop(len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) - 1)
+
+                    # Start the last tile removed timer, so that the player has to wait "self.tools["BuildingTool"]["RemovalCooldown"]" before removing another tile
+                    self.tools["BuildingTool"]["LastTileRemovedTimer"] = 0
+
+                    # If the building tile to remove is in the neighbouring tiles dictionary (keys)
+                    if building_tile_to_remove in self.neighbouring_tiles_dict.keys():
+                        # Remove the building tile
+                        self.neighbouring_tiles_dict.pop(building_tile_to_remove)
+
+            # --------------------------------------
+            # Checking for placement of building tiles
+
+            # Draw a guide circles to show the minimum and maximum distances the player can place building tiles (MAY REMOVE)
+            pygame.draw.circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MinimumPlacingDistance"], 1)
+            pygame.draw.circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MaximumPlacingDistance"], 1)
+
+            # Find collisions between the mouse rect and empty tiles inside the tile map
+            empty_tile_collision = pygame.Rect(self.mouse_position[0] , self.mouse_position[1] , 1, 1).collidedict(self.empty_tiles_dict)
+
+            # If there is a collision between the mouse rect and an empty tile 
+            if empty_tile_collision != None:
+
+                # The tile rect will be the key of the returned value from the collide dict
+                empty_tile_rect_info = empty_tile_collision[0]
+                
+                # The center of the empty tile
+                empty_tile_center = (
+                                    empty_tile_collision[0][0] + (empty_tile_collision[0][2] / 2),
+                                    empty_tile_collision[0][1] + (empty_tile_collision[0][3] / 2)
+                                    )   
+
+                # If the distance between the center of the player and the center of the empty tile at the mouse position less than the maximum distance
+                if self.tools["BuildingTool"]["MinimumPlacingDistance"] < math.dist(self.rect.center, empty_tile_center) < self.tools["BuildingTool"]["MaximumPlacingDistance"]:
+                    # Highlight the empty tile as green
+                    pygame.draw.rect(
+                                    surface = self.surface,
+                                    color = "green", 
+                                    rect = pygame.Rect(
+                                                        empty_tile_rect_info[0] - self.camera_position[0], 
+                                                        empty_tile_rect_info[1] - self.camera_position[1],
+                                                        empty_tile_rect_info[2],
+                                                        empty_tile_rect_info[3]),
+                                    width = 1                
+                                    )   
+
+                    # If the left mouse button is pressed and there are less than 3 existing building tiles
+                    if pygame.mouse.get_pressed()[0] == True and len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) < 3:
+
+                        # Create a building tile
+                        building_tile = BuildingTile(x = empty_tile_rect_info[0], y = empty_tile_rect_info[1], image = self.tools["BuildingTool"]["Images"]["TileImage"])
+
+                        # Add the building tile to the building tiles sprite group
+                        self.sprite_groups["WorldTiles"].add(building_tile)
+
+                        # Add the building tile to the world tiles dictionary with the key as the building tile and the value as the type of world tile
+                        self.world_tiles_dict[building_tile] = "BuildingTile"
+
+                        # Remove the empty tile from the empty tiles dictionary
+                        self.empty_tiles_dict.pop(empty_tile_rect_info)
+                        
+                        # Add the building tile to the existing building tiles dictionary
+                        self.tools["BuildingTool"]["ExistingBuildingTilesDict"][len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"])] = building_tile
+
+                # If the distance between the center of the player and the center of the empty tile at the mouse position:
+                # - Less than or equal to the minimum distance
+                # - Greater than or equal to the maximum distance
+                elif math.dist(self.rect.center, empty_tile_center) <= self.tools["BuildingTool"]["MinimumPlacingDistance"] or \
+                     math.dist(self.rect.center, empty_tile_center) >= self.tools["BuildingTool"]["MaximumPlacingDistance"]:
+
+                    # Highlight the empty tile as red
+                    pygame.draw.rect(
+                                    surface = self.surface,
+                                    color = "red", 
+                                    rect = pygame.Rect(
+                                                        empty_tile_rect_info[0] - self.camera_position[0], 
+                                                        empty_tile_rect_info[1] - self.camera_position[1],
+                                                        empty_tile_rect_info[2],
+                                                        empty_tile_rect_info[3]),
+                                    width = 1                
+                                    )   
+
     def run(self):
 
         #pygame.draw.line(self.surface, "white", (self.surface.get_width() / 2, 0), (self.surface.get_width() / 2, self.surface.get_height()))
@@ -970,7 +1119,7 @@ class Player(Generic, pygame.sprite.Sprite):
         # Play animations
         self.play_animations()
 
-        # TEMPORARY
+        # # TEMPORARY
         # for tile in self.neighbouring_tiles_dict.keys():
         #     pygame.draw.rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
@@ -979,6 +1128,9 @@ class Player(Generic, pygame.sprite.Sprite):
 
         # Track player movement
         self.handle_player_movement()
+
+        # If the player has the building tool out, highlight the tiles
+        self.highlight_tiles_while_building() 
 
         # # Create / update a mask for pixel - perfect collisions (Uncomment later when adding collisions with objects other than tiles)
         # self.mask = pygame.mask.from_surface(self.image)

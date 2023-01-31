@@ -136,6 +136,19 @@ class GameStatesController():
                                 # Show the paused menu
                                 self.game.running = False
                                 self.menu.current_menu = "paused_menu"
+                            
+                            # "1" key
+                            case pygame.K_1:
+                                # Switch the player's tool to the building tool
+                                self.game.player.switch_tool(tool = "BuildingTool")
+                            # "2" key
+                            case pygame.K_2:
+                                # Switch the player's tool to the bamboo assault rifle
+                                self.game.player.switch_tool(tool = "BambooAssaultRifle")
+                            # "3" key
+                            case pygame.K_3:
+                                # Switch the player's tool to the bamboo launcher
+                                self.game.player.switch_tool(tool = "BambooLauncher")
                                     
     def run(self, delta_time):
         
