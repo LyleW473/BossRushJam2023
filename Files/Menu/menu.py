@@ -4,8 +4,6 @@ from Global.settings import *
 
 class Menu:
     def __init__(self):
-        # Initialise fonts
-        pygame.font.init()
 
         # Screen
         self.surface = pygame.display.get_surface()

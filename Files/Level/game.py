@@ -13,8 +13,8 @@ class Game:
         self.screen = pygame.display.get_surface()  
 
         # Create a surface for which all objects will be drawn onto. This surface is then scaled and drawn onto the main screen
-        scale_multiplier = 3
-        self.scaled_surface = pygame.Surface((screen_width / scale_multiplier, screen_height / scale_multiplier))
+        self.scale_multiplier = 3
+        self.scaled_surface = pygame.Surface((screen_width / self.scale_multiplier, screen_height / self.scale_multiplier))
 
         # Attribute which is monitored by the game states controller
         self.running = False
@@ -35,10 +35,6 @@ class Game:
         # Camera modes
         self.camera_mode = None # Can either be: Static, Follow
 
-        # --------------------------------------------------------------------------------------
-        # Game UI
-
-        self.game_ui = GameUI(surface = self.scaled_surface, scale_multiplier = scale_multiplier)
 
         # --------------------------------------------------------------------------------------
         # Groups
@@ -215,6 +211,9 @@ class Game:
         # Set the camera mode 
         self.set_camera_mode()
 
+        # Create the game UI
+        self.game_ui = GameUI(surface = self.scaled_surface, scale_multiplier = self.scale_multiplier, player_tools = self.player.tools, player_gameplay_info_dict = self.player.player_gameplay_info_dict)
+
     def draw_tile_map_objects(self):
 
         # Calls the draw methods of all objects in the level
@@ -319,13 +318,15 @@ class Game:
         # pygame.draw.circle(self.scaled_surface, "white", (self.player.rect.centerx - self.camera_position[0], self.player.rect.centery - self.camera_position[1]), 50, 1)
 
         # If the current tool equipped by the player is not the building tool
-        if self.player.current_tool_equipped != "BuildingTool":
+        if self.player.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
 
-            # If the left mouse button has been pressed 
-            if pygame.mouse.get_pressed()[0] == True:
+            # If the left mouse button has been pressed and the player has enough resources to shoot
+            if pygame.mouse.get_pressed()[0] == True and \
+                self.player.player_gameplay_info_dict["AmountOfBambooResource"] - self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["BambooResourceDepletionAmount"]:
 
                 # If the player's current weapon is the "BambooAssaultRifle"
-                if self.player.current_tool_equipped ==  "BambooAssaultRifle":
+                if self.player.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooAssaultRifle":
+
                     # If there are less than x bamboo projectiles and if enough time has passed since the last time the player shot
                     if len(self.bamboo_projectiles_group) < 10000 and (self.player.tools["BambooAssaultRifle"]["PreviouslyShotTime"] >= self.player.tools["BambooAssaultRifle"]["ShootingCooldown"]):
                         
@@ -350,10 +351,13 @@ class Game:
                         # Set the previously shot time back to 0
                         self.player.tools["BambooAssaultRifle"]["PreviouslyShotTime"] = 0 
 
+                        # Remove the amount of bamboo resource set for the bamboo assault rifle
+                        self.player.player_gameplay_info_dict["AmountOfBambooResource"] -= self.player.tools["BambooAssaultRifle"]["BambooResourceDepletionAmount"]
+
             # If the previously shot time is less than the current weapon's shooting cooldown
-            if self.player.tools[self.player.current_tool_equipped]["PreviouslyShotTime"] < self.player.tools[self.player.current_tool_equipped]["ShootingCooldown"]:
+            if self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["PreviouslyShotTime"] < self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["ShootingCooldown"]:
                 # Increment the time passed since the last time the weapon was shot
-                self.player.tools[self.player.current_tool_equipped]["PreviouslyShotTime"] += 1000 * delta_time
+                self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["PreviouslyShotTime"] += 1000 * delta_time
 
         # ---------------------------------------------------------------------------------
         # Updating bamboo projectiles 
@@ -376,12 +380,12 @@ class Game:
         # If the player is pressing the left mouse button
         if pygame.mouse.get_pressed()[0]:
 
-            if self.player.current_tool_equipped == "BuildingTool":
-                weapon_image = self.player.tools[self.player.current_tool_equipped]["Images"]["Up"]
+            if self.player.player_gameplay_info_dict["CurrentToolEquipped"] == "BuildingTool":
+                weapon_image = self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["Images"]["Up"]
 
-            if self.player.current_tool_equipped != "BuildingTool":
+            if self.player.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
                 # Assign the weapon image
-                weapon_image = self.player.tools[self.player.current_tool_equipped]["Images"][self.player.current_look_direction]
+                weapon_image = self.player.tools[self.player.player_gameplay_info_dict["CurrentToolEquipped"]]["Images"][self.player.current_look_direction]
             
             # The following distance will ensure that the weapon is always "hypot_distance" away from the center of the player
             hypot_distance = 10
@@ -410,13 +414,11 @@ class Game:
 
     # --------------------------------------------------------------------------------------
     # Game UI methods
+
     def update_game_ui(self, delta_time):
 
         # Update the delta time
         self.game_ui.delta_time = delta_time
-
-        # Update the game UI's player tools dictionary 
-        self.game_ui.player_tools = self.player.tools
 
     def run(self, delta_time):
 

@@ -1,8 +1,9 @@
 import pygame
+from Global.functions import draw_text
 
 class GameUI:
 
-    def __init__(self, surface, scale_multiplier):
+    def __init__(self, surface, scale_multiplier, player_tools, player_gameplay_info_dict):
 
         # Surface the UI will be drawn onto
         self.surface = surface
@@ -14,10 +15,16 @@ class GameUI:
         self.delta_time = None
 
         # The tools that the player has
-        self.player_tools = None
+        self.player_tools = player_tools
+            
+        # A dictionary containing information such as the HP the player has, the current tool equipped, amount of bamboo resource, etc.
+        self.player_gameplay_info_dict = player_gameplay_info_dict
 
         # A dictionary containing the display cards for each tool inside the player's inventory of tools
         self.player_tools_display_cards_dict = {}
+
+        # The font used to display text for the players' stats
+        self.player_stats_font = pygame.font.Font("graphics/Fonts/player_stats_font.ttf", 50)
 
         # A dictionary containing information for each element of the game UI
         self.dimensions = {
@@ -25,13 +32,38 @@ class GameUI:
                                                             "y": round(300 / scale_multiplier),
                                                             "width": round(150 / scale_multiplier),
                                                             "height": round(150 / scale_multiplier),
+                                                            "spacing_y": round(20 / scale_multiplier),
                                                             "border_thickness": 12,
-                                                            "alpha_level": 225,
-                                                            "inner_outline_thickness": 1
-                                                            }
-
+                                                            "inner_outline_thickness": 1,
+                                                            "alpha_level": 225
+                                                            },
+                            "player_stats": {
+                                "x": round(25 / scale_multiplier),
+                                "y": 0,
+                                "width": round(500 / scale_multiplier),
+                                "height": round(250 / scale_multiplier),
+                                "border_thickness" : 12,
+                                "inner_outline_thickness": 1,
+                                "starting_position_from_inner_rect": (round(10 / scale_multiplier), round(10 / scale_multiplier)),
+                                "spacing_y_between_stats": round(12 / scale_multiplier),
+                                "spacing_x_between_image_and_text" : round(15 / scale_multiplier)
                             }
-    
+                            }
+
+        # A dictionary containing the images for the player stats
+        self.stats_images_dict = {
+                        "BambooResource": {
+                                            "Image": pygame.image.load("graphics/Misc/BambooResource.png").convert_alpha(), 
+                                            "ImageWidth": pygame.image.load("graphics/Misc/BambooResource.png").convert().get_width(), 
+                                            "ImageHeight": pygame.image.load("graphics/Misc/BambooResource.png").convert().get_height()
+                                          },
+                        "BuildingTiles": {
+                                            "Image": self.player_tools["BuildingTool"]["Images"]["TileImage"],
+                                            "ImageWidth" : self.player_tools["BuildingTool"]["Images"]["TileImage"].get_width(),
+                                            "ImageHeight": self.player_tools["BuildingTool"]["Images"]["TileImage"].get_height(),
+                                         }      
+                                 }             
+
     def create_player_tools_display_cards(self):
 
         # Creates the players' tools' display cards
@@ -43,19 +75,24 @@ class GameUI:
             # For each tool in the player's inventory of tools
             for tool in self.player_tools.keys():
                 # The spacing on the y-axis between each card
-                spacing_y = (len(self.player_tools_display_cards_dict) * self.dimensions["player_tools_display_cards"]["height"] * 1.1)
+                spacing_y = self.dimensions["player_tools_display_cards"]["spacing_y"]
 
                 # Create a rect containing the dimensions for the "display card" and an alpha surface for each "display card"
                 self.player_tools_display_cards_dict[tool] = {
-                                                            "Rect": pygame.Rect(
-                                                                                self.dimensions["player_tools_display_cards"]["x"], 
-                                                                                self.dimensions["player_tools_display_cards"]["y"] + spacing_y,
-                                                                                self.dimensions["player_tools_display_cards"]["width"],
-                                                                                self.dimensions["player_tools_display_cards"]["height"]
-                                                                                ),
-                                                            "AlphaSurface": pygame.Surface((self.dimensions["player_tools_display_cards"]["width"], self.dimensions["player_tools_display_cards"]["height"])),
-                                                            "IconImage": self.resize_icon_image(image = self.player_tools[tool]["Images"]["IconImage"])
-                                                            }
+                            "Rect": pygame.Rect(
+                                self.dimensions["player_tools_display_cards"]["x"], 
+                                self.dimensions["player_tools_display_cards"]["y"] + (self.dimensions["player_tools_display_cards"]["height"] * len(self.player_tools_display_cards_dict)) + (spacing_y * len(self.player_tools_display_cards_dict)),
+                                self.dimensions["player_tools_display_cards"]["width"],
+                                self.dimensions["player_tools_display_cards"]["height"]
+                                                    ),
+                            "AlphaSurface": pygame.Surface((self.dimensions["player_tools_display_cards"]["width"], self.dimensions["player_tools_display_cards"]["height"])),
+                            "IconImage": self.resize_icon_image(image = self.player_tools[tool]["Images"]["IconImage"])
+                            }
+                
+                # If this is the last tool inside the player's inventory of tools
+                if len(self.player_tools_display_cards_dict) == len(self.player_tools):
+                    # Set the dimensions of where the player stats to start to be below that
+                    self.dimensions["player_stats"]["y"] = self.player_tools_display_cards_dict[tool]["Rect"].y + self.player_tools_display_cards_dict[tool]["Rect"].height + spacing_y
                 
                 # Set a colorkey and alpha level for the alpha surface
                 self.player_tools_display_cards_dict[tool]["AlphaSurface"].set_colorkey("black")
@@ -170,6 +207,111 @@ class GameUI:
                             width = 1
                             )
 
+    def draw_player_stats(self):
+
+        # Draws the box(es) and text which contains the players' gameplay information e.g. amount of bamboo resource, number of building tiles placed, etc.
+        
+        # Outer rect of the stats "card"
+        outer_rect = pygame.Rect(
+                                self.dimensions["player_stats"]["x"], 
+                                self.dimensions["player_stats"]["y"], 
+                                self.dimensions["player_stats"]["width"], 
+                                self.dimensions["player_stats"]["height"]
+                                )
+        # Inner rect of the stats "card"
+        inner_rect = pygame.Rect(
+                                self.dimensions["player_stats"]["x"] + (self.dimensions["player_stats"]["border_thickness"] / 2), 
+                                self.dimensions["player_stats"]["y"] + (self.dimensions["player_stats"]["border_thickness"] / 2), 
+                                self.dimensions["player_stats"]["width"] - self.dimensions["player_stats"]["border_thickness"], 
+                                self.dimensions["player_stats"]["height"] - self.dimensions["player_stats"]["border_thickness"]
+                                )
+
+        # Outer body
+        pygame.draw.rect(
+                        surface = self.surface, 
+                        color = "darkgreen", 
+                        rect = outer_rect, 
+                        width = 0)
+
+        # Outer body outline
+        pygame.draw.rect(
+                        surface = self.surface, 
+                        color = "black", 
+                        rect = outer_rect, 
+                        width = 1
+                        )
+
+        # Inner body
+        pygame.draw.rect(
+                        surface = self.surface, 
+                        color = (120, 120, 120), 
+                        rect = inner_rect, 
+                        width = 0
+                        )
+
+        # Inner body outline
+        pygame.draw.rect(
+                        surface = self.surface, 
+                        color = "white", 
+                        rect = pygame.Rect(
+                                            inner_rect.x - self.dimensions["player_stats"]["inner_outline_thickness"],
+                                            inner_rect.y - (self.dimensions["player_stats"]["inner_outline_thickness"]), 
+                                            inner_rect.width + (self.dimensions["player_stats"]["inner_outline_thickness"] * 2), 
+                                            inner_rect.height + (self.dimensions["player_stats"]["inner_outline_thickness"] * 2)),
+                        # rect = border_rect, 
+                        width = self.dimensions["player_stats"]["inner_outline_thickness"]
+                        )
+
+        # -----------------------------------------------------------------
+        # Drawing the amount of existing building tiles that the player has
+
+        # Position that the building tile image
+        building_tile_image_position = (
+                                        inner_rect.x + self.dimensions["player_stats"]["starting_position_from_inner_rect"][0], 
+                                        inner_rect.y + self.dimensions["player_stats"]["starting_position_from_inner_rect"][1]
+                                       )
+
+        # Draw the building tile image 
+        self.surface.blit(self.stats_images_dict["BuildingTiles"]["Image"], building_tile_image_position)
+
+        # The text that displays how many building tiles exist inside the map currently
+        existing_building_tiles_text = f'Number of tiles: {len(self.player_tools["BuildingTool"]["ExistingBuildingTilesDict"])}'
+
+        # Draw the text displaying the number of building tiles that exist inside the map currently
+        draw_text(
+                text = existing_building_tiles_text, 
+                text_colour = "white",
+                font = self.player_stats_font,
+                x = building_tile_image_position[0] + self.stats_images_dict["BuildingTiles"]["ImageWidth"] + self.dimensions["player_stats"]["spacing_x_between_image_and_text"],
+                y = building_tile_image_position[1],
+                surface = self.surface, 
+                scale_multiplier = self.scale_multiplier 
+                )
+        
+        # -----------------------------------------------------------------
+        # Drawing the amount of bamboo resource that the player has (used for ammo and building tiles)
+
+        bamboo_resource_image_position = (
+                    building_tile_image_position[0],
+                    building_tile_image_position[1] + self.stats_images_dict["BuildingTiles"]["ImageHeight"] + self.dimensions["player_stats"]["spacing_y_between_stats"])
+
+        # Building tile image 
+        self.surface.blit(self.stats_images_dict["BambooResource"]["Image"], bamboo_resource_image_position)
+
+        # The text that displays how much bamboo resource the player has
+        amount_of_bamboo_resource_text = f'Bamboo: {self.player_gameplay_info_dict["AmountOfBambooResource"]}'
+
+        # Draw the text displaying the amount of bamboo resource
+        draw_text(
+                text = amount_of_bamboo_resource_text, 
+                text_colour = "white",
+                font = self.player_stats_font,
+                x = bamboo_resource_image_position[0] + self.stats_images_dict["BambooResource"]["ImageWidth"] + self.dimensions["player_stats"]["spacing_x_between_image_and_text"],
+                y = bamboo_resource_image_position[1],
+                surface = self.surface, 
+                scale_multiplier = self.scale_multiplier 
+                )
+
     def run(self):
 
         # Create the players' tools' display cards
@@ -177,4 +319,7 @@ class GameUI:
 
         # Draw the players' tools' display cards onto the screen
         self.draw_player_tools_display_cards()
+
+        # Draw the players' stats
+        self.draw_player_stats()
 

@@ -10,6 +10,9 @@ class Player(Generic, pygame.sprite.Sprite):
         # Surface that the player is drawn onto
         self.surface = surface
 
+        # The sprite groups that the player interacts with
+        self.sprite_groups = sprite_groups
+
         # ---------------------------------------------------------------------------------
         # Movement
 
@@ -60,7 +63,15 @@ class Player(Generic, pygame.sprite.Sprite):
         # Shooting, building etc.
 
         # Note: Time and cooldowns are measured in milliseconds
-        self.current_tool_equipped = "BambooAssaultRifle"
+        self.amount_of_bamboo_resource = 100 # The amount of bamboo resource that the player has (Used for shooting and building)
+
+        # A dictionary containing information such as the HP the player has, the current tool equipped, amount of bamboo resource, etc.
+        self.player_gameplay_info_dict = {
+                                        "CurrentToolEquipped": "BambooAssaultRifle",
+                                        "AmountOfBambooResource": 75
+                                         }
+
+        # A dictionary containing the tools and information relating to those tools
         self.tools  =  {
                         "BuildingTool": {
                                         "Images": { 
@@ -73,13 +84,12 @@ class Player(Generic, pygame.sprite.Sprite):
                                         "MinimumPlacingDistance": 2 * TILE_SIZE,
                                         "ExistingBuildingTilesDict": {},
                                         "RemovalCooldown": 200,
+                                        "BambooResourceDepletionAmount": 5,
                                         "LastTileRemovedTimer": None
 
                                         },
 
-                        "BambooAssaultRifle": {
-                            "ShootingCooldown": 150,
-                            "PreviouslyShotTime": 0, 
+                        "BambooAssaultRifle": { 
                             "Images" : {
                                 "IconImage": pygame.image.load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
                                 "Left": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/Right.png").convert_alpha(), flip_x = True, flip_y = False),
@@ -90,7 +100,12 @@ class Player(Generic, pygame.sprite.Sprite):
                                 "Down": pygame.transform.flip(surface = pygame.image.load("graphics/Weapons/BambooAR/Up.png").convert_alpha(), flip_x = False, flip_y = True),
                                 "Down Left": pygame.transform.flip(surface = pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha(), flip_x = True, flip_y = False),
                                 "Down Right": pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
-                                        }     },
+                                        },
+                            "ShootingCooldown": 150,
+                            "PreviouslyShotTime": 0,
+                            "BambooResourceDepletionAmount": 0.5
+                                        
+                                             },
                     
                         "BambooLauncher": {
                                             "ShootingCooldown": 0, 
@@ -100,9 +115,6 @@ class Player(Generic, pygame.sprite.Sprite):
                                                       }
                                           },
                         }
-        
-        # The sprite groups that the player interacts with
-        self.sprite_groups = sprite_groups
 
     # ---------------------------------------------------------------------------------
     # Animations
@@ -978,19 +990,20 @@ class Player(Generic, pygame.sprite.Sprite):
 
     # ---------------------------------------------------------------------------------
     # Gameplay
+
     def switch_tool(self, tool):
 
         # Switches between tools
         
         # If the current tool is not the tool the player wants to switch to
-        if self.current_tool_equipped != tool:
+        if self.player_gameplay_info_dict["CurrentToolEquipped"] != tool:
             # Switch to the tool
-            self.current_tool_equipped = tool
+            self.player_gameplay_info_dict["CurrentToolEquipped"] = tool
     
-    def highlight_tiles_while_building(self):
+    def build(self):
         
         # If the player currently has the building tool equipped
-        if self.current_tool_equipped == "BuildingTool":
+        if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BuildingTool":
             
             # --------------------------------------
             # Updating building tool removal timer
@@ -1037,6 +1050,8 @@ class Player(Generic, pygame.sprite.Sprite):
                         # Remove the building tile
                         self.neighbouring_tiles_dict.pop(building_tile_to_remove)
 
+                    # Refund half of the bamboo resource depletion amount set
+                    self.player_gameplay_info_dict["AmountOfBambooResource"] += (self.tools["BuildingTool"]["BambooResourceDepletionAmount"] * 0.5)
             # --------------------------------------
             # Checking for placement of building tiles
 
@@ -1075,21 +1090,27 @@ class Player(Generic, pygame.sprite.Sprite):
 
                     # If the left mouse button is pressed and there are less than 3 existing building tiles
                     if pygame.mouse.get_pressed()[0] == True and len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) < 3:
-
-                        # Create a building tile
-                        building_tile = BuildingTile(x = empty_tile_rect_info[0], y = empty_tile_rect_info[1], image = self.tools["BuildingTool"]["Images"]["TileImage"])
-
-                        # Add the building tile to the building tiles sprite group
-                        self.sprite_groups["WorldTiles"].add(building_tile)
-
-                        # Add the building tile to the world tiles dictionary with the key as the building tile and the value as the type of world tile
-                        self.world_tiles_dict[building_tile] = "BuildingTile"
-
-                        # Remove the empty tile from the empty tiles dictionary
-                        self.empty_tiles_dict.pop(empty_tile_rect_info)
                         
-                        # Add the building tile to the existing building tiles dictionary
-                        self.tools["BuildingTool"]["ExistingBuildingTilesDict"][len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"])] = building_tile
+                        # If the player has enough bamboo resource to place down another building tile
+                        if self.player_gameplay_info_dict["AmountOfBambooResource"] - self.tools["BuildingTool"]["BambooResourceDepletionAmount"] > 0:
+
+                            # Create a building tile
+                            building_tile = BuildingTile(x = empty_tile_rect_info[0], y = empty_tile_rect_info[1], image = self.tools["BuildingTool"]["Images"]["TileImage"])
+
+                            # Add the building tile to the building tiles sprite group
+                            self.sprite_groups["WorldTiles"].add(building_tile)
+
+                            # Add the building tile to the world tiles dictionary with the key as the building tile and the value as the type of world tile
+                            self.world_tiles_dict[building_tile] = "BuildingTile"
+
+                            # Remove the empty tile from the empty tiles dictionary
+                            self.empty_tiles_dict.pop(empty_tile_rect_info)
+                            
+                            # Add the building tile to the existing building tiles dictionary
+                            self.tools["BuildingTool"]["ExistingBuildingTilesDict"][len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"])] = building_tile
+
+                            # Remove bamboo resource by the depletion amount set
+                            self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BuildingTool"]["BambooResourceDepletionAmount"]
 
                 # If the distance between the center of the player and the center of the empty tile at the mouse position:
                 # - Less than or equal to the minimum distance
@@ -1129,8 +1150,8 @@ class Player(Generic, pygame.sprite.Sprite):
         # Track player movement
         self.handle_player_movement()
 
-        # If the player has the building tool out, highlight the tiles
-        self.highlight_tiles_while_building() 
+        # If the player has the building tool out, if the conditions are met, build (and more)
+        self.build() 
 
         # # Create / update a mask for pixel - perfect collisions (Uncomment later when adding collisions with objects other than tiles)
         # self.mask = pygame.mask.from_surface(self.image)
