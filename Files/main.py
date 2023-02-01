@@ -1,6 +1,7 @@
-import pygame, time
+import pygame
 from Global.settings import *
 from game_states_controller import GameStatesController
+from time import perf_counter
 
 
 class Main:
@@ -8,18 +9,16 @@ class Main:
 
         # Pygame set-up
         pygame.init()
- 
-        pygame.display.set_caption("BossRush2023")
 
-        # Set the screen to be full screen 
-        self.screen = pygame.display.set_mode(flags = pygame.FULLSCREEN, depth = 32)
+        # Set the caption
+        pygame.display.set_caption("BossRush2023")
         
         # Create a game states controller
         self.game_states_controller = GameStatesController()
 
         # Time
         # Record the previous frame that was played
-        self.previous_frame = time.perf_counter()
+        self.previous_frame = perf_counter()
         
         # Create an object to track time
         self.clock = pygame.time.Clock()
@@ -33,8 +32,8 @@ class Main:
             self.clock.tick(self.chosen_framerate)
 
             # Calculate delta time 
-            delta_time = time.perf_counter() - self.previous_frame
-            self.previous_frame = time.perf_counter()
+            delta_time = perf_counter() - self.previous_frame
+            self.previous_frame = perf_counter()
 
             # Run the game states controller
             # Note: This is where we can change game states, e.g. from the menu to ingame

@@ -24,14 +24,14 @@ class GameUI:
         self.player_tools_display_cards_dict = {}
 
         # The font used to display text for the players' stats
-        self.player_stats_font = pygame.font.Font("graphics/Fonts/player_stats_font.ttf", 50)
+        self.player_stats_font = pygame.font.Font("graphics/Fonts/player_stats_font.ttf", 32)
 
         # A dictionary containing information for each element of the game UI
         self.dimensions = {
                             "player_tools_display_cards": { "x": round(25 / scale_multiplier),
-                                                            "y": round(300 / scale_multiplier),
-                                                            "width": round(150 / scale_multiplier),
-                                                            "height": round(150 / scale_multiplier),
+                                                            "y": round(50 / scale_multiplier),
+                                                            "width": round(125 / scale_multiplier),
+                                                            "height": round(125 / scale_multiplier),
                                                             "spacing_y": round(20 / scale_multiplier),
                                                             "border_thickness": 12,
                                                             "inner_outline_thickness": 1,
@@ -40,8 +40,8 @@ class GameUI:
                             "player_stats": {
                                 "x": round(25 / scale_multiplier),
                                 "y": 0,
-                                "width": round(500 / scale_multiplier),
-                                "height": round(250 / scale_multiplier),
+                                "width": round(300 / scale_multiplier),
+                                "height": round(200 / scale_multiplier),
                                 "border_thickness" : 12,
                                 "inner_outline_thickness": 1,
                                 "starting_position_from_inner_rect": (round(10 / scale_multiplier), round(10 / scale_multiplier)),
@@ -86,7 +86,7 @@ class GameUI:
                                 self.dimensions["player_tools_display_cards"]["height"]
                                                     ),
                             "AlphaSurface": pygame.Surface((self.dimensions["player_tools_display_cards"]["width"], self.dimensions["player_tools_display_cards"]["height"])),
-                            "IconImage": self.resize_icon_image(image = self.player_tools[tool]["Images"]["IconImage"])
+                            "IconImage": self.player_tools[tool]["Images"]["IconImage"]
                             }
                 
                 # If this is the last tool inside the player's inventory of tools

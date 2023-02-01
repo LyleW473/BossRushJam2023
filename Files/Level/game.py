@@ -3,7 +3,6 @@ from Global.settings import *
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
 from Level.game_ui import GameUI
-from math import sin, cos
 
 class Game:
     def __init__(self):
@@ -12,7 +11,7 @@ class Game:
         self.screen = pygame.display.get_surface()  
 
         # Create a surface for which all objects will be drawn onto. This surface is then scaled and drawn onto the main screen
-        self.scale_multiplier = 3
+        self.scale_multiplier = 2
         self.scaled_surface = pygame.Surface((screen_width / self.scale_multiplier, screen_height / self.scale_multiplier))
 
         # Attribute which is monitored by the game states controller

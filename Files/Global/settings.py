@@ -1,6 +1,6 @@
 # Screen measurements
-screen_width = 1920
-screen_height = 1080
+screen_width = 1600
+screen_height = 900
 
 # Tile size
 TILE_SIZE = 16
