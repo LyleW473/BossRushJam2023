@@ -1,4 +1,4 @@
-import pygame, os
+import pygame
 from Global.settings import *
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
@@ -6,6 +6,7 @@ from Level.game_ui import GameUI
 from Level.bamboo_pile import BambooPile
 from random import choice as random_choice
 from math import dist
+from os import listdir as os_listdir
 
 class Game:
     def __init__(self):
@@ -45,9 +46,8 @@ class Game:
         self.bamboo_projectiles_group = pygame.sprite.Group() # Group for all bamboo projectiles for the player
         self.empty_tiles_dict = {} # Dictionary used to hold all of the empty tiles in the tile map
         self.bamboo_piles_group = pygame.sprite.Group()
-        
-    # --------------------------------------------------------------------------------------
-    # Misc methods
+        self.boss_group = pygame.sprite.GroupSingle()
+
 
     # --------------------------------------------------------------------------------------
     # Camera methods
@@ -139,7 +139,7 @@ class Game:
 
         # Create a dictionary filled with all of the tiles' images
         # Note: Start at index 1 because the "0" tile represents nothing. 
-        self.tile_images = {i + 1: pygame.image.load(f"graphics/Tiles/{i + 1}.png").convert() for i in range(0, len(os.listdir("graphics/Tiles")))} 
+        self.tile_images = {i + 1: pygame.image.load(f"graphics/Tiles/{i + 1}.png").convert() for i in range(0, len(os_listdir("graphics/Tiles")))} 
 
     def create_objects_tile_map(self, non_transformed_tile_map):
 
@@ -354,6 +354,122 @@ class Game:
                     # Set the timer to start counting from the spawning cooldown timer set
                     BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] = BambooPile.bamboo_pile_info_dict["SpawningCooldown"] 
 
+    # -------------------------------------------
+    # Bosses
+
+    def find_valid_boss_spawning_position(self, delta_time):
+        
+        # Method used to spawn the boss (Spawn the boss once the player presses the button at the top of the screen (add a button at the top of the screen that goes to the next boss))
+
+        # Create a dictionary to hold information regarding bosses if there isn't one yet
+        if hasattr(self, "bosses_dict") == False:
+            self.bosses_dict = { 
+                        "CurrentBoss": "SikaDeer",
+                        "NumOfTilesForChecking": 3, # The number of tiles to the left / right / up, down of the randomly chosen empty tile for the spawning position to be valid
+                        "RandomSpawningPosition" : random_choice(list(self.empty_tiles_dict.keys())), # Choose a random spawning position
+                        "ValidSpawningPosition": None, 
+                        "SpawningPositionTilesList": [],
+
+                        "SikaDeer": None,
+                        "GoldenMonkey": None,
+                        "AsiaticBlackBear": None,
+                        
+                        # Dictionary to hold all the images of the bosses
+                        "ImagesDict":{ folder: {action : [pygame.image.load(f'graphics/Bosses/{folder}/{action}/{i}.png') for i in range (0, len(os_listdir(f'graphics/Bosses/{folder}/{action}')))] for action in os_listdir(f'graphics/Bosses/{folder}')} for folder in os_listdir("graphics/Bosses")}
+
+                            }
+            print(self.bosses_dict["ImagesDict"])
+
+        # If a valid spawning position has not been found
+        if self.bosses_dict["ValidSpawningPosition"] == None:
+
+            # Choose a random empty tile
+            self.bosses_dict["RandomSpawningPosition"] = self.bosses_dict["RandomSpawningPosition"]
+            #pygame.draw.rect(self.scaled_surface, "green", (self.bosses_dict["RandomSpawningPosition"][0] - self.camera_position[0], self.bosses_dict["RandomSpawningPosition"][1] - self.camera_position[1], TILE_SIZE, TILE_SIZE), 0)
+
+            # For each empty tile inside the empty tiles dictionary
+            for empty_tile in self.empty_tiles_dict.keys():
+                
+                # If the length of the tiles list is already has enough empty tiles to prove that it is a valid spawning location
+                if len(self.bosses_dict["SpawningPositionTilesList"]) == (((self.bosses_dict["NumOfTilesForChecking"] * 2) + 1) ** 2) - 1:
+                    # Exit the loop
+                    break
+                
+                # Otherwise
+                else:
+                    # If the empty tile is not the same as the random empty tile and the tile is a certain distance from the selected random empty tile
+                    if empty_tile != self.bosses_dict["RandomSpawningPosition"] and \
+                        self.bosses_dict["RandomSpawningPosition"][0]  - (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE) <= empty_tile[0] <= self.bosses_dict["RandomSpawningPosition"][0] + (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE) and \
+                                self.bosses_dict["RandomSpawningPosition"][1] - (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE) <= empty_tile[1] <= self.bosses_dict["RandomSpawningPosition"][1] + (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE):
+
+                                # Add the empty tile to the spawning position tiles list
+                                self.bosses_dict["SpawningPositionTilesList"].append(empty_tile)
+            
+            # If there is "enough space" for the boss to spawn 
+            if len(self.bosses_dict["SpawningPositionTilesList"]) == (((self.bosses_dict["NumOfTilesForChecking"] * 2) + 1) ** 2) - 1:
+                # Set the valid spawning position attribute to True
+                self.bosses_dict["ValidSpawningPosition"] = self.bosses_dict["RandomSpawningPosition"]
+
+            # If there is not "enough space" for the boss to spawn 
+            elif len(self.bosses_dict["SpawningPositionTilesList"]) < (((self.bosses_dict["NumOfTilesForChecking"] * 2) + 1) ** 2) - 1:
+                # Generate another random spawning position
+                self.bosses_dict["RandomSpawningPosition"] =  random_choice(list(self.empty_tiles_dict.keys()))
+                # Empty the spawning position tiles list
+                self.bosses_dict["SpawningPositionTilesList"] = []
+
+        # If a valid spawning position has been found
+        elif self.bosses_dict["ValidSpawningPosition"] != None:
+            
+                for empty_tile in self.bosses_dict["SpawningPositionTilesList"]:
+                    pygame.draw.rect(self.scaled_surface, "white", (empty_tile[0] - self.camera_position[0], empty_tile[1] - self.camera_position[1], empty_tile[2], empty_tile[3]), 1)
+
+                pygame.draw.rect(
+                                self.scaled_surface, 
+                                "red", 
+                                    (
+                                    self.bosses_dict["ValidSpawningPosition"][0] - self.camera_position[0],
+                                    self.bosses_dict["ValidSpawningPosition"][1] - self.camera_position[1], 
+                                    self.bosses_dict["ValidSpawningPosition"][2], self.bosses_dict["ValidSpawningPosition"][3]
+                                    ),
+                                0)
+
+
+                # If there is no current boss
+                if self.bosses_dict[self.bosses_dict["CurrentBoss"]] == None: # Add the timer here to wait until the boss is spawned
+                    # Spawn the boss
+                    self.spawn_boss(boss_to_spawn = self.bosses_dict["CurrentBoss"])
+
+    def spawn_boss(self, boss_to_spawn):
+        
+        match boss_to_spawn:
+            
+            case "SikaDeer":
+                # Import the SikaDeer boss
+                from Level.Bosses.SikaDeerBoss import SikaDeerBoss
+
+                # Create a class attribute for the SikaDeerBoss, which is an image dictionary holding all the images for each action that the boss has
+                SikaDeerBoss.ImagesDict = self.bosses_dict["ImagesDict"]["SikaDeer"]
+
+                # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
+                self.bosses_dict["SikaDeer"] = SikaDeerBoss(x = self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), y = self.bosses_dict["ValidSpawningPosition"][1] + TILE_SIZE)
+
+                # Add the boss into the boss group
+                self.boss_group.add(self.bosses_dict["SikaDeer"])
+
+            case "GoldenMonkey":
+                pass
+
+            case "AsiaticBlackBear":
+                pass
+
+    def draw_boss(self):
+
+        # Draw the boss inside the boss group
+        for boss in self.boss_group:
+            boss.draw(surface = self.scaled_surface, x = boss.rect.x - self.camera_position[0], y = boss.rect.y - self.camera_position[1])
+            pygame.draw.rect(self.scaled_surface, "green", pygame.Rect(boss.rect.x - self.camera_position[0], boss.rect.y - self.camera_position[1], boss.rect.width, boss.rect.height), 1)
+
+
     # --------------------------------------------------------------------------------------
     # Game UI methods
 
@@ -379,6 +495,9 @@ class Game:
         # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
         self.spawn_bamboo_pile(delta_time = delta_time)
 
+        if pygame.key.get_pressed()[pygame.K_f]:
+            self.find_valid_boss_spawning_position(delta_time = delta_time)
+
         # Handle collisions between all objects in the level
         self.handle_collisions()
 
@@ -387,6 +506,9 @@ class Game:
 
         # Run the player methods
         self.player.run(delta_time = delta_time)
+
+        # Draw the boss
+        self.draw_boss()
         
         # Run the game UI 
         self.game_ui.run()

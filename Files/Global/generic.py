@@ -1,7 +1,7 @@
 from pygame import sprite
 
 class Generic(sprite.Sprite):
-    def __init__(self, x, y, image):
+    def __init__(self, x, y, image = None):
 
         # Image
         self.image = image
