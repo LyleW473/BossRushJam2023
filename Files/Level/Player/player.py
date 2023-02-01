@@ -5,7 +5,7 @@ from Level.Player.building_tile import BuildingTile
 from Level.Player.bamboo_projectiles import BambooProjectile
 from math import degrees, sin, cos, atan2, pi, dist
 
-class Player(Generic, pygame.sprite.Sprite):
+class Player(Generic):
     
     def __init__(self, x, y, surface, sprite_groups):
         
@@ -65,12 +65,12 @@ class Player(Generic, pygame.sprite.Sprite):
         # Shooting, building etc.
 
         # Note: Time and cooldowns are measured in milliseconds
-        self.amount_of_bamboo_resource = 100 # The amount of bamboo resource that the player has (Used for shooting and building)
 
         # A dictionary containing information such as the HP the player has, the current tool equipped, amount of bamboo resource, etc.
         self.player_gameplay_info_dict = {
                                         "CurrentToolEquipped": "BambooAssaultRifle",
-                                        "AmountOfBambooResource": 75
+                                        "AmountOfBambooResource": 75,
+                                        "MaximumAmountOfBambooResource": 120
                                          }
 
         # A dictionary containing the tools and information relating to those tools
@@ -86,9 +86,8 @@ class Player(Generic, pygame.sprite.Sprite):
                                         "MinimumPlacingDistance": 2 * TILE_SIZE,
                                         "ExistingBuildingTilesDict": {},
                                         "RemovalCooldown": 200,
-                                        "BambooResourceDepletionAmount": 5,
-                                        "LastTileRemovedTimer": None
-
+                                        "LastTileRemovedTimer": None,
+                                        "BambooResourceDepletionAmount": 5
                                         },
 
                         "BambooAssaultRifle": { 
@@ -1268,9 +1267,12 @@ class Player(Generic, pygame.sprite.Sprite):
             # Move the projectile
             bamboo_projectile.move_projectile()
     
-    def run(self):
+    def run(self, delta_time):
 
         #pygame.draw.line(self.surface, "white", (self.surface.get_width() / 2, 0), (self.surface.get_width() / 2, self.surface.get_height()))
+        
+        # Update the delta time
+        self.delta_time = delta_time
 
         # Find the mouse position and angle
         self.find_mouse_position_and_angle()
@@ -1278,9 +1280,9 @@ class Player(Generic, pygame.sprite.Sprite):
         # Play animations
         self.play_animations()
 
-        # TEMPORARY
-        for tile in self.neighbouring_tiles_dict.keys():
-            pygame.draw.rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
+        # # TEMPORARY
+        # for tile in self.neighbouring_tiles_dict.keys():
+        #     pygame.draw.rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
         # Handle tile collisions (affects player movement)
         self.handle_tile_collisions()

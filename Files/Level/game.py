@@ -3,6 +3,9 @@ from Global.settings import *
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
 from Level.game_ui import GameUI
+from Level.bamboo_pile import BambooPile
+from random import choice as random_choice
+from math import dist
 
 class Game:
     def __init__(self):
@@ -36,23 +39,15 @@ class Game:
 
         # --------------------------------------------------------------------------------------
         # Groups
-        self.all_tile_map_objects_group = pygame.sprite.Group() # Group for all tile map objects, including the player
         self.world_tiles_dict = {} # Dictionary used to hold all the world tiles 
         self.world_tiles_group = pygame.sprite.Group()
         # self.player_group = pygame.sprite.GroupSingle(self.player) This was created inside the create_objects_tile_map method
         self.bamboo_projectiles_group = pygame.sprite.Group() # Group for all bamboo projectiles for the player
         self.empty_tiles_dict = {} # Dictionary used to hold all of the empty tiles in the tile map
+        self.bamboo_piles_group = pygame.sprite.Group()
         
     # --------------------------------------------------------------------------------------
     # Misc methods
-
-    def update_objects_delta_time(self, delta_time):
-        # Used to update the delta time attributes of all objects within the tile map
-
-        # For all objects
-        for tile_map_object in self.all_tile_map_objects_group:
-            # Update the object's delta time
-            tile_map_object.delta_time = delta_time
 
     # --------------------------------------------------------------------------------------
     # Camera methods
@@ -161,8 +156,8 @@ class Game:
                     
                     # Empty tiles
                     case 0:
-                        # Add the empty tile to the empty tiles dictionary (For player building and changing tiles)
-                        self.empty_tiles_dict[((column_index * TILE_SIZE), (row_index * TILE_SIZE), TILE_SIZE, TILE_SIZE)] = len(self.empty_tiles_dict)
+                        # Add the empty tile to the empty tiles dictionary (For player building and changing tiles, etc.)
+                        self.empty_tiles_dict[((column_index * TILE_SIZE), (row_index * TILE_SIZE), TILE_SIZE, TILE_SIZE)] = 0
 
                     # Player
                     case 1:
@@ -177,8 +172,6 @@ class Game:
                         # Add the player to its group
                         self.player_group = pygame.sprite.GroupSingle(self.player)
 
-                        # Add the player to the group of all tile map objects
-                        self.all_tile_map_objects_group.add(self.player)
 
                     # World tile 1
                     case 2:
@@ -188,9 +181,6 @@ class Game:
                         # Add the world tile to the world tiles dictionary
                         # The key is the world tile because we use pygame.rect.collidedict in other areas of the code, the value is the type of world tile (The other type is building tiles)
                         self.world_tiles_dict[world_tile] = "WorldTile"
-
-                        # Add it to the group of all tile map objects
-                        self.all_tile_map_objects_group.add(world_tile)
 
                         # Add it to the group of world tiles (For collisions with other objects, excluding the player)
                         self.world_tiles_group.add(world_tile)
@@ -249,6 +239,13 @@ class Game:
             # Draw the bamboo projectile 
             # pygame.draw.rect(self.scaled_surface, "white", (bamboo_projectile.rect.x - self.camera_position[0], bamboo_projectile.rect.y - self.camera_position[1], bamboo_projectile.rect.width, bamboo_projectile.rect.height), 0)
             bamboo_projectile.draw(surface = self.scaled_surface, x = bamboo_projectile.rect.x - self.camera_position[0], y = bamboo_projectile.rect.y - self.camera_position[1])
+       
+        # ---------------------------------------------
+        # Bamboo piles
+
+        for bamboo_pile in self.bamboo_piles_group:
+            # Draw the bamboo pile
+            bamboo_pile.draw(surface = self.scaled_surface, x = bamboo_pile.rect.x - self.camera_position[0], y = bamboo_pile.rect.y - self.camera_position[1])
 
     # --------------------------------------------------------------------------------------
     # Gameplay methods
@@ -272,15 +269,8 @@ class Game:
 
             # If the tile is within 1 tiles of the player (horizontally and vertically)
             if (self.player.rect.left  - (TILE_SIZE * 1.25) <= tile.rect.centerx <= self.player.rect.right + (TILE_SIZE * 1.25)) and (self.player.rect.top - (TILE_SIZE * 1.25) <= tile.rect.centery <= (self.player.rect.bottom + TILE_SIZE * 1.25)):
-                
-
                 # Add it to the player's neighbouring tiles dictionary
                 self.player.neighbouring_tiles_dict[tile] = 0 
-
-                # # If the tile is a building tile
-                # elif tile_type == "BuildingTile":
-                #     # Add it to the player's neighbouring tiles dictionary
-                #     self.player.neighbouring_tiles_dict[tile] = "BuildingTile" 
 
             # If the tile is not within 1 tiles of the player (horizontally and vertically)
             else:
@@ -289,22 +279,82 @@ class Game:
                     # Remove the world/ building tile from the neighbouring tiles dictionary
                     self.player.neighbouring_tiles_dict.pop(tile)
                     
-
     def handle_collisions(self):
 
         # Handles collisions between objects (including the player). Collisions between the world tiles and the player are within the Player class.
 
         # --------------------------------------------------------------------------------------
-        # Bamboo projectiles 
+        # Bamboo projectiles and world tiles
+        
+        # Look for collisions between bamboo projectiles and world tiles, delete bamboo projectile if there is a collision
+        pygame.sprite.groupcollide(self.bamboo_projectiles_group, self.world_tiles_group, dokilla = True, dokillb = False, collided = pygame.sprite.collide_mask)
 
-        # For each bamboo projectile in the bamboo projectiles group
-        for bamboo_projectile in self.bamboo_projectiles_group:
+        # --------------------------------------------------------------------------------------
+        # Player and bamboo piles
+        
+        # Look for collisions between the player and bamboo piles, and only delete the bamboo pile if there is a collision and the player does not currently have the maximum amount of bamboo resource
+        player_and_bamboo_piles_collision_list = pygame.sprite.spritecollide(self.player, self.bamboo_piles_group, dokill = False, collided = pygame.sprite.collide_mask)
+        if len(player_and_bamboo_piles_collision_list) > 0 and (self.player.player_gameplay_info_dict["AmountOfBambooResource"] != self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]):
             
-            # Look for a slightly less accurate collision check between the tile and the player sprite
-            if pygame.sprite.spritecollide(bamboo_projectile, self.world_tiles_group, False):
-                # Create a list of all the tiles that the player collided (more accurate collision check)
-                if pygame.sprite.spritecollide(bamboo_projectile, self.world_tiles_group, False, pygame.sprite.collide_mask):
-                    self.bamboo_projectiles_group.remove(bamboo_projectile)
+            # Remove the bamboo pile from the bamboo piles group
+            self.bamboo_piles_group.remove(player_and_bamboo_piles_collision_list)
+
+            # Add the empty tile back to the empty tiles dictionary so other items can spawn in the tile
+            self.empty_tiles_dict[(player_and_bamboo_piles_collision_list[0].rect.x, player_and_bamboo_piles_collision_list[0].rect.y, player_and_bamboo_piles_collision_list[0].rect.width, player_and_bamboo_piles_collision_list[0].rect.height)] = 0
+
+            print((player_and_bamboo_piles_collision_list[0].rect.x, player_and_bamboo_piles_collision_list[0].rect.y, player_and_bamboo_piles_collision_list[0].rect.width, player_and_bamboo_piles_collision_list[0].rect.height))
+
+            # Increase the amount of bamboo resource that the player has, limiting it to the maximum amount the player can hold at one time
+            self.player.player_gameplay_info_dict["AmountOfBambooResource"] = min(
+                                                                                self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"], 
+                                                                                self.player.player_gameplay_info_dict["AmountOfBambooResource"] + BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"]
+                                                                                )
+
+    def spawn_bamboo_pile(self, delta_time):
+
+        # ----------------------------------------------------------------------------
+        # Updating the spawning timer
+        
+        # If there is a timer that has been set to the spawning cooldown and there are less bamboo piles than the maximum amount at one time
+        """ Note: The second check is so that once there are the maximum amount of piles at one time, the timer will only start counting when there are less than the maximum amount 
+        - This avoids the issue where if the player walks over a bamboo pile after there were the maximum amount of piles, a new pile won't instantly spawn.
+        """
+        if BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] != None and len(self.bamboo_piles_group) < BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"]:
+            
+            # If the timer has finished counting down
+            if BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] <= 0:
+                # Set the spawning cooldown timer back to None, allowing for a new bamboo pile to be spawned
+                BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] = None
+
+            # If the timer has not finished counting down
+            elif BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] > 0:
+                # Decrease the timer / count down from the timer
+                BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] -= 1000 * delta_time
+
+        # ----------------------------------------------------------------------------
+        # Spawning the bamboo pile
+
+        # If there is no timer, spawn a bamboo pile
+        elif BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] == None:
+            
+            # Choose a random empty tile
+            random_empty_tile = random_choice(list(self.empty_tiles_dict.keys()))
+            
+            # Center of the random empty tile
+            random_empty_tile_center = (random_empty_tile[0] + (random_empty_tile[2] / 2), random_empty_tile[1] + (random_empty_tile[3] / 2))
+
+            # If the empty tile's center is within the minimum and maximum spawning distance from the player and and there are less bamboo piles than the maximum number of bamboo piles that should be in the map at one time
+            if BambooPile.bamboo_pile_info_dict["MinimumSpawningDistanceFromPlayer"] <= dist(self.player.rect.center, random_empty_tile_center) <= BambooPile.bamboo_pile_info_dict["MaximumSpawningDistanceFromPlayer"] and \
+                len(self.bamboo_piles_group) < BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"]:
+
+                    # Remove the empty tile from the empty tiles dictionary (so that another item does not spawn in the same tile)
+                    self.empty_tiles_dict.pop(random_empty_tile)
+
+                    # Create a new bamboo pile and add it to the bamboo piles group
+                    self.bamboo_piles_group.add(BambooPile(x = random_empty_tile[0], y = random_empty_tile[1]))
+
+                    # Set the timer to start counting from the spawning cooldown timer set
+                    BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] = BambooPile.bamboo_pile_info_dict["SpawningCooldown"] 
 
     # --------------------------------------------------------------------------------------
     # Game UI methods
@@ -315,9 +365,6 @@ class Game:
         self.game_ui.delta_time = delta_time
 
     def run(self, delta_time):
-
-        # Update the delta time of all objects 
-        self.update_objects_delta_time(delta_time = delta_time)
 
         # Update the game UI
         self.update_game_ui(delta_time = delta_time)
@@ -331,6 +378,9 @@ class Game:
         # Draw all objects inside the tile map / level
         self.draw_tile_map_objects()
 
+        # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
+        self.spawn_bamboo_pile(delta_time = delta_time)
+
         # Handle collisions between all objects in the level
         self.handle_collisions()
 
@@ -338,7 +388,7 @@ class Game:
         self.find_neighbouring_tiles_to_player()
 
         # Run the player methods
-        self.player.run()
+        self.player.run(delta_time = delta_time)
         
         # Run the game UI 
         self.game_ui.run()

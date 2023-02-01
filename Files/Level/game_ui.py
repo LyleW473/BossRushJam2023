@@ -40,7 +40,7 @@ class GameUI:
                             "player_stats": {
                                 "x": round(25 / scale_multiplier),
                                 "y": 0,
-                                "width": round(300 / scale_multiplier),
+                                "width": round(310 / scale_multiplier),
                                 "height": round(200 / scale_multiplier),
                                 "border_thickness" : 12,
                                 "inner_outline_thickness": 1,
@@ -299,7 +299,7 @@ class GameUI:
         self.surface.blit(self.stats_images_dict["BambooResource"]["Image"], bamboo_resource_image_position)
 
         # The text that displays how much bamboo resource the player has
-        amount_of_bamboo_resource_text = f'Bamboo: {self.player_gameplay_info_dict["AmountOfBambooResource"]}'
+        amount_of_bamboo_resource_text = f'Bamboo: {self.player_gameplay_info_dict["AmountOfBambooResource"]} / {self.player_gameplay_info_dict["MaximumAmountOfBambooResource"]}'
 
         # Draw the text displaying the amount of bamboo resource
         draw_text(

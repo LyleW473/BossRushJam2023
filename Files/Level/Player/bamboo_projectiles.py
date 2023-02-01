@@ -3,9 +3,9 @@ from Global.generic import Generic
 from math import sin, cos, degrees
 from Global.settings import *
 
-class BambooProjectile(Generic, pygame.sprite.Sprite):
+class BambooProjectile(Generic):
     # Projectile image of all bamboo projectiles
-    projectile_image = pygame.image.load("graphics/Projectiles/bamboo_projectile.png")
+    projectile_image = pygame.image.load("graphics/Projectiles/BambooProjectile.png")
 
     def __init__(self, x, y, angle):
 
@@ -29,9 +29,6 @@ class BambooProjectile(Generic, pygame.sprite.Sprite):
         """
         # Inherit from the Generic class, which has basic attributes and methods.
         Generic.__init__(self, x = x, y = y, image = pygame.transform.rotozoom(surface = BambooProjectile.projectile_image.convert_alpha(), angle = degrees(angle), scale = 1))
-
-        # Inherit from pygame's sprite class
-        pygame.sprite.Sprite.__init__(self)
 
         """ Override the rect position, and instead position the center of the projectile at the x and y co-ordinate:
         - As the image is rotated, the image may be resized, therefore this ensures that the center of the projectile will always be at the center of the player.
