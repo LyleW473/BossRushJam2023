@@ -302,8 +302,6 @@ class Game:
             # Add the empty tile back to the empty tiles dictionary so other items can spawn in the tile
             self.empty_tiles_dict[(player_and_bamboo_piles_collision_list[0].rect.x, player_and_bamboo_piles_collision_list[0].rect.y, player_and_bamboo_piles_collision_list[0].rect.width, player_and_bamboo_piles_collision_list[0].rect.height)] = 0
 
-            print((player_and_bamboo_piles_collision_list[0].rect.x, player_and_bamboo_piles_collision_list[0].rect.y, player_and_bamboo_piles_collision_list[0].rect.width, player_and_bamboo_piles_collision_list[0].rect.height))
-
             # Increase the amount of bamboo resource that the player has, limiting it to the maximum amount the player can hold at one time
             self.player.player_gameplay_info_dict["AmountOfBambooResource"] = min(
                                                                                 self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"], 
