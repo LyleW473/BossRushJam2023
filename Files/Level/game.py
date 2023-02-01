@@ -271,7 +271,7 @@ class Game:
         for tile in self.world_tiles_dict.keys():
 
             # If the tile is within 1 tiles of the player (horizontally and vertically)
-            if (self.player.rect.left  - (TILE_SIZE) <= tile.rect.centerx <= self.player.rect.right + (TILE_SIZE)) and (self.player.rect.top - (TILE_SIZE * 2) <= tile.rect.centery <= (self.player.rect.bottom + TILE_SIZE * 1)):
+            if (self.player.rect.left  - (TILE_SIZE * 1.25) <= tile.rect.centerx <= self.player.rect.right + (TILE_SIZE * 1.25)) and (self.player.rect.top - (TILE_SIZE * 1.25) <= tile.rect.centery <= (self.player.rect.bottom + TILE_SIZE * 1.25)):
                 
 
                 # Add it to the player's neighbouring tiles dictionary

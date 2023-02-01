@@ -1215,27 +1215,46 @@ class Player(Generic, pygame.sprite.Sprite):
                     # If enough time has passed since the last time the player shot
                     if self.tools["BambooAssaultRifle"]["ShootingCooldownTimer"] == None:
                         
-                        # Distance to place the projectile at the tip of the gun
+                        # Distance to place the projectile at the tip of the gun 
                         hypot_distance = 45
                         distance_x = hypot_distance * cos(self.look_angle)
                         distance_y = -(hypot_distance * sin(self.look_angle))
 
-                        # Create a bamboo projectile, spawning it at the tip of the gun (Starts at the center of the player but has an added distance which displaces it to right in front of the gun)
-                        bamboo_projectile = BambooProjectile(
-                                                            x = distance_x + self.rect.centerx,
-                                                            y = distance_y + self.rect.centery,
-                                                            angle = self.look_angle
-                                                            )
+                        # -----------------------------------------------------
+                        # Checking that there are no tiles in between the center of the player and where the bamboo projectile will be spawned
+                        # Note: The following checks is so that the player cannot shoot projectiles through walls
+
+                        # Assume that there is no tile in between the center of the player and where the bamboo projectile will be spawned
+                        no_tile_in_between = True
                         
-                        # Add the bamboo projectile to the bamboo projectiles group
-                        self.sprite_groups["BambooProjectiles"].add(bamboo_projectile)
+                        # For every neighbouring tile
+                        for neighbouring_tile in self.neighbouring_tiles_dict.keys():
+                            # Check if the tile is in between the center of the player and the spawning positions of the bamboo projectile
+                            if len(neighbouring_tile.rect.clipline(self.rect.center, (self.rect.centerx + distance_x, self.rect.centery + distance_y))) != 0:
+                                # If there is a collision then set "no_tile_in_between" to False and exit the loop
+                                no_tile_in_between = False
+                                break
+                        
+                        # If there is nothing in between the center of the player and where the bamboo projectile will be spawned
+                        if no_tile_in_between == True:
+                            
+                            # Create a bamboo projectile, spawning it at the tip of the gun (Starts at the center of the player but has an added distance which displaces it to right in front of the gun)
+                            # Note: The center of the bamboo projectile is placed at the co-ordinates
+                            bamboo_projectile = BambooProjectile(
+                                                                x = self.rect.centerx + distance_x,
+                                                                y = self.rect.centery + distance_y,
+                                                                angle = self.look_angle
+                                                                )
+                
+                        
+                            # Add the bamboo projectile to the bamboo projectiles group
+                            self.sprite_groups["BambooProjectiles"].add(bamboo_projectile)
 
-                        # Set the shooting cooldown timer to the shooting cooldown set
-                        self.tools["BambooAssaultRifle"]["ShootingCooldownTimer"] = self.tools["BambooAssaultRifle"]["ShootingCooldown"]
+                            # Set the shooting cooldown timer to the shooting cooldown set
+                            self.tools["BambooAssaultRifle"]["ShootingCooldownTimer"] = self.tools["BambooAssaultRifle"]["ShootingCooldown"]
 
-                        # Remove the amount of bamboo resource set for the bamboo assault rifle
-                        self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BambooAssaultRifle"]["BambooResourceDepletionAmount"]
-    
+                            # Remove the amount of bamboo resource set for the bamboo assault rifle
+                            self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BambooAssaultRifle"]["BambooResourceDepletionAmount"]
 
         # ---------------------------------------------------------------------------------
         # Updating bamboo projectiles 
@@ -1259,9 +1278,9 @@ class Player(Generic, pygame.sprite.Sprite):
         # Play animations
         self.play_animations()
 
-        # # TEMPORARY
-        # for tile in self.neighbouring_tiles_dict.keys():
-        #     pygame.draw.rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
+        # TEMPORARY
+        for tile in self.neighbouring_tiles_dict.keys():
+            pygame.draw.rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
         # Handle tile collisions (affects player movement)
         self.handle_tile_collisions()
