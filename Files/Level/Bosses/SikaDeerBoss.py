@@ -1,4 +1,9 @@
 from Global.generic import Generic
+from Level.Bosses.BossAttacks.stomp import StompController
+from pygame.draw import rect as pygame_draw_rect
+from pygame.draw import line as pygame_draw_line
+from pygame import Rect as pygame_Rect
+from pygame.draw import circle as pygame_draw_circle
 
 class SikaDeerBoss(Generic):
 
@@ -6,7 +11,10 @@ class SikaDeerBoss(Generic):
     # Example: Stomp : [Image list]
 
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, surface, scale_multiplier):
+
+        # Surface that the boss is drawn onto
+        self.surface = surface 
         
         # The starting image when spawned
         starting_image = SikaDeerBoss.ImagesDict["Stomp"][0]
@@ -17,8 +25,10 @@ class SikaDeerBoss(Generic):
         # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
         self.rect.midbottom = (x, y)
 
-
-        # self.delta_time = 0
+        """ List of "hidden" added attributes
+        self.delta_time
+        self.camera_position
+        """
 
         # # Health
         # self.health = 4000
@@ -38,7 +48,7 @@ class SikaDeerBoss(Generic):
                                             "Damage": 20,
                                             "Speed": 150, # Speed that the stomp wave travels in milliseconds 
                                             "Duration": 6000, # How long the attack will be performed
-                                            "DurationTimer": 6000 # Timer used to check 
+                                            "DurationTimer": 6000, # Timer used to check if the attack is over
 
                                              },
 
@@ -81,6 +91,9 @@ class SikaDeerBoss(Generic):
         #         # Set the animation frame timer to start at the time between each animation frame
         #         self.behaviour_patterns_dict[action]["AnimationFrameTimer"] = self.behaviour_patterns_dict[action]["TimeBetweenAnimFrames"] 
 
+        # Stomp controller used to create stomp nodes and update each individual stomp node
+        self.stomp_controller = StompController(scale_multiplier = scale_multiplier)
+
 
         print(self.behaviour_patterns_dict)
 
@@ -117,8 +130,9 @@ class SikaDeerBoss(Generic):
                             or self.animation_index == 5:
 
                             # Create a stomp attack
-                            self.stomp()
-                            print("STOMP", self.animation_index, self.behaviour_patterns_dict[current_action]["DurationTimer"], self.behaviour_patterns_dict[current_action]["Duration"])
+                            self.stomp_controller.create_stomp_nodes(center_of_boss_position = (self.rect.centerx, self.rect.centery))
+
+                            # print("STOMP", self.animation_index, self.behaviour_patterns_dict[current_action]["DurationTimer"], self.behaviour_patterns_dict[current_action]["Duration"])
 
                         # Go the next animation frame
                         self.animation_index += 1
@@ -150,18 +164,33 @@ class SikaDeerBoss(Generic):
         self.behaviour_patterns_dict[current_action]["AnimationFrameTimer"] -= 1000 * self.delta_time
         self.behaviour_patterns_dict["Stomp"]["DurationTimer"] -= 1000 * self.delta_time
 
-
-    def stomp(self):
-        print("")
-
+    def draw_stomp_attacks(self):
+        
+        # If there are any stomp attack nodes inside the stomp nodes
+        if len(StompController.nodes_group) > 0:
+ 
+            # For each stomp attack in the group
+            for stomp_attack_node in StompController.nodes_group:
+                
+                # Circle will be drawn in the center of the node rect
+                pygame_draw_circle(surface = self.surface, color = "white", center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = 1)
+                # The center of the rectangle is at the position calculated when the node was created
+                pygame_draw_rect(surface = self.surface, color = "red", rect = (stomp_attack_node.rect.x - self.camera_position[0], stomp_attack_node.rect.y - self.camera_position[1], stomp_attack_node.rect.width, stomp_attack_node.rect.height), width = 1)
 
     def run(self):
         
+        pygame_draw_rect(self.surface, "green", pygame_Rect(self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 1)
+        pygame_draw_line(self.surface, "white", (0 - self.camera_position[0], self.rect.centery - self.camera_position[1]), (self.surface.get_width() - self.camera_position[0], self.rect.centery - self.camera_position[1]))
+        pygame_draw_line(self.surface, "white", (self.rect.centerx - self.camera_position[0], 0 - self.camera_position[1]), (self.rect.centerx - self.camera_position[0], self.surface.get_height() - self.camera_position[1]))
+
+        # Draw the boss
+        self.draw(surface = self.surface, x = self.rect.x - self.camera_position[0], y = self.rect.y - self.camera_position[1])
+        
+        # Draw the stomp attacks
+        self.draw_stomp_attacks()
+
         # Play animations
         self.play_animations()
-
-
-    
                 
 
 

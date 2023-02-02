@@ -581,7 +581,16 @@ class Game:
                 self.bosses_dict["SikaDeer"] = SikaDeerBoss(
                                                             x = self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), 
                                                             y = self.bosses_dict["ValidSpawningPosition"][1] + TILE_SIZE,
+                                                            surface = self.scaled_surface,
+                                                            scale_multiplier = self.scale_multiplier
                                                             )
+
+                # Set the 
+                from Level.Bosses.BossAttacks.stomp import StompController
+
+                # Create a sprite group for the stomp attacks nodes created by the Sika Deer boss
+                self.stomp_attack_nodes_group = pygame.sprite.Group()
+                StompController.nodes_group = self.stomp_attack_nodes_group
 
                 # Add the boss into the boss group
                 self.boss_group.add(self.bosses_dict["SikaDeer"])
@@ -605,15 +614,23 @@ class Game:
             # Update the current boss' delta time
             current_boss.delta_time = delta_time
 
+            # Update the current boss' camera position 
+            current_boss.camera_position = self.camera_position
+
             # Draw guidelines between the player and the boss
             self.draw_guidelines_between_a_and_b(a = current_boss.rect.center, b = self.player.rect.center)
 
-            # Draw the current boss
-            current_boss.draw(surface = self.scaled_surface, x = current_boss.rect.x - self.camera_position[0], y = current_boss.rect.y - self.camera_position[1])
-            pygame.draw.rect(self.scaled_surface, "green", pygame.Rect(current_boss.rect.x - self.camera_position[0], current_boss.rect.y - self.camera_position[1], current_boss.rect.width, current_boss.rect.height), 1)
-
-            # Update the boss
+            # Run the boss
             current_boss.run()
+            
+            # if self.bosses_dict["CurrentBoss"] == "SikaDeer":
+
+            #     # For each stomp attack in the group
+                
+            #     for stomp_attack_node in self.stomp_attacks_nodes_group:
+            #         # Draw the stomp attack
+            #         stomp_attack_node.draw(surface = self.scaled_surface, x = stomp_attack_node.rect.x - self.camera_position[0], y = stomp_attack_node.rect.y - self.camera_position[1])
+
 
         # If the current boss is spawning
         elif current_boss == None and hasattr(self, "bosses_dict") and self.bosses_dict["ValidSpawningPosition"] != None:
