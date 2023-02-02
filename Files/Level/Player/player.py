@@ -48,17 +48,8 @@ class Player(Generic):
         self.look_angle = 0
         """
         # ---------------------------------------------------------------------------------
-        # Cursor guidelines
-
-        # Thickness of each segment
-        self.cursor_guidelines_segments_thickness = 5
-
-        # Surface
-        self.cursor_guidelines_surface = pygame.Surface((self.surface.get_width(), self.surface.get_height()))
-        self.cursor_guidelines_surface.set_colorkey("black")
-        self.cursor_guidelines_surface.set_alpha(90)
-
         # Cursor images
+        
         self.default_cursor_image = pygame.image.load("graphics/Cursors/Default.png").convert_alpha()
 
         # ---------------------------------------------------------------------------------
@@ -959,35 +950,6 @@ class Player(Generic):
         # Draw the new cursor
         # Blit the cursor image at the mouse position divided by the scale multiplier, subtracting half of the cursor image's width and height
         self.surface.blit(self.default_cursor_image, ((self.mouse_position[0] - self.camera_position[0]) - (self.default_cursor_image.get_width()/ 2), (self.mouse_position[1] - self.camera_position[1]) - (self.default_cursor_image.get_height() / 2)))
-
-        # Draw the guidelines to the mouse cursor
-        self.draw_guidelines_to_cursor(dx, dy)
-
-    def draw_guidelines_to_cursor(self, dx, dy):
-
-        # Draws the guidelines to the mouse cursor / position
-
-        # The number of segments desired for the guidelines
-        number_of_segments = 6
-        
-        # Calculate the length of each segment 
-        segment_length_x = dx / (number_of_segments * 2)
-        segment_length_y = dy / (number_of_segments * 2)
-
-        # Fill the cursor guidelines surface with black. (The colour-key has been set to black)
-        self.cursor_guidelines_surface.fill("black")
-
-        # Draw
-        for i in range(1, (number_of_segments * 2) + 1, 2):     
-            pygame.draw.line(
-                surface = self.cursor_guidelines_surface, 
-                color = "white",
-                start_pos = ((self.rect.centerx - self.camera_position[0]) + (segment_length_x * i), (self.rect.centery - self.camera_position[1]) + (segment_length_y * i)),
-                end_pos = ((self.rect.centerx - self.camera_position[0]) + (segment_length_x * (i + 1)), (self.rect.centery - self.camera_position[1]) + (segment_length_y * (i + 1))),
-                width = self.cursor_guidelines_segments_thickness)
-
-        # Draw the cursor guidelines surface onto the main surface
-        self.surface.blit(self.cursor_guidelines_surface, (0, 0))
 
     # ---------------------------------------------------------------------------------
     # Gameplay

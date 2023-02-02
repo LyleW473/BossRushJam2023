@@ -38,7 +38,6 @@ class Game:
         # Camera modes
         self.camera_mode = None # Can either be: Static, Follow
 
-
         # --------------------------------------------------------------------------------------
         # Groups
         self.world_tiles_dict = {} # Dictionary used to hold all the world tiles 
@@ -48,6 +47,17 @@ class Game:
         self.empty_tiles_dict = {} # Dictionary used to hold all of the empty tiles in the tile map
         self.bamboo_piles_group = pygame.sprite.Group()
         self.boss_group = pygame.sprite.GroupSingle()
+
+        # --------------------------------------------------------------------------------------
+        # Boss and player guidelines
+
+        # Thickness of each segment
+        self.guidelines_segments_thickness = 5
+
+        # Surface
+        self.guidelines_surface = pygame.Surface((self.scaled_surface.get_width(), self.scaled_surface.get_height()))
+        self.guidelines_surface.set_colorkey("black")
+        self.guidelines_surface.set_alpha(90)
 
 
     # --------------------------------------------------------------------------------------
@@ -314,11 +324,12 @@ class Game:
         # ----------------------------------------------------------------------------
         # Updating the spawning timer
         
-        # If there is a timer that has been set to the spawning cooldown and there are less bamboo piles than the maximum amount at one time
+        # If there is a timer that has been set to the spawning cooldown and there are less bamboo piles than the maximum amount at one time and the current boss has been spawned
         """ Note: The second check is so that once there are the maximum amount of piles at one time, the timer will only start counting when there are less than the maximum amount 
         - This avoids the issue where if the player walks over a bamboo pile after there were the maximum amount of piles, a new pile won't instantly spawn.
         """
-        if BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] != None and len(self.bamboo_piles_group) < BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"]:
+        if BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] != None and len(self.bamboo_piles_group) < BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"] and \
+            len(self.boss_group) > 0:
             
             # If the timer has finished counting down
             if BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] <= 0:
@@ -550,7 +561,13 @@ class Game:
                         self.spawn_boss(boss_to_spawn = self.bosses_dict["CurrentBoss"])
 
     def spawn_boss(self, boss_to_spawn):
-        
+
+        # Spawns the boss
+
+        # Set the bamboo piles to start spawning
+        BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] = BambooPile.bamboo_pile_info_dict["SpawningCooldown"]
+
+        # Check which boss should be spawned
         match boss_to_spawn:
             
             case "SikaDeer":
@@ -574,11 +591,54 @@ class Game:
 
     def draw_boss(self):
 
-        # Draw the boss inside the boss group
-        for boss in self.boss_group:
-            boss.draw(surface = self.scaled_surface, x = boss.rect.x - self.camera_position[0], y = boss.rect.y - self.camera_position[1])
-            pygame.draw.rect(self.scaled_surface, "green", pygame.Rect(boss.rect.x - self.camera_position[0], boss.rect.y - self.camera_position[1], boss.rect.width, boss.rect.height), 1)
+        # Draws the current boss
 
+        # Save a reference to the current boss in a temp variable
+        current_boss = self.boss_group.sprite
+        
+        # If there is a current boss
+        if current_boss != None:
+
+            # Draw guidelines between the player and the boss
+            self.draw_guidelines_between_a_and_b(a = current_boss.rect.center, b = self.player.rect.center)
+
+            # Draw the current boss
+            current_boss.draw(surface = self.scaled_surface, x = current_boss.rect.x - self.camera_position[0], y = current_boss.rect.y - self.camera_position[1])
+            pygame.draw.rect(self.scaled_surface, "green", pygame.Rect(current_boss.rect.x - self.camera_position[0], current_boss.rect.y - self.camera_position[1], current_boss.rect.width, current_boss.rect.height), 1)
+
+        # If the current boss is spawning
+        elif current_boss == None and hasattr(self, "bosses_dict") and self.bosses_dict["ValidSpawningPosition"] != None:
+            # Draw guidelines between the player and the boss' spawning location
+            self.draw_guidelines_between_a_and_b(a = (self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)), b = self.player.rect.center)
+
+    def draw_guidelines_between_a_and_b(self, a, b):
+
+        # Draws guidelines between the two subjects
+    
+        # The number of segments desired for the guidelines
+        number_of_segments = 6
+
+        # Calculate the distance between the a and b
+        dx, dy = a[0] - b[0], a[1] - b[1]
+
+        # Calculate the length of each segment 
+        segment_length_x = dx / (number_of_segments * 2)
+        segment_length_y = dy / (number_of_segments * 2)
+
+        # Fill the cursor guidelines surface with black. (The colour-key has been set to black)
+        self.guidelines_surface.fill("black")
+
+        # Draw
+        for i in range(1, (number_of_segments * 2) + 1, 2):     
+            pygame.draw.line(
+                surface = self.guidelines_surface, 
+                color = "white",
+                start_pos = ((b[0] - self.camera_position[0]) + (segment_length_x * i), (b[1] - self.camera_position[1]) + (segment_length_y * i)),
+                end_pos = ((b[0] - self.camera_position[0]) + (segment_length_x * (i + 1)), (b[1] - self.camera_position[1]) + (segment_length_y * (i + 1))),
+                width = self.guidelines_segments_thickness)
+
+        # Draw the cursor guidelines surface onto the main surface
+        self.scaled_surface.blit(self.guidelines_surface, (0, 0))
 
     # --------------------------------------------------------------------------------------
     # Game UI methods
@@ -592,7 +652,7 @@ class Game:
 
         # Update the game UI
         self.update_game_ui(delta_time = delta_time)
-        
+
         # Fill the scaled surface with a colour
         self.scaled_surface.fill("cornsilk4")
 
@@ -604,6 +664,8 @@ class Game:
 
         # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
         self.spawn_bamboo_pile(delta_time = delta_time)
+
+        print(BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"])
 
         if pygame.key.get_pressed()[pygame.K_f] or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None):
             self.find_valid_boss_spawning_position(delta_time = delta_time)
