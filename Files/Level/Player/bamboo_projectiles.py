@@ -4,12 +4,11 @@ from math import sin, cos, degrees
 from Global.settings import *
 
 class BambooProjectile(Generic):
+    
     # Projectile image of all bamboo projectiles
     projectile_image = pygame.image.load("graphics/Projectiles/BambooProjectile.png")
 
     def __init__(self, x, y, angle):
-
-        # The angle that the projectile will travel in
 
         # The total distance travelled (including the horizontal and vertical components)
         desired_distance_travelled = 6 * TILE_SIZE
@@ -17,7 +16,7 @@ class BambooProjectile(Generic):
         # The time for the projectile to cover the desired distnace travelled
         time_to_travel_distance_at_final_velocity = 0.25 # t
 
-        # Calculate the horizontal and vertical distance the player must travel based on the desired distance travelled
+        # Calculate the horizontal and vertical distance the projectile must travel based on the desired distance travelled
         horizontal_distance = desired_distance_travelled * cos(angle)
         vertical_distance = desired_distance_travelled * sin(angle)
 

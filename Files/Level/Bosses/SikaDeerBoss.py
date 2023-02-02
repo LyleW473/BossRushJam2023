@@ -164,11 +164,11 @@ class SikaDeerBoss(Generic):
         self.behaviour_patterns_dict[current_action]["AnimationFrameTimer"] -= 1000 * self.delta_time
         self.behaviour_patterns_dict["Stomp"]["DurationTimer"] -= 1000 * self.delta_time
 
-    def draw_stomp_attacks(self):
+    def update_stomp_attacks(self):
         
         # If there are any stomp attack nodes inside the stomp nodes
         if len(StompController.nodes_group) > 0:
- 
+
             # For each stomp attack in the group
             for stomp_attack_node in StompController.nodes_group:
                 
@@ -176,6 +176,9 @@ class SikaDeerBoss(Generic):
                 pygame_draw_circle(surface = self.surface, color = "white", center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = 1)
                 # The center of the rectangle is at the position calculated when the node was created
                 pygame_draw_rect(surface = self.surface, color = "red", rect = (stomp_attack_node.rect.x - self.camera_position[0], stomp_attack_node.rect.y - self.camera_position[1], stomp_attack_node.rect.width, stomp_attack_node.rect.height), width = 1)
+
+                # Move the stomp attack node
+                stomp_attack_node.move(delta_time = self.delta_time)
 
     def run(self):
         
@@ -187,7 +190,7 @@ class SikaDeerBoss(Generic):
         self.draw(surface = self.surface, x = self.rect.x - self.camera_position[0], y = self.rect.y - self.camera_position[1])
         
         # Draw the stomp attacks
-        self.draw_stomp_attacks()
+        self.update_stomp_attacks()
 
         # Play animations
         self.play_animations()

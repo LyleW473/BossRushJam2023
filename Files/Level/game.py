@@ -295,14 +295,30 @@ class Game:
         # Handles collisions between objects (including the player). Collisions between the world tiles and the player are within the Player class.
 
         # --------------------------------------------------------------------------------------
-        # Bamboo projectiles and world tiles
-        
-        # Look for collisions between bamboo projectiles and world tiles, delete bamboo projectile if there is a collision
-        pygame.sprite.groupcollide(self.bamboo_projectiles_group, self.world_tiles_group, dokilla = True, dokillb = False, collided = pygame.sprite.collide_mask)
+        # Bamboo projectiles 
+
+        # World / building tiles
+        # Look for collisions between bamboo projectiles and world tiles, delete the bamboo projectile if there is a collision
+        if len(self.bamboo_projectiles_group) > 0:
+
+            # For each bamboo projectile 
+            for bamboo_projectile in self.bamboo_projectiles_group:
+                
+                # Check for a rect collision between the bamboo projectile and world / building tiles inside the world tiles dictionary
+                collision_result = bamboo_projectile.rect.collidedict(self.world_tiles_dict)
+
+                # If there is a rect collision
+                if collision_result != None:
+
+                    # Check for a pixel-perfect collision between the bamboo projectile and the world tile that the bamboo projectile's rect collided with
+                    if pygame.sprite.collide_mask(bamboo_projectile, collision_result[0]) != None:
+                        # If there is a pixel-perfect collision, remove the bamboo projectile
+                        self.bamboo_projectiles_group.remove(bamboo_projectile)
 
         # --------------------------------------------------------------------------------------
-        # Player and bamboo piles
-        
+        # Player
+
+        # Bamboo piles
         # Look for collisions between the player and bamboo piles, and only delete the bamboo pile if there is a collision and the player does not currently have the maximum amount of bamboo resource
         player_and_bamboo_piles_collision_list = pygame.sprite.spritecollide(self.player, self.bamboo_piles_group, dokill = False, collided = pygame.sprite.collide_rect)
         if len(player_and_bamboo_piles_collision_list) > 0 and (self.player.player_gameplay_info_dict["AmountOfBambooResource"] != self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]):
@@ -319,6 +335,27 @@ class Game:
                                                                                 self.player.player_gameplay_info_dict["AmountOfBambooResource"] + BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"]
                                                                                 )
 
+        # --------------------------------------------------------------------------------------
+        # Stomp attack nodes
+
+        # World tiles
+
+        # Look for collisions between stomp attack nodes and world tiles, delete the stomp attack node if there is a collision
+        # Additional check because this group does note exist until the Sika Deer boss has spawned and started stomping
+        if hasattr(self, "stomp_attack_nodes_group") and len(self.stomp_attack_nodes_group) > 0:
+            self.look_for_world_tile_collisions(other_group = self.stomp_attack_nodes_group)
+
+    def look_for_world_tile_collisions(self, other_group):
+        
+        # Helper method to find collisions between items in another specified group and world tiles
+        
+        # For each item inside this group
+        for item in other_group:
+            # If the item collides with a world tile
+            if item.rect.collidedict(self.world_tiles_dict) != None:
+                # Remove the item from the group
+                other_group.remove(item)
+    
     def spawn_bamboo_pile(self, delta_time):
 
         # ----------------------------------------------------------------------------
@@ -584,11 +621,11 @@ class Game:
                                                             surface = self.scaled_surface,
                                                             scale_multiplier = self.scale_multiplier
                                                             )
-
-                # Set the 
-                from Level.Bosses.BossAttacks.stomp import StompController
+                # ----------------------------------------
+                # Preparing groups 
 
                 # Create a sprite group for the stomp attacks nodes created by the Sika Deer boss
+                from Level.Bosses.BossAttacks.stomp import StompController
                 self.stomp_attack_nodes_group = pygame.sprite.Group()
                 StompController.nodes_group = self.stomp_attack_nodes_group
 
