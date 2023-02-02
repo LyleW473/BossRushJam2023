@@ -5,7 +5,6 @@ from Level.Player.player import Player
 from Level.game_ui import GameUI
 from Level.bamboo_pile import BambooPile
 from random import choice as random_choice
-from random import randrange as random_randrange
 from math import dist
 from os import listdir as os_listdir
 
@@ -136,6 +135,7 @@ class Game:
             - Until the player reaches half the size of the scaled screen height from the last tile in the tile map
             
         """
+
         self.camera_position = [camera_position_x, camera_position_y]
 
         # Update the player's camera position attribute so that tile rects are correctly aligned
@@ -279,7 +279,7 @@ class Game:
         for tile in self.world_tiles_dict.keys():
 
             # If the tile is within 1 tiles of the player (horizontally and vertically)
-            if (self.player.rect.left  - (TILE_SIZE * 1.25) <= tile.rect.centerx <= self.player.rect.right + (TILE_SIZE * 1.25)) and (self.player.rect.top - (TILE_SIZE * 1.25) <= tile.rect.centery <= (self.player.rect.bottom + TILE_SIZE * 1.25)):
+            if (self.player.rect.left  - (TILE_SIZE * 2) <= tile.rect.centerx <= self.player.rect.right + (TILE_SIZE * 2)) and (self.player.rect.top - (TILE_SIZE * 2) <= tile.rect.centery <= (self.player.rect.bottom + TILE_SIZE * 2)):
                 # Add it to the player's neighbouring tiles dictionary
                 self.player.neighbouring_tiles_dict[tile] = 0 
 
@@ -664,8 +664,6 @@ class Game:
 
         # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
         self.spawn_bamboo_pile(delta_time = delta_time)
-
-        print(BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"])
 
         if pygame.key.get_pressed()[pygame.K_f] or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None):
             self.find_valid_boss_spawning_position(delta_time = delta_time)

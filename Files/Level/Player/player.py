@@ -42,6 +42,14 @@ class Player(Generic):
         self.dx = 0 # The distance the player can move based on if there were any collisions
         self.dy = 0 # The distance the player can move based on if there were any collisions
 
+        # Collision tolerance
+        """ Explanation:
+        - This is because the difference between the points of collision most likely won't always be 0
+        - This means that as soon as we find a collision between a tile and a player, where the difference between the two points (i.e. the sides of each item) is less than the collision tolerance, then this will register as a collision.
+        - So if the difference between the points of collision is less than the collision tolerance, then this will be detected as a collision
+        """
+        self.collision_tolerance = 5
+        
         # ---------------------------------------------------------------------------------
         # Angles
         """
@@ -49,7 +57,7 @@ class Player(Generic):
         """
         # ---------------------------------------------------------------------------------
         # Cursor images
-        
+
         self.default_cursor_image = pygame.image.load("graphics/Cursors/Default.png").convert_alpha()
 
         # ---------------------------------------------------------------------------------
@@ -597,6 +605,9 @@ class Player(Generic):
             # Update the direction variables
             self.update_direction_variables()
 
+            # Handle tile collisions
+            self.handle_tile_collisions()
+
             # If the player isn't decelerating currently
             if self.decelerating == False:
 
@@ -609,16 +620,22 @@ class Player(Generic):
                 # ---------------------------------------------------------------------------------
                 # Moving the player
 
-                # If moving left will place the player out of the screen
-                if self.rect.left - self.movement_suvat_s <= 0:
-                    # Set the player's x position to be at 0
-                    self.rect.left = 0
+                """ Reasons for the following check:
+                - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+                - Int is so that if self.dx = 0.123925 or a number close to 0, this would still cause the same problem
+                """
+                if int(self.dx) != 0:
 
-                # Otherwise
-                elif self.rect.left - self.movement_suvat_s > 0:
-                    # Move the player left
-                    next_position_x -= self.dx
-                    self.rect.x = round(next_position_x)
+                    # If moving left will place the player out of the screen
+                    if self.rect.left - self.movement_suvat_s <= 0:
+                        # Set the player's x position to be at 0
+                        self.rect.left = 0
+
+                    # Otherwise
+                    elif self.rect.left - self.movement_suvat_s > 0:
+                        # Move the player left
+                        next_position_x -= self.dx
+                        self.rect.x = round(next_position_x)
 
         # If the "d" key is pressed
         elif pygame.key.get_pressed()[pygame.K_d] and pygame.key.get_pressed()[pygame.K_a] == False:
@@ -631,6 +648,9 @@ class Player(Generic):
             # Update the direction variables
             self.update_direction_variables()
 
+            # Handle tile collisions
+            self.handle_tile_collisions()
+
             # If the player isn't decelerating currently
             if self.decelerating == False:
                 
@@ -641,18 +661,24 @@ class Player(Generic):
                 self.movement_acceleration()
 
                 # ---------------------------------------------------------------------------------
-                # Moving the player
+                # Moving the player 
 
-                # If moving right will place the player out of the tile map / out of the screen
-                if self.rect.right + self.movement_suvat_s >= self.last_tile_position[0]:
-                    # Set the player's right position to be at the last tile position in the tile map
-                    self.rect.right = self.last_tile_position[0]
+                """ Reasons for the following check:
+                - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+                - Int is so that if self.dx = 0.123925 or a number close to 0, this would still cause the same problem
+                """       
+                if int(self.dx) != 0:
 
-                # Otherwise
-                elif self.rect.right + self.movement_suvat_s < self.last_tile_position[0]:
-                    # Move the player right
-                    next_position_x += self.dx
-                    self.rect.x = round(next_position_x)
+                    # If moving right will place the player out of the tile map / out of the screen
+                    if self.rect.right + self.movement_suvat_s >= self.last_tile_position[0]:
+                        # Set the player's right position to be at the last tile position in the tile map
+                        self.rect.right = self.last_tile_position[0]
+
+                    # Otherwise
+                    elif self.rect.right + self.movement_suvat_s < self.last_tile_position[0]:
+                        # Move the player right
+                        next_position_x += self.dx
+                        self.rect.x = round(next_position_x)
 
         # If the "w" key is pressed
         if pygame.key.get_pressed()[pygame.K_w] and pygame.key.get_pressed()[pygame.K_s] == False:
@@ -665,6 +691,9 @@ class Player(Generic):
             # Update the direction variables
             self.update_direction_variables()
 
+            # Handle tile collisions
+            self.handle_tile_collisions()
+
             # If the player isn't decelerating currently
             if self.decelerating == False:
                 
@@ -677,16 +706,21 @@ class Player(Generic):
                 # ---------------------------------------------------------------------------------
                 # Moving the player
 
-                # If moving up will place the player out of the screen
-                if self.rect.top - self.movement_suvat_s < 0:
-                    # Set the player's top position to be at the top of the screen 
-                    self.rect.top = 0
+                """ Reasons for the following check:
+                - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+                - Int is so that if self.dy = 0.2348232 or a number close to 0, this would still cause the same problem
+                """
+                if int(self.dy) != 0:
+                    # If moving up will place the player out of the screen
+                    if self.rect.top - self.movement_suvat_s < 0:
+                        # Set the player's top position to be at the top of the screen 
+                        self.rect.top = 0
 
-                # Otherwise
-                elif self.rect.top - self.movement_suvat_s >= 0:
-                    # Move the player up
-                    next_position_y -= self.dy
-                    self.rect.y = round(next_position_y)
+                    # Otherwise
+                    elif self.rect.top - self.movement_suvat_s >= 0:
+                        # Move the player up
+                        next_position_y -= self.dy
+                        self.rect.y = round(next_position_y)
 
         # If the "s" key is pressed
         elif pygame.key.get_pressed()[pygame.K_s] and pygame.key.get_pressed()[pygame.K_w] == False:
@@ -698,6 +732,9 @@ class Player(Generic):
 
             # Update the direction variables
             self.update_direction_variables()
+            
+            # Handle tile collisions
+            self.handle_tile_collisions()
 
             # If the player isn't decelerating currently
             if self.decelerating == False:
@@ -711,16 +748,22 @@ class Player(Generic):
                 # ---------------------------------------------------------------------------------
                 # Moving the player
 
-                # If moving down will place the player out of the tile map
-                if self.rect.bottom + self.movement_suvat_s > self.last_tile_position[1]:
-                    # Set the player's bottom position to the y position of the last tile position
-                    self.rect.bottom = self.last_tile_position[1] 
+                """ Reasons for the following check:
+                - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+                - Int is so that if self.dy = 0.2348232 or a number close to 0, this would still cause the same problem
+                """
+                if int(self.dy) != 0:
 
-                # Otherwise
-                elif self.rect.bottom + self.movement_suvat_s <= self.last_tile_position[1]:
-                    # Move the player down
-                    next_position_y += self.dy
-                    self.rect.y = round(next_position_y)
+                    # If moving down will place the player out of the tile map
+                    if self.rect.bottom + self.movement_suvat_s > self.last_tile_position[1]:
+                        # Set the player's bottom position to the y position of the last tile position
+                        self.rect.bottom = self.last_tile_position[1] 
+
+                    # Otherwise
+                    elif self.rect.bottom + self.movement_suvat_s <= self.last_tile_position[1]:
+                        # Move the player down
+                        next_position_y += self.dy
+                        self.rect.y = round(next_position_y)
 
         # ---------------------------------------------------------------------------------
         # Deceleration
@@ -764,163 +807,167 @@ class Player(Generic):
             # ---------------------------------------------------------------------------------
             # Decelerating in the last direction the player was moving towards
 
+            """ Reasons for the following int(self.dx) or int(self.dy) checks:
+            - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+            - Int is so that if self.dx = 0.123925 or a number close to 0, this would still cause the same problem
+            """               
             # If the player was moving right
             if self.direction_variables_dict["Right"] == True:
 
-                # If moving right will place the player out of the tile map / out of the screen
-                if self.rect.right + self.movement_suvat_s >= self.last_tile_position[0]:
-                    # Set the player's right position to be at the last tile position in the tile map
-                    self.rect.right = self.last_tile_position[0]
+                if int(self.dx) != 0:
 
-                # Otherwise
-                elif self.rect.right + self.movement_suvat_s < self.last_tile_position[0]:
-                    # Move the player right
-                    next_position_x_2 += self.dx
-                    self.rect.x = round(next_position_x_2)
+                    # If moving right will place the player out of the tile map / out of the screen
+                    if self.rect.right + self.movement_suvat_s >= self.last_tile_position[0]:
+                        # Set the player's right position to be at the last tile position in the tile map
+                        self.rect.right = self.last_tile_position[0]
+
+                    # Otherwise
+                    elif self.rect.right + self.movement_suvat_s < self.last_tile_position[0]:
+                        # Move the player right
+                        next_position_x_2 += self.dx
+                        self.rect.x = round(next_position_x_2)
 
             # If the player was moving left
             elif self.direction_variables_dict["Left"] == True:
-    
-                # If moving left will place the player out of the screen
-                if self.rect.left - self.movement_suvat_s <= 0:
-                    # Set the player's x position to be at 0
-                    self.rect.left = 0
 
-                # Otherwise
-                elif self.rect.left - self.movement_suvat_s > 0:
-                    # Move the player left
-                    next_position_x_2 -= self.dx
-                    self.rect.x = round(next_position_x_2)
+                if int(self.dx) != 0:
+        
+                    # If moving left will place the player out of the screen
+                    if self.rect.left - self.movement_suvat_s <= 0:
+                        # Set the player's x position to be at 0
+                        self.rect.left = 0
+
+                    # Otherwise
+                    elif self.rect.left - self.movement_suvat_s > 0:
+                        # Move the player left
+                        next_position_x_2 -= self.dx
+                        self.rect.x = round(next_position_x_2)
 
             # If the player was moving up
             elif self.direction_variables_dict["Up"] == True:
 
-                # If moving up will place the player out of the screen
-                if self.rect.top - self.movement_suvat_s < 0:
-                    # Set the player's top position to be at the top of the screen 
-                    self.rect.top = 0
+                if int(self.dy) != 0:
 
-                # Otherwise
-                elif self.rect.top - self.movement_suvat_s >= 0:
-                    # Move the player up
-                    next_position_y_2 -= self.dy
-                    self.rect.y = round(next_position_y_2)
-            
+                    # If moving up will place the player out of the screen
+                    if self.rect.top - self.movement_suvat_s < 0:
+                        # Set the player's top position to be at the top of the screen 
+                        self.rect.top = 0
+
+                    # Otherwise
+                    elif self.rect.top - self.movement_suvat_s >= 0:
+                        # Move the player up
+                        next_position_y_2 -= self.dy
+                        self.rect.y = round(next_position_y_2)
+                
             # If the player was moving down
             elif self.direction_variables_dict["Down"] == True:
-                
-                # If moving down will place the player out of the tile map
-                if self.rect.bottom + self.movement_suvat_s > self.last_tile_position[1]:
-                    # Set the player's bottom position to the y position of the last tile position
-                    self.rect.bottom = self.last_tile_position[1] 
 
-                # Otherwise
-                elif self.rect.bottom + self.movement_suvat_s <= self.last_tile_position[1]:
-                    # Move the player down
-                    next_position_y_2 += self.dy
-                    self.rect.y = round(next_position_y_2)
+                if int(self.dy) != 0:
+
+                    # If moving down will place the player out of the tile map
+                    if self.rect.bottom + self.movement_suvat_s > self.last_tile_position[1]:
+                        # Set the player's bottom position to the y position of the last tile position
+                        self.rect.bottom = self.last_tile_position[1] 
+
+                    # Otherwise
+                    elif self.rect.bottom + self.movement_suvat_s <= self.last_tile_position[1]:
+                        # Move the player down
+                        next_position_y_2 += self.dy
+                        self.rect.y = round(next_position_y_2)
 
     # ---------------------------------------------------------------------------------
     # Collisions      
-                          
+
     def handle_tile_collisions(self):
         
-        # Handles tile collisions
+        # Handles collisions between tiles and the player
+
+        # Note: A collision is only triggered when one rect is overlapping another rect by less than self.collision_tolerance.
 
         # ---------------------------------------------------------------------------------
         # Horizontal collisions
 
-        # If the player is attempting to move left
-        if self.direction_variables_dict["Left"] == True:
-            # Check for collisions to the left of the player
-            x_collisions = pygame.Rect(round(self.rect.x - self.movement_suvat_s), self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
+        # Find the x collisions to the left and right of the player
+        x_collisions_left = pygame.Rect(self.rect.x - self.movement_suvat_s , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
+        x_collisions_right = pygame.Rect(self.rect.x + self.movement_suvat_s , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
 
-        # If the player is attempting to move right
-        elif self.direction_variables_dict["Right"] == True:
-            # Check for collisions to the right of the player
-            x_collisions = pygame.Rect(round(self.rect.x + self.movement_suvat_s), self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
+        # If there is an x collision to the right of the player
+        if x_collisions_right != None:
 
-        # If the player is not attempting to move left or right
-        elif self.direction_variables_dict["Left"] == False and self.direction_variables_dict["Right"] == False:
-            # Set x collisions to None
-            x_collisions = None 
-
-        # If the player is attempting to move left or right
-        """ Note: This is because x_collisions could be none either when:
-            - There is no horizontal collision but the player is trying to move left or right
-            - The player is trying to move up or down 
-        """
-        if (self.direction_variables_dict["Left"] == True or self.direction_variables_dict["Right"] == True):
-
-            # If there is a horizontal collision
-            if x_collisions != None:
-                pygame.draw.rect(self.surface, "green", (x_collisions[0].rect.x - self.camera_position[0], x_collisions[0].rect.y - self.camera_position[1], x_collisions[0].rect.width, x_collisions[0].rect.height))
-
-                # If the player is facing right (i.e. moving right)
-                if self.direction_variables_dict["Right"] == True:
-                    # The player's right should be the tile's left
-                    self.rect.right = x_collisions[0].rect.left
-
-                # If the player is facing left (i.e. moving left)
-                elif self.direction_variables_dict["Left"] == True:
-                    # The player's left should be the tile's right
-                    self.rect.left = x_collisions[0].rect.right
-                
-                # Set dx to be 0, so that the player does not move
+            # If the difference between the player's right and the tile's left is less than the collision tolerance (there is a collision) and the player is trying to move right
+            if abs(self.rect.right - x_collisions_right[0].rect.left) < self.collision_tolerance and self.direction_variables_dict["Right"] == True:
+                # Set the player's right to the tile's left
+                self.rect.right = x_collisions_right[0].rect.left
+                # Don't allow the player to move
                 self.dx = 0
 
-            # If there is no horizontal collision (and the player intended to move left or right)
-            elif x_collisions == None:
-                # Move the player by the movement distance
+            # If the difference between the player's right and the tile's left is less than the collision tolerance (there is a collision) and the player is trying to move in any direction but right
+            elif abs(self.rect.right - x_collisions_right[0].rect.left) < self.collision_tolerance and self.direction_variables_dict["Right"] != True:
+                # Allow the player to move
                 self.dx = self.movement_suvat_s
+
+        # If there is an x collision to the left of the player
+        if x_collisions_left != None:
+
+            # If the difference between the player's left and the tile's right is less than the collision tolerance (there is a collision) and the player is trying to move left
+            if abs(self.rect.left - x_collisions_left[0].rect.right) < self.collision_tolerance and self.direction_variables_dict["Left"] == True:
+                # Set the player's left to the tile's right
+                self.rect.left = x_collisions_left[0].rect.right
+                # Don't allow the player to move
+                self.dx = 0
+            
+            # If the difference between the player's left and the tile's right is less than the collision tolerance (there is a collision) and the player is trying to move in any direction but left
+            elif abs(self.rect.left - x_collisions_left[0].rect.right) < self.collision_tolerance and self.direction_variables_dict["Left"] != True:
+                # Allow the player to move
+                self.dx = self.movement_suvat_s
+
+        # If there is no x collision to the left of the player and there is no x collision to the right of the player
+        elif x_collisions_left == None and x_collisions_right == None:
+            # Allow the player to move
+            self.dx = self.movement_suvat_s
 
         # ---------------------------------------------------------------------------------
         # Vertical collisions      
 
-        # If the player is attempting to move up
-        if self.direction_variables_dict["Up"] == True:
-            # Check for collisions above the player
-            y_collisions = pygame.Rect(self.rect.x, round(self.rect.y - self.movement_suvat_s), self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)      
+        # Find the collisions above and below the player
+        y_collisions_up = pygame.Rect(self.rect.x, self.rect.y - self.movement_suvat_s, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
+        y_collisions_down = pygame.Rect(self.rect.x, self.rect.y + self.movement_suvat_s, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
 
-        # If the player is attempting to move down
-        elif self.direction_variables_dict["Down"] == True:
-            # Check for collisions below the player
-            y_collisions = pygame.Rect(self.rect.x, round(self.rect.y + self.movement_suvat_s), self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)      
+        # If there is an y collision above the player
+        if y_collisions_up != None:
 
-        # If the player is not attempting to move up or down
-        elif self.direction_variables_dict["Up"] == False and self.direction_variables_dict["Down"] == False:
-            # Set y collisions to None
-            y_collisions = None
-
-        # If the player is attempting to move up or down
-        """ Note: This is because y_collisions could be none either when:
-            - There is no vertical collision but the player is trying to move up or down
-            - The player is trying to move left or right
-        """
-        if (self.direction_variables_dict["Up"] == True or self.direction_variables_dict["Down"] == True):
-
-            # If there is a vertical collision    
-            if y_collisions != None:
-                pygame.draw.rect(self.surface, "green", (y_collisions[0].rect.x - self.camera_position[0], y_collisions[0].rect.y - self.camera_position[1], y_collisions[0].rect.width, y_collisions[0].rect.height))
-
-                # If the player is attempting to move up
-                if self.direction_variables_dict["Up"] == True:
-                    # The player's top should be the tile's bottom
-                    self.rect.top = y_collisions[0].rect.bottom
-
-                # If the player is attempting to move down
-                elif self.direction_variables_dict["Down"] == True:
-                    # The player's bottom should be the tile's top
-                    self.rect.bottom = y_collisions[0].rect.top
-                
-                # Set dy to be 0, so that the player does not move
+            # If the difference between the player's top and the tile's bottom is less than the collision tolerance (there is a collision) and the player is trying to move up
+            if abs(self.rect.top - y_collisions_up[0].rect.bottom) < self.collision_tolerance and self.direction_variables_dict["Up"] == True:
+                # Set the player's top to the tile's bottom
+                self.rect.top = y_collisions_up[0].rect.bottom
+                # Don't allow the player to move
                 self.dy = 0
 
-            # If there is no vertical collision
-            elif y_collisions == None and (self.direction_variables_dict["Up"] == True or self.direction_variables_dict["Down"] == True):
-                # Move the player by the movement distance
+            # If the difference between the player's top and the tile's bottom is less than the collision tolerance (there is a collision) and the player is trying to move in any direction but up
+            elif abs(self.rect.top - y_collisions_up[0].rect.bottom) < self.collision_tolerance and self.direction_variables_dict["Up"] != True:
+                # Allow the player to move
                 self.dy = self.movement_suvat_s
 
+        # If there is an y collision below the player
+        if y_collisions_down != None:
+
+            # If the difference between the player's bottom and the tile's top is less than the collision tolerance (there is a collision) and the player is trying to move down
+            if abs(self.rect.bottom - y_collisions_down[0].rect.top) < self.collision_tolerance and self.direction_variables_dict["Down"] == True:
+                # Set the player's bottom to the tile's top
+                self.rect.bottom = y_collisions_down[0].rect.top
+                # Don't allow the player to move
+                self.dy = 0
+
+            # If the difference between the player's bottom and the tile's top is less than the collision tolerance (there is a collision) and the player is trying to move in any direction but down
+            elif abs(self.rect.bottom - y_collisions_down[0].rect.top) < self.collision_tolerance and self.direction_variables_dict["Down"] != True:
+                # Allow the player to move
+                self.dy = self.movement_suvat_s
+
+        # If there is no y collision above the player and there is no y collision below the player
+        elif y_collisions_up == None and y_collisions_down == None:
+            # Allow the player to move
+            self.dy = self.movement_suvat_s
+        
     # ---------------------------------------------------------------------------------
     # Mouse
 
@@ -1245,9 +1292,6 @@ class Player(Generic):
         # # TEMPORARY
         # for tile in self.neighbouring_tiles_dict.keys():
         #     pygame.draw.rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
-
-        # Handle tile collisions (affects player movement)
-        self.handle_tile_collisions()
 
         # Track player movement
         self.handle_player_movement()
