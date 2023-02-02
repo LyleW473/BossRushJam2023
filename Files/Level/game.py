@@ -380,7 +380,7 @@ class Game:
             number_of_tiles_for_checking = 3
             spawning_effect_counter = 0
             number_of_cycles = 8 # If the NumOfTilesForChecking was 3 and SpawningEffectCounter started at 0, then each cycle would consist of 4 changes
-            time_to_spawn = 7000
+            time_to_spawn = 1000 # 7000
             time_between_each_change = (time_to_spawn / number_of_cycles) / ((number_of_tiles_for_checking + 1) - spawning_effect_counter) # The time between each change
             
             # Create a dictionary to hold information regarding bosses
@@ -578,7 +578,10 @@ class Game:
                 SikaDeerBoss.ImagesDict = self.bosses_dict["ImagesDict"]["SikaDeer"]
 
                 # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
-                self.bosses_dict["SikaDeer"] = SikaDeerBoss(x = self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), y = self.bosses_dict["ValidSpawningPosition"][1] + TILE_SIZE)
+                self.bosses_dict["SikaDeer"] = SikaDeerBoss(
+                                                            x = self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), 
+                                                            y = self.bosses_dict["ValidSpawningPosition"][1] + TILE_SIZE,
+                                                            )
 
                 # Add the boss into the boss group
                 self.boss_group.add(self.bosses_dict["SikaDeer"])
@@ -589,7 +592,7 @@ class Game:
             case "AsiaticBlackBear":
                 pass
 
-    def draw_boss(self):
+    def update_and_run_boss(self, delta_time):
 
         # Draws the current boss
 
@@ -599,12 +602,18 @@ class Game:
         # If there is a current boss
         if current_boss != None:
 
+            # Update the current boss' delta time
+            current_boss.delta_time = delta_time
+
             # Draw guidelines between the player and the boss
             self.draw_guidelines_between_a_and_b(a = current_boss.rect.center, b = self.player.rect.center)
 
             # Draw the current boss
             current_boss.draw(surface = self.scaled_surface, x = current_boss.rect.x - self.camera_position[0], y = current_boss.rect.y - self.camera_position[1])
             pygame.draw.rect(self.scaled_surface, "green", pygame.Rect(current_boss.rect.x - self.camera_position[0], current_boss.rect.y - self.camera_position[1], current_boss.rect.width, current_boss.rect.height), 1)
+
+            # Update the boss
+            current_boss.run()
 
         # If the current boss is spawning
         elif current_boss == None and hasattr(self, "bosses_dict") and self.bosses_dict["ValidSpawningPosition"] != None:
@@ -645,8 +654,12 @@ class Game:
 
     def update_game_ui(self, delta_time):
 
-        # Update the delta time
+        # Updates the delta time
+    
+        # Game ui
         self.game_ui.delta_time = delta_time
+
+
 
     def run(self, delta_time):
 
@@ -677,8 +690,8 @@ class Game:
         # Run the player methods
         self.player.run(delta_time = delta_time)
 
-        # Draw the boss
-        self.draw_boss()
+        # Update and run the boss
+        self.update_and_run_boss(delta_time = delta_time)
         
         # Run the game UI 
         self.game_ui.run()
