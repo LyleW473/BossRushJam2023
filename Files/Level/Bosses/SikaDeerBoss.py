@@ -4,6 +4,7 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import line as pygame_draw_line
 from pygame import Rect as pygame_Rect
 from pygame.draw import circle as pygame_draw_circle
+from pygame.mask import from_surface as pygame_mask_from_surface
 
 class SikaDeerBoss(Generic):
 
@@ -181,7 +182,8 @@ class SikaDeerBoss(Generic):
         # Play animations
         self.play_animations()
                 
-
+        # Create / update a mask for pixel - perfect collisions
+        self.mask = pygame_mask_from_surface(self.image)
 
                 
 

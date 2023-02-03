@@ -5,6 +5,7 @@ from Level.Player.player import Player
 from Level.game_ui import GameUI
 from Level.bamboo_pile import BambooPile
 from random import choice as random_choice
+from random import randrange as random_randrange
 from math import dist
 from os import listdir as os_listdir
 
@@ -307,17 +308,9 @@ class Game:
                 # --------------------------------
                 # World / building tiles
 
-                # Check for a rect collision between the bamboo projectile and world / building tiles inside the world tiles dictionary
-                collision_result = bamboo_projectile.rect.collidedict(self.world_tiles_dict)
+                # Look for tile collisions between the bamboo projectile and world/ building tiles
+                self.look_for_world_tile_collisions(item = bamboo_projectile, other_group = self.bamboo_projectiles_group)
 
-                # If there is a rect collision
-                if collision_result != None:
-
-                    # Check for a pixel-perfect collision between the bamboo projectile and the world tile that the bamboo projectile's rect collided with
-                    if pygame.sprite.collide_mask(bamboo_projectile, collision_result[0]) != None:
-                        # If there is a pixel-perfect collision, remove the bamboo projectile
-                        self.bamboo_projectiles_group.remove(bamboo_projectile)
-                
                 # --------------------------------
                 # Bosses
 
@@ -339,9 +332,8 @@ class Game:
                             self.bosses_dict[self.bosses_dict["CurrentBoss"]].health -= bamboo_projectile.damage_amount
 
         # --------------------------------------------------------------------------------------
-        # Player
-
         # Bamboo piles
+
         # Look for collisions between the player and bamboo piles, and only delete the bamboo pile if there is a collision and the player does not currently have the maximum amount of bamboo resource
         player_and_bamboo_piles_collision_list = pygame.sprite.spritecollide(self.player, self.bamboo_piles_group, dokill = False, collided = pygame.sprite.collide_rect)
         if len(player_and_bamboo_piles_collision_list) > 0 and (self.player.player_gameplay_info_dict["AmountOfBambooResource"] != self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]):
@@ -357,26 +349,60 @@ class Game:
                                                                                 self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"], 
                                                                                 self.player.player_gameplay_info_dict["AmountOfBambooResource"] + BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"]
                                                                                 )
+            # 60% chance of increasing the player's current health
+            if random_randrange(0, 100) <= 60:
+                # Increase the player's current health, limiting it to the maximum health the player can have
+                self.player.player_gameplay_info_dict["CurrentHealth"] = min(
+                                                                            self.player.player_gameplay_info_dict["MaximumHealth"], 
+                                                                            self.player.player_gameplay_info_dict["CurrentHealth"] + BambooPile.bamboo_pile_info_dict["HealthReplenishmentAmount"]
+                                                                            )
 
         # --------------------------------------------------------------------------------------
         # Stomp attack nodes
 
-        # World tiles
-
-        # Look for collisions between stomp attack nodes and world tiles, delete the stomp attack node if there is a collision
         # Additional check because this group does note exist until the Sika Deer boss has spawned and started stomping
         if hasattr(self, "stomp_attack_nodes_group") and len(self.stomp_attack_nodes_group) > 0:
-            self.look_for_world_tile_collisions(other_group = self.stomp_attack_nodes_group)
 
-    def look_for_world_tile_collisions(self, other_group):
+            # For each stomp attack node
+            for stomp_attack_node in self.stomp_attack_nodes_group:
+
+                # --------------------------------
+                # World / building tiles
+
+                # Look for tile rect collisions between the stomp attack nodes and world / building tiles
+                if stomp_attack_node.rect.collidedict(self.world_tiles_dict):
+                    # Remove the stomp attack node from the group if there is a collision
+                    self.stomp_attack_nodes_group.remove(stomp_attack_node)
+
+                # --------------------------------
+                # Player
+
+                # Look for tile rect collisions between the stomp attack nodes and the player
+                if stomp_attack_node.rect.colliderect(self.player.rect):
+
+                    # Check for a pixel-perfect collision between the bamboo projectile and the current boss
+                    if pygame.sprite.collide_mask(stomp_attack_node, self.player) != None:
+
+                        # Remove the stomp attack node from the group if there is a collision
+                        self.stomp_attack_nodes_group.remove(stomp_attack_node)
+                        
+                        # Damage the player by the stomp attack node damage
+                        self.player.player_gameplay_info_dict["CurrentHealth"] -= stomp_attack_node.damage_amount
+                        
+
+    def look_for_world_tile_collisions(self, item, other_group):
         
         # Helper method to find collisions between items in another specified group and world tiles
-        
-        # For each item inside this group
-        for item in other_group:
-            # If the item collides with a world tile
-            if item.rect.collidedict(self.world_tiles_dict) != None:
-                # Remove the item from the group
+            
+        # Check for a rect collision between the item and world / building tiles inside the world tiles dictionary
+        collision_result = item.rect.collidedict(self.world_tiles_dict)
+
+        # If the item collided with a tile
+        if collision_result != None:
+
+            # Check for a pixel-perfect collision between the item and the world tile that the item's rect collided with
+            if pygame.sprite.collide_mask(item, collision_result[0]) != None:
+                # If there is a pixel-perfect collision, remove the item from the specified group
                 other_group.remove(item)
     
     def spawn_bamboo_pile(self, delta_time):
@@ -677,22 +703,13 @@ class Game:
             # Update the current boss' camera position 
             current_boss.camera_position = self.camera_position
 
-            print(current_boss.health)
+            # print(current_boss.health)
 
             # Draw guidelines between the player and the boss
             self.draw_guidelines_between_a_and_b(a = current_boss.rect.center, b = self.player.rect.center)
 
             # Run the boss
             current_boss.run()
-            
-            # if self.bosses_dict["CurrentBoss"] == "SikaDeer":
-
-            #     # For each stomp attack in the group
-                
-            #     for stomp_attack_node in self.stomp_attacks_nodes_group:
-            #         # Draw the stomp attack
-            #         stomp_attack_node.draw(surface = self.scaled_surface, x = stomp_attack_node.rect.x - self.camera_position[0], y = stomp_attack_node.rect.y - self.camera_position[1])
-
 
         # If the current boss is spawning
         elif current_boss == None and hasattr(self, "bosses_dict") and self.bosses_dict["ValidSpawningPosition"] != None:
@@ -741,7 +758,7 @@ class Game:
 
 
     def run(self, delta_time):
-
+        print(self.player.player_gameplay_info_dict["CurrentHealth"])
         # Update the game UI
         self.update_game_ui(delta_time = delta_time)
 

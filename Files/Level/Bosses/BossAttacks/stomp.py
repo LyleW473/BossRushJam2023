@@ -3,6 +3,8 @@ from pygame.sprite import Sprite as pygame_sprite_Sprite
 from pygame import Rect as pygame_Rect
 from math import pi, cos, sin
 from Global.settings import TILE_SIZE
+from pygame.image import load as load_image
+from pygame.transform import scale as scale_image
 
 class StompController(Generic):
 
@@ -11,7 +13,7 @@ class StompController(Generic):
         # Series of "nodes", which will spread out to a maximum distance 
 
         # Starting / minimum radius of each node
-        self.minimum_node_radius = 10 / scale_multiplier
+        self.minimum_node_radius = 20 / scale_multiplier
             
         # Maximum radius of each node
         self.maximum_node_radius = 32 / scale_multiplier
@@ -47,6 +49,9 @@ class StompController(Generic):
 
 class StompNode(pygame_sprite_Sprite):
 
+    # This image is only used for masks
+    base_image = load_image("graphics/BossAttacks/StompAttack.png").convert()
+
     def __init__(self, x, y, radius, angle):
 
         # Inherit from the pygame.sprite.Sprite class
@@ -55,13 +60,11 @@ class StompNode(pygame_sprite_Sprite):
         # The stomp attack will start below the center of the boss, b
         self.rect = pygame_Rect(x - radius, y - radius, radius * 2, radius * 2)
 
-        # The radius of the stomp node
-        self.radius = radius
-
         # Add the node to the stomp nodes group
         StompController.nodes_group.add(self)
 
         # ------------------------------------------------------------------------------
+        # Movement
 
         # The total distance travelled (including the horizontal and vertical components)
         desired_distance_travelled = 4 * TILE_SIZE
@@ -80,6 +83,18 @@ class StompNode(pygame_sprite_Sprite):
         # The attributes that will hold the new x and y positions of the projectile / node (for more accurate movement as the floating point values are saved)
         self.new_position_centerx = self.rect.centerx
         self.new_position_centery = self.rect.centery
+
+        # ------------------------------------------------------------------------------
+        # Other
+
+        # Image used for mask collision
+        self.image = scale_image(StompNode.base_image, (radius * 2, radius * 2))
+
+        # The radius of the stomp node
+        self.radius = radius
+
+        # The amount of damage that the stomp node deals
+        self.damage_amount = 10
 
     def move(self, delta_time):
 

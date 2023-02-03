@@ -69,7 +69,9 @@ class Player(Generic):
         self.player_gameplay_info_dict = {
                                         "CurrentToolEquipped": "BambooAssaultRifle",
                                         "AmountOfBambooResource": 75,
-                                        "MaximumAmountOfBambooResource": 120
+                                        "MaximumAmountOfBambooResource": 120,
+                                        "CurrentHealth": 50,
+                                        "MaximumHealth": 100
                                          }
 
         # A dictionary containing the tools and information relating to those tools
@@ -1297,6 +1299,9 @@ class Player(Generic):
 
         # Track player movement
         self.handle_player_movement()
+        
+        # Create / update a mask for pixel - perfect collisions
+        self.mask = pygame.mask.from_surface(self.image)
 
         # Draw the player tool
         self.draw_player_tool()
@@ -1307,5 +1312,3 @@ class Player(Generic):
         # Handle player shooting
         self.handle_shooting()
 
-        # # Create / update a mask for pixel - perfect collisions (Uncomment later when adding collisions with objects other than tiles)
-        # self.mask = pygame.mask.from_surface(self.image)
