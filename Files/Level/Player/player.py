@@ -69,10 +69,21 @@ class Player(Generic):
         # A dictionary containing information such as the HP the player has, the current tool equipped, amount of bamboo resource, etc.
         self.player_gameplay_info_dict = {
                                         "CurrentToolEquipped": "BambooAssaultRifle",
-                                        "AmountOfBambooResource": 30,
-                                        "MaximumAmountOfBambooResource": 30,
+
+                                        # Bamboo resource
+                                        "AmountOfBambooResource": 60,
+                                        "MaximumAmountOfBambooResource": 60,
+
+                                        # Health
                                         "CurrentHealth": 100,
                                         "MaximumHealth": 100,
+
+                                        # Frenzy mode
+                                        "CurrentFrenzyModeValue": 0,
+                                        "MaximumFrenzyModeValue": 100,
+                                        "DealDamageFrenzyModeIncrement": 0.75,
+                                        "TakeDamageFrenzyModeIncrement": 0.5,
+                                        "BlockDamageFrenzyModeIncrement": 1,
 
                                         # Damage flash effect
                                         "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
@@ -91,7 +102,7 @@ class Player(Generic):
                                         "MaximumPlacingDistance": 5 * TILE_SIZE,
                                         "MinimumPlacingDistance": 2 * TILE_SIZE,
                                         "ExistingBuildingTilesList": [],
-                                        "RemovalCooldown": 200,
+                                        "RemovalCooldown": 150,
                                         "LastTileRemovedTimer": None,
                                         "BambooResourceDepletionAmount": 5
                                         },

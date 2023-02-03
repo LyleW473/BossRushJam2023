@@ -54,7 +54,17 @@ class GameUI:
                                 "health_bar_height": int(52 / scale_multiplier), # Odd values will result in the health bar not being aligned properly
                                 "health_bar_border_radius": 0,
                                 "health_bar_outline_thickness": 2,
-                                "changing_health_bar_edge_thickness" : 3
+                                "changing_health_bar_edge_thickness" : 3,
+
+                                # Frenzy mode bar
+                                "frenzy_mode_bar_x": (self.surface.get_width() - (int(92 / scale_multiplier))) - TILE_SIZE,
+                                "frenzy_mode_bar_y": (self.surface.get_height() - round(500 / scale_multiplier)) - TILE_SIZE,
+                                "frenzy_mode_bar_width": int(92 / scale_multiplier),
+                                "frenzy_mode_bar_height": round( 500 / scale_multiplier),
+                                "changing_frenzy_mode_bar_edge_thickness": 3,
+                                "frenzy_mode_bar_outline_thickness": 3,
+                                "frenzy_mode_value_text_font": pygame_font_Font("graphics/Fonts/frenzy_mode_value_font.ttf", 18)
+
                                             },
                             "boss_bar": {
                                 "x": (self.surface.get_width() - round(800 / scale_multiplier)) / 2,
@@ -233,6 +243,99 @@ class GameUI:
                     scale_multiplier = self.scale_multiplier
                     )
 
+    def draw_player_frenzy_mode_bar(self):
+
+        # --------------------------------------
+        # Default body
+
+        pygame_draw_rect(
+                        surface = self.surface,
+                        color = "gray21",
+                        rect = pygame_Rect(
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_x"],
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_y"],
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_width"],
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_height"]
+                                        ),
+                        width = 0
+                        ) 
+        # --------------------------------------
+        # Bar that changes depending on the value of the 
+
+        # Calculate the height of the bar
+        frenzy_mode_bar_height = max(self.player_gameplay_info_dict["CurrentFrenzyModeValue"] / self.player_gameplay_info_dict["MaximumFrenzyModeValue"] * self.dimensions["player_stats"]["frenzy_mode_bar_height"], 0)
+        # Calculate the y position based on the height of the bar (int(frenzy_mode_bar_height) so that the bar doesn't get misaligned with decimal increments in the frenzy mode value)
+        frenzy_mode_bar_y_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_y"] + self.dimensions["player_stats"]["frenzy_mode_bar_height"]) - int(frenzy_mode_bar_height)
+
+        pygame_draw_rect(
+                        surface = self.surface,
+                        color = "darkorchid2",
+                        rect = pygame_Rect(
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_x"],
+                                        frenzy_mode_bar_y_pos,
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_width"] / 2,
+                                        frenzy_mode_bar_height
+                                        ),
+                        width = 0
+                        ) 
+
+        pygame_draw_rect(
+                        surface = self.surface,
+                        color = "darkorchid3",
+                        rect = pygame_Rect(
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_x"] + (self.dimensions["player_stats"]["frenzy_mode_bar_width"] / 2),
+                                        frenzy_mode_bar_y_pos,
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_width"] / 2,
+                                        frenzy_mode_bar_height
+                                        ),
+                        width = 0
+                        ) 
+
+        # Only draw the edge when the height of the frenzy mode bar is greater than 0
+        if frenzy_mode_bar_height > 0:
+
+            # Edge at the end of the changing part of the boss' health
+            pygame_draw_line(
+                            surface = self.surface, 
+                            color = (174, 50, 205),
+                            start_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_x"], frenzy_mode_bar_y_pos - (self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"] / 2)),
+                            end_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_x"] + self.dimensions["player_stats"]["frenzy_mode_bar_width"], frenzy_mode_bar_y_pos - (self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"] / 2)),
+                            width = self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"]
+                            )
+        # --------------------------------------
+        # Outline
+        pygame_draw_rect(
+                        surface = self.surface,
+                        color = "black",
+                        rect = pygame_Rect(
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_x"] - (self.dimensions["player_stats"]["frenzy_mode_bar_outline_thickness"]),
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_y"] - (self.dimensions["player_stats"]["frenzy_mode_bar_outline_thickness"]),
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_width"] + (self.dimensions["player_stats"]["frenzy_mode_bar_outline_thickness"] * 2),
+                                        self.dimensions["player_stats"]["frenzy_mode_bar_height"] + (self.dimensions["player_stats"]["frenzy_mode_bar_outline_thickness"] * 2)
+                                        ),
+                        width = self.dimensions["player_stats"]["frenzy_mode_bar_outline_thickness"]
+                            )
+
+        # --------------------------------------
+        # Frenzy mode bar text:
+
+        # Update the text that will be displayed on the screen depending on the current frenzy mode value
+        frenzy_mode_value_text = f'{int((self.player_gameplay_info_dict["CurrentFrenzyModeValue"] / self.player_gameplay_info_dict["MaximumFrenzyModeValue"]) * 100)} %' # A percentage meter
+
+        # Calculate the font size, used to position the text at the center of the health bar
+        frenzy_mode_value_text_font_size = self.dimensions["player_stats"]["frenzy_mode_value_text_font"].size(frenzy_mode_value_text)
+        
+        # Draw the text displaying the amount of bamboo resource
+        draw_text(
+                text = frenzy_mode_value_text, 
+                text_colour = "white",
+                font = self.dimensions["player_stats"]["frenzy_mode_value_text_font"],
+                x = (self.dimensions["player_stats"]["frenzy_mode_bar_x"] + (self.dimensions["player_stats"]["frenzy_mode_bar_width"] / 2)) - ((frenzy_mode_value_text_font_size[0]) / 2),
+                y = (self.dimensions["player_stats"]["frenzy_mode_bar_y"] + (self.dimensions["player_stats"]["frenzy_mode_bar_height"] / 2)) - ((frenzy_mode_value_text_font_size[1]) / 2),
+                surface = self.surface, 
+
+                )
+    
     def draw_display_cards(self):
 
         # For each tool display card
@@ -252,5 +355,8 @@ class GameUI:
 
         # Draw the boss' health if a boss has been spawned
         self.draw_boss_health()
+
+        # Draw the player's frenzy mode bar
+        self.draw_player_frenzy_mode_bar()
 
 
