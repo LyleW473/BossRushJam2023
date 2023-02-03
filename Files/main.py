@@ -16,7 +16,7 @@ class Main:
         # Create a game states controller
         self.game_states_controller = GameStatesController()
 
-        # Time
+        # Times
         # Record the previous frame that was played
         self.previous_frame = perf_counter()
         

@@ -750,12 +750,13 @@ class Game:
 
     def update_game_ui(self, delta_time):
 
-        # Updates the delta time
+        # Updates the game UI
     
-        # Game ui
+        # Delta time
         self.game_ui.delta_time = delta_time
-
-
+        
+        # Current boss
+        self.game_ui.current_boss = self.boss_group.sprite
 
     def run(self, delta_time):
 

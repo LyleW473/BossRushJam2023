@@ -1,4 +1,5 @@
 from pygame.draw import rect as pygame_draw_rect
+from pygame.draw import line as pygame_draw_line
 from pygame import Rect as pygame_Rect
 from Global.functions import draw_text
 
@@ -191,24 +192,10 @@ class DisplayCard:
                                 inner_body_rect.width - (self.extra_information_dict["starting_position_from_inner_rect"][0] * 2), # width
                                 self.extra_information_dict["health_bar_height"] # height
                                )
-        # Health bar outer outline
+        # Empty health bar
         pygame_draw_rect(
                         surface = self.surface,
-                        color = "black", 
-                        rect = (
-                                health_bar_measurements[0] - self.extra_information_dict["health_bar_outline_thickness"], 
-                                health_bar_measurements[1] - self.extra_information_dict["health_bar_outline_thickness"], 
-                                health_bar_measurements[2] + (self.extra_information_dict["health_bar_outline_thickness"] * 2),
-                                health_bar_measurements[3] + (self.extra_information_dict["health_bar_outline_thickness"] * 2)
-                                ),
-                        width = 0,
-                        border_radius = self.extra_information_dict["health_bar_border_radius"]
-                        )
-
-        # Default health bar in red
-        pygame_draw_rect(
-                        surface = self.surface,
-                        color = "red", 
+                        color = "gray21", # "dimgray"
                         rect = (
                                 health_bar_measurements[0], 
                                 health_bar_measurements[1], 
@@ -218,6 +205,8 @@ class DisplayCard:
                         width = 0,
                         border_radius = self.extra_information_dict["health_bar_border_radius"]
                         )
+        # -----------------------------------------
+        # Changing health bar
 
         # The width should be the percentage of the current health compared to the maximum health, multiplied by the default health bar width
         # Limit the width to be 0 if the player's current health is negative
@@ -229,21 +218,50 @@ class DisplayCard:
         # Calculate the font size, used to position the text at the center of the health bar
         players_health_text_font_size = self.text_font.size(players_health_text)
 
-        # Current health bar in green
+        # First half of the current health bar
         pygame_draw_rect(
                         surface = self.surface,
-                        color = "green", 
+                        color = (0, 128, 0), 
                         rect = (
                                 health_bar_measurements[0], 
                                 health_bar_measurements[1], 
                                 green_health_bar_width,
-                                health_bar_measurements[3]
+                                (health_bar_measurements[3] / 2)
                                 ),
                         width = 0,
                         border_radius = self.extra_information_dict["health_bar_border_radius"]
                         )      
 
-        # Draw the text displaying the amount of bamboo resource
+        # Second half of the current health bar
+        pygame_draw_rect(
+                        surface = self.surface,
+                        color = "green4", 
+                        rect = (
+                                health_bar_measurements[0], 
+                                health_bar_measurements[1] + (health_bar_measurements[3] / 2), 
+                                green_health_bar_width,
+                                (health_bar_measurements[3] / 2) 
+                                ),
+                        width = 0,
+                        border_radius = self.extra_information_dict["health_bar_border_radius"]
+                        )      
+
+        # Only draw the edge when the width of the health bar is greater than 0
+        if green_health_bar_width > 0:
+
+            # Edge at the end of the changing part of the player's health
+            pygame_draw_line(
+                            surface = self.surface, 
+                            color = "gray51",
+                            start_pos = ((health_bar_measurements[0] + green_health_bar_width) - (self.extra_information_dict["changing_health_bar_edge_thickness"] / 2), health_bar_measurements[1]),
+                            end_pos = ((health_bar_measurements[0] + green_health_bar_width) - (self.extra_information_dict["changing_health_bar_edge_thickness"] / 2), health_bar_measurements[1] + health_bar_measurements[3]),
+                            width = self.extra_information_dict["changing_health_bar_edge_thickness"]
+                            )
+        
+        # -----------------------------------------
+        # Player health text
+
+        # Draw the text displaying the player's health
         draw_text(
                 text = players_health_text, 
                 text_colour = "white",
@@ -254,6 +272,22 @@ class DisplayCard:
                 scale_multiplier = self.extra_information_dict["scale_multiplier"]
                 )
 
+        # -----------------------------------------
+        # Health bar outer outline
+        
+        pygame_draw_rect(
+                        surface = self.surface,
+                        color = "black", 
+                        rect = (
+                                health_bar_measurements[0] - self.extra_information_dict["health_bar_outline_thickness"], 
+                                health_bar_measurements[1] - self.extra_information_dict["health_bar_outline_thickness"], 
+                                health_bar_measurements[2] + (self.extra_information_dict["health_bar_outline_thickness"] * 2),
+                                health_bar_measurements[3] + (self.extra_information_dict["health_bar_outline_thickness"] * 2)
+                                ),
+                        width = self.extra_information_dict["health_bar_outline_thickness"],
+                        border_radius = self.extra_information_dict["health_bar_border_radius"]
+                        )
+        
     # --------------------------------------------
     # Main draw method
     

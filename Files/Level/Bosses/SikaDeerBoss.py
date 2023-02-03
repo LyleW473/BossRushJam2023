@@ -33,6 +33,8 @@ class SikaDeerBoss(Generic):
         
         # Health of the boss
         self.health = 7500
+        # Maximum health of the boss
+        self.maximum_health = 7500
         
         self.behaviour_patterns_dict = {
                                     # The current action that the boss is performing

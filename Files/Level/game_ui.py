@@ -1,5 +1,12 @@
-import pygame
+from pygame import Rect as pygame_Rect
+from pygame import Surface as pygame_Surface
+from pygame.font import Font as pygame_font_Font
+from pygame.draw import rect as pygame_draw_rect
+from pygame.draw import line as pygame_draw_line
+from pygame.image import load as load_image
 from Level.display_card import DisplayCard
+from Global.settings import TILE_SIZE
+from Global.functions import draw_text
 
 class GameUI:
 
@@ -14,12 +21,14 @@ class GameUI:
         # Delta time attribute
         self.delta_time = None
 
+        # The current boss
+        self.current_boss = None
+
         # The tools that the player has
         self.player_tools = player_tools
-            
+        
         # A dictionary containing information such as the HP the player has, the current tool equipped, amount of bamboo resource, etc.
         self.player_gameplay_info_dict = player_gameplay_info_dict
-
 
         # A dictionary containing information for each element of the game UI
         self.dimensions = {
@@ -41,11 +50,21 @@ class GameUI:
 
                                 # Health bar
                                 "spacing_y_between_stats_and_health_bar": round(20 / scale_multiplier),
-                                "health_bar_height": round(50 / scale_multiplier), # The width is calculated inside the display card class, using the inner body rect
-                                "health_bar_border_radius": 10,
+                                # The width is calculated inside the display card class, using the inner body rect
+                                "health_bar_height": int(52 / scale_multiplier), # Odd values will result in the health bar not being aligned properly
+                                "health_bar_border_radius": 0,
                                 "health_bar_outline_thickness": 2,
+                                "changing_health_bar_edge_thickness" : 3
                                             },
-
+                            "boss_bar": {
+                                "x": (self.surface.get_width() - round(800 / scale_multiplier)) / 2,
+                                "y": (self.surface.get_height() - round( (52 + 4) / scale_multiplier)) - TILE_SIZE, # Positioned 1 tile from the bottom of the screen (The 4 = the bar outline thickness)
+                                "width": round((800) / scale_multiplier),
+                                "height": round(52 / scale_multiplier),
+                                "bar_outline_thickness": 4,
+                                "text_font": pygame_font_Font("graphics/Fonts/player_stats_font.ttf", 32),
+                                "changing_health_bar_edge_thickness": 3,
+                                }
                           }
                             
         # A dictionary containing the display cards of all the elements of the game UI
@@ -56,7 +75,7 @@ class GameUI:
 
         # A dictionary containing the images for the player stats
         self.stats_images_dict = {
-                        "BambooResource": pygame.image.load("graphics/Misc/BambooResource.png").convert_alpha(),
+                        "BambooResource": load_image("graphics/Misc/BambooResource.png").convert_alpha(),
                         "BuildingTiles": self.player_tools["BuildingTool"]["Images"]["TileImage"]
                                  }
 
@@ -78,13 +97,13 @@ class GameUI:
 
                 # Create a display card, passing in: The rect, main surface, an alpha surface for the display card and icon image.
                 self.display_cards_dict["player_tools"].append(DisplayCard(
-                                            rect = pygame.Rect(
+                                            rect = pygame_Rect(
                                                             self.dimensions["player_tools"]["x"], 
                                                             self.dimensions["player_tools"]["y"] + (self.dimensions["player_tools"]["height"] * len(self.display_cards_dict["player_tools"])) + (spacing_y * len(self.display_cards_dict["player_tools"])),
                                                             self.dimensions["player_tools"]["width"],
                                                             self.dimensions["player_tools"]["height"]),
                                             surface = self.surface,
-                                            alpha_surface = pygame.Surface((self.dimensions["player_tools"]["width"], self.dimensions["player_tools"]["height"])),
+                                            alpha_surface = pygame_Surface((self.dimensions["player_tools"]["width"], self.dimensions["player_tools"]["height"])),
                                             images = self.player_tools[tool]["Images"]["IconImage"],
                                             purpose = "PlayerTools",
                                                                 )
@@ -105,20 +124,114 @@ class GameUI:
         # Create player stats cards and add it to the list in the player stats of the display cards dictionary
         self.display_cards_dict["player_stats"].append(DisplayCard
                                                                     (
-                                                                        rect = pygame.Rect(
+                                                                        rect = pygame_Rect(
                                                                                             self.dimensions["player_stats"]["x"],
                                                                                             self.dimensions["player_stats"]["y"], 
                                                                                             self.dimensions["player_stats"]["width"], 
                                                                                             self.dimensions["player_stats"]["height"]
                                                                                             ),
                                                                         surface = self.surface, 
-                                                                        alpha_surface = pygame.Surface((self.dimensions["player_stats"]["width"], self.dimensions["player_stats"]["height"])),
+                                                                        alpha_surface = pygame_Surface((self.dimensions["player_stats"]["width"], self.dimensions["player_stats"]["height"])),
                                                                         images = [self.stats_images_dict["BuildingTiles"], self.stats_images_dict["BambooResource"]],
-                                                                        text_font = pygame.font.Font("graphics/Fonts/player_stats_font.ttf", 32),
+                                                                        text_font = pygame_font_Font("graphics/Fonts/player_stats_font.ttf", 32),
                                                                         extra_information_dict = {key:value for key, value in self.dimensions["player_stats"].items() if key not in ["x", "y", "width", "height"]}, # Adds extra information into a dictionary
                                                                         purpose = "PlayerStats"
                                                                     )
                                                                 )
+
+    def draw_boss_health(self):
+        
+        # If a boss has been spawned
+        if self.current_boss != None:
+            
+            # --------------------------------------
+            # Default body
+
+            pygame_draw_rect(
+                            surface = self.surface,
+                            color = "gray21",
+                            rect = pygame_Rect(
+                                            self.dimensions["boss_bar"]["x"],
+                                            self.dimensions["boss_bar"]["y"],
+                                            self.dimensions["boss_bar"]["width"],
+                                            self.dimensions["boss_bar"]["height"]
+                                            ),
+                            width = 0
+                            )
+            
+            # --------------------------------------
+            # Bar that changes depending on the health of the current boss
+
+            health_bar_width = max((self.current_boss.health / self.current_boss.maximum_health ) * self.dimensions["boss_bar"]["width"], 0)
+            pygame_draw_rect(
+                            surface = self.surface,
+                            color = "firebrick3",
+                            rect = pygame_Rect(
+                                            self.dimensions["boss_bar"]["x"],
+                                            self.dimensions["boss_bar"]["y"],
+                                            health_bar_width,
+                                            self.dimensions["boss_bar"]["height"] / 2
+                                            ),
+                            width = 0
+                            )
+
+            pygame_draw_rect(
+                            surface = self.surface,
+                            color = "firebrick4",
+                            rect = pygame_Rect(
+                                            self.dimensions["boss_bar"]["x"],
+                                            self.dimensions["boss_bar"]["y"] + (self.dimensions["boss_bar"]["height"] / 2),
+                                            health_bar_width,
+                                            self.dimensions["boss_bar"]["height"] / 2
+                                            ),
+                            width = 0
+                            )
+
+            # Only draw the edge when the width of the health bar is greater than 0
+            if health_bar_width > 0:
+
+                # Edge at the end of the changing part of the boss' health
+                pygame_draw_line(
+                                surface = self.surface, 
+                                color = "gray51",
+                                start_pos = ((self.dimensions["boss_bar"]["x"] + health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), self.dimensions["boss_bar"]["y"]),
+                                end_pos = ((self.dimensions["boss_bar"]["x"] + health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), self.dimensions["boss_bar"]["y"] + self.dimensions["boss_bar"]["height"]),
+                                width = self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"]
+                                )
+
+            # --------------------------------------
+            # Outline
+            pygame_draw_rect(
+                            surface = self.surface,
+                            color = "black",
+                            rect = pygame_Rect(
+                                            self.dimensions["boss_bar"]["x"] - (self.dimensions["boss_bar"]["bar_outline_thickness"]),
+                                            self.dimensions["boss_bar"]["y"] - (self.dimensions["boss_bar"]["bar_outline_thickness"]),
+                                            self.dimensions["boss_bar"]["width"] + (self.dimensions["boss_bar"]["bar_outline_thickness"] * 2),
+                                            self.dimensions["boss_bar"]["height"] + (self.dimensions["boss_bar"]["bar_outline_thickness"] * 2)
+                                            ),
+                            width = self.dimensions["boss_bar"]["bar_outline_thickness"]
+                                )
+
+            # --------------------------------------
+            # Health bar text:
+
+            # Update the text that will be displayed on the screen depending on the boss' current health
+            boss_health_text = f'{max(self.current_boss.health, 0)} / {self.current_boss.maximum_health}'
+
+            # Calculate the font size, used to position the text at the center of the health bar
+            boss_health_text_font_size = self.dimensions["boss_bar"]["text_font"].size(boss_health_text)
+            
+            # Draw the text displaying the amount of bamboo resource
+            draw_text(
+                    text = boss_health_text, 
+                    text_colour = "white",
+                    font = self.dimensions["boss_bar"]["text_font"],
+                    x = (self.dimensions["boss_bar"]["x"] + (self.dimensions["boss_bar"]["width"] / 2)) - ((boss_health_text_font_size[0] / self.scale_multiplier) / 2),
+                    y = (self.dimensions["boss_bar"]["y"] + (self.dimensions["boss_bar"]["height"] / 2)) - ((boss_health_text_font_size[1] / self.scale_multiplier) / 2),
+                    surface = self.surface, 
+                    scale_multiplier = self.scale_multiplier
+                    )
 
     def draw_display_cards(self):
 
@@ -136,5 +249,8 @@ class GameUI:
 
         # Draw the display cards onto the screen
         self.draw_display_cards()
+
+        # Draw the boss' health if a boss has been spawned
+        self.draw_boss_health()
 
 
