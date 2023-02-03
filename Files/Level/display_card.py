@@ -138,7 +138,7 @@ class DisplayCard:
         self.surface.blit(self.images[0], building_tile_image_position)
 
         # The text that displays how many building tiles exist inside the map currently
-        existing_building_tiles_text = f'Number of tiles: {len(player_tools["BuildingTool"]["ExistingBuildingTilesDict"])}'
+        existing_building_tiles_text = f'Number of tiles: {len(player_tools["BuildingTool"]["ExistingBuildingTilesList"])}'
 
         # Draw the text displaying the number of building tiles that exist inside the map currently
         draw_text(

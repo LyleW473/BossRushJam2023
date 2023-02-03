@@ -68,8 +68,8 @@ class Player(Generic):
         # A dictionary containing information such as the HP the player has, the current tool equipped, amount of bamboo resource, etc.
         self.player_gameplay_info_dict = {
                                         "CurrentToolEquipped": "BambooAssaultRifle",
-                                        "AmountOfBambooResource": 75,
-                                        "MaximumAmountOfBambooResource": 120,
+                                        "AmountOfBambooResource": 30,
+                                        "MaximumAmountOfBambooResource": 30,
                                         "CurrentHealth": 100,
                                         "MaximumHealth": 100
                                          }
@@ -85,7 +85,7 @@ class Player(Generic):
                                         "MaximumBuildingTileHP": 100,
                                         "MaximumPlacingDistance": 5 * TILE_SIZE,
                                         "MinimumPlacingDistance": 2 * TILE_SIZE,
-                                        "ExistingBuildingTilesDict": {},
+                                        "ExistingBuildingTilesList": [],
                                         "RemovalCooldown": 200,
                                         "LastTileRemovedTimer": None,
                                         "BambooResourceDepletionAmount": 5
@@ -985,6 +985,7 @@ class Player(Generic):
         mouse_position = pygame.mouse.get_pos()  
         scale_multiplier = (screen_width / self.surface.get_width(), screen_height / self.surface.get_height())
         self.mouse_position = ((mouse_position[0] / scale_multiplier[0]) + self.camera_position[0] , (mouse_position[1] / scale_multiplier[1]) + self.camera_position[1])
+        self.mouse_rect = pygame.Rect(self.mouse_position[0], self.mouse_position[1], 1, 1)
 
         # Find the distance between the mouse and the center of the player in their horizontal and vertical components
         dx, dy = self.mouse_position[0] - self.rect.centerx, self.mouse_position[1] - self.rect.centery
@@ -1076,26 +1077,51 @@ class Player(Generic):
             # --------------------------------------
             # Checking for input to remove building tiles
 
+            # Look for collisions between the player's mouse and any placed building tile
+            # Note: Used for removing building tiles and highlighting tiles
+            collision_result_index = self.mouse_rect.collidelist(self.tools["BuildingTool"]["ExistingBuildingTilesList"])
+
+            # If the player is hovering over an existing building tile
+            if collision_result_index != -1:
+                
+                # Highlight the building tile
+                building_tile_to_highlight = self.tools["BuildingTool"]["ExistingBuildingTilesList"][collision_result_index]
+                pygame.draw.rect(
+                                surface = self.surface,
+                                color = "orange",
+                                rect = pygame.Rect(
+                                                    building_tile_to_highlight.rect.x - self.camera_position[0],
+                                                    building_tile_to_highlight.rect.y  - self.camera_position[1],
+                                                    building_tile_to_highlight.rect.width,
+                                                    building_tile_to_highlight.rect.height
+                                                  ),
+                                width = 2
+                                )
+
+            # ------------------
+            # Highlighting any tiles that 
+
             # If the player pressed the right mouse button and there is an existing building tile
-            if pygame.mouse.get_pressed()[2] and len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) > 0:
+            if pygame.mouse.get_pressed()[2] and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0:
                 
                 # If enough time has passed since the player last removed a building tile
                 if self.tools["BuildingTool"]["LastTileRemovedTimer"] == None:
 
-                    # The building tile to remove should be the last building tile placed down
-                    building_tile_to_remove = self.tools["BuildingTool"]["ExistingBuildingTilesDict"][len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) - 1]
+                    # Return the building tile at this collision index 
+                    """ Note: If there is no collision, index -1 will be returned, which is perfect because then we should remove the last building tile placed down """
+                    building_tile_to_remove = self.tools["BuildingTool"]["ExistingBuildingTilesList"][collision_result_index]
 
                     # Remove the building tile from the world tiles group
                     self.sprite_groups["WorldTiles"].remove(building_tile_to_remove)
 
-                    # Remove the building tile from the world tiles dictionary
+                    # Remove the building tile from the world tiles list
                     self.world_tiles_dict.pop(building_tile_to_remove)
 
                     # "Create" an empty tile where the building tile was
                     self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
 
-                    # Remove the building tile from the existing building tiles dictionary
-                    self.tools["BuildingTool"]["ExistingBuildingTilesDict"].pop(len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) - 1)
+                    # Remove the building tile at the collision result index from the existing building tiles list
+                    self.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(collision_result_index)
 
                     # Start the last tile removed timer, so that the player has to wait "self.tools["BuildingTool"]["RemovalCooldown"]" before removing another tile
                     self.tools["BuildingTool"]["LastTileRemovedTimer"] = 0
@@ -1113,7 +1139,7 @@ class Player(Generic):
 
             # Draw a guide circles to show the minimum and maximum distances the player can place building tiles (MAY REMOVE)
             pygame.draw.circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MinimumPlacingDistance"], 1)
-            pygame.draw.circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MaximumPlacingDistance"], 1)
+            pygame.draw.circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MaximumPlacingDistance"], 2)
 
             # Find collisions between the mouse rect and empty tiles inside the tile map
             empty_tile_collision = pygame.Rect(self.mouse_position[0] , self.mouse_position[1] , 1, 1).collidedict(self.empty_tiles_dict)
@@ -1141,11 +1167,11 @@ class Player(Generic):
                                                         empty_tile_rect_info[1] - self.camera_position[1],
                                                         empty_tile_rect_info[2],
                                                         empty_tile_rect_info[3]),
-                                    width = 1                
+                                    width = 2                
                                     )   
 
                     # If the left mouse button is pressed and there are less than 3 existing building tiles
-                    if pygame.mouse.get_pressed()[0] == True and len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"]) < 3:
+                    if pygame.mouse.get_pressed()[0] == True and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) < 3:
                         
                         # If the player has enough bamboo resource to place down another building tile
                         if self.player_gameplay_info_dict["AmountOfBambooResource"] - self.tools["BuildingTool"]["BambooResourceDepletionAmount"] > 0:
@@ -1162,8 +1188,8 @@ class Player(Generic):
                             # Remove the empty tile from the empty tiles dictionary
                             self.empty_tiles_dict.pop(empty_tile_rect_info)
                             
-                            # Add the building tile to the existing building tiles dictionary
-                            self.tools["BuildingTool"]["ExistingBuildingTilesDict"][len(self.tools["BuildingTool"]["ExistingBuildingTilesDict"])] = building_tile
+                            # Add the building tile to the existing building tiles list
+                            self.tools["BuildingTool"]["ExistingBuildingTilesList"].append(building_tile)
 
                             # Remove bamboo resource by the depletion amount set
                             self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BuildingTool"]["BambooResourceDepletionAmount"]
@@ -1183,7 +1209,7 @@ class Player(Generic):
                                                         empty_tile_rect_info[1] - self.camera_position[1],
                                                         empty_tile_rect_info[2],
                                                         empty_tile_rect_info[3]),
-                                    width = 1                
+                                    width = 2                
                                     )   
     
     # ---------------------------------------
@@ -1218,7 +1244,7 @@ class Player(Generic):
                 current_weapon["ShootingCooldownTimer"] = None
 
             # If the left mouse button has been pressed and the player has enough resources to shoot
-            if pygame.mouse.get_pressed()[0] == True and self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon["BambooResourceDepletionAmount"]:
+            if pygame.mouse.get_pressed()[0] == True and (self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon["BambooResourceDepletionAmount"]) >= 0:
 
                 # If the player's current weapon is the "BambooAssaultRifle"
                 if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooAssaultRifle":
