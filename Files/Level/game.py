@@ -297,13 +297,16 @@ class Game:
         # --------------------------------------------------------------------------------------
         # Bamboo projectiles 
 
-        # World / building tiles
+        
         # Look for collisions between bamboo projectiles and world tiles, delete the bamboo projectile if there is a collision
         if len(self.bamboo_projectiles_group) > 0:
 
             # For each bamboo projectile 
             for bamboo_projectile in self.bamboo_projectiles_group:
-                
+
+                # --------------------------------
+                # World / building tiles
+
                 # Check for a rect collision between the bamboo projectile and world / building tiles inside the world tiles dictionary
                 collision_result = bamboo_projectile.rect.collidedict(self.world_tiles_dict)
 
@@ -314,6 +317,26 @@ class Game:
                     if pygame.sprite.collide_mask(bamboo_projectile, collision_result[0]) != None:
                         # If there is a pixel-perfect collision, remove the bamboo projectile
                         self.bamboo_projectiles_group.remove(bamboo_projectile)
+                
+                # --------------------------------
+                # Bosses
+
+                # If a boss has been spawned
+                if hasattr(self, "bosses_dict") and self.bosses_dict[self.bosses_dict["CurrentBoss"]] != None:
+
+                    # If the bamboo projectile's rect has collided with the current boss' rect
+                    if bamboo_projectile.rect.colliderect(self.bosses_dict[self.bosses_dict["CurrentBoss"]].rect) == True:
+                        
+                        # Check for a pixel-perfect collision between the bamboo projectile and the current boss
+                        if pygame.sprite.collide_mask(bamboo_projectile, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
+                            # If there is a pixel-perfect collision:
+
+                            # Remove the bamboo projectile
+                            self.bamboo_projectiles_group.remove(bamboo_projectile)
+
+                            # Damage the current boss by the amount of damage that was passed into the bamboo projectile
+                            # Note: This allows for different damage values for e.g. different weapons
+                            self.bosses_dict[self.bosses_dict["CurrentBoss"]].health -= bamboo_projectile.damage_amount
 
         # --------------------------------------------------------------------------------------
         # Player
@@ -653,6 +676,8 @@ class Game:
 
             # Update the current boss' camera position 
             current_boss.camera_position = self.camera_position
+
+            print(current_boss.health)
 
             # Draw guidelines between the player and the boss
             self.draw_guidelines_between_a_and_b(a = current_boss.rect.center, b = self.player.rect.center)

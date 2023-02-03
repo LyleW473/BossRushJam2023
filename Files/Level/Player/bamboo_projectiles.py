@@ -8,7 +8,10 @@ class BambooProjectile(Generic):
     # Projectile image of all bamboo projectiles
     projectile_image = pygame.image.load("graphics/Projectiles/BambooProjectile.png")
 
-    def __init__(self, x, y, angle):
+    def __init__(self, x, y, angle, damage_amount):
+
+        # --------------------------------------------------------------------------------
+        # Movement
 
         # The total distance travelled (including the horizontal and vertical components)
         desired_distance_travelled = 6 * TILE_SIZE
@@ -38,6 +41,11 @@ class BambooProjectile(Generic):
         # The attributes that will hold the new x and y positions of the projectile (for more accurate shooting as the floating point values are saved)
         self.new_position_x = self.rect.x
         self.new_position_y = self.rect.y
+        # --------------------------------------------------------------------------------
+        # Damage
+
+        # The damage amount (the damage depends on what weapon this was shot from)
+        self.damage_amount = damage_amount
 
     def move_projectile(self):
 

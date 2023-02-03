@@ -103,7 +103,8 @@ class Player(Generic):
                                         },
                             "ShootingCooldown": 150,
                             "ShootingCooldownTimer": 150, # 150 so that the player starts off being unable to shoot (after pressing the play button)
-                            "BambooResourceDepletionAmount": 0.5
+                            "BambooResourceDepletionAmount": 0.5,
+                            "WeaponDamage": 25
                                         
                                              },
                     
@@ -1251,7 +1252,8 @@ class Player(Generic):
                             bamboo_projectile = BambooProjectile(
                                                                 x = self.rect.centerx + distance_x,
                                                                 y = self.rect.centery + distance_y,
-                                                                angle = self.look_angle
+                                                                angle = self.look_angle,
+                                                                damage_amount = self.tools["BambooAssaultRifle"]["WeaponDamage"]
                                                                 )
                 
                         

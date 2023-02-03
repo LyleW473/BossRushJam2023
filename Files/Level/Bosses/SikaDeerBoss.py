@@ -29,11 +29,10 @@ class SikaDeerBoss(Generic):
         self.delta_time
         self.camera_position
         """
-
-        # # Health
-        # self.health = 4000
-
-
+        
+        # Health of the boss
+        self.health = 7500
+        
         self.behaviour_patterns_dict = {
                                     # The current action that the boss is performing
                                     "CurrentAction": "Stomp",
@@ -79,21 +78,8 @@ class SikaDeerBoss(Generic):
         # Set the animation frame timer to start at 0, this is so that the first animation frame does not count as a stomp
         self.behaviour_patterns_dict["Stomp"]["AnimationFrameTimer"] = 0
 
-        # print(SikaDeerBoss.ImagesDict)
-
-        # # Adding animation timers for each behaviour pattern
-        # for action in self.behaviour_patterns_dict.keys():
-        #     # If the key is not "CurrentAction":
-        #     if action != "CurrentAction":
-        #         # Set a new key:value pair for the time between each animation frame
-        #         self.behaviour_patterns_dict[action]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict[action]["Duration"] / len(SikaDeerBoss.ImagesDict[action])
-
-        #         # Set the animation frame timer to start at the time between each animation frame
-        #         self.behaviour_patterns_dict[action]["AnimationFrameTimer"] = self.behaviour_patterns_dict[action]["TimeBetweenAnimFrames"] 
-
         # Stomp controller used to create stomp nodes and update each individual stomp node
         self.stomp_controller = StompController(scale_multiplier = scale_multiplier)
-
 
         print(self.behaviour_patterns_dict)
 

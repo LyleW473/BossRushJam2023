@@ -36,6 +36,7 @@ class StompController(Generic):
 
         # Create more stomp nodes:
         for i in range(0, desired_number_of_nodes):
+
             # Create a stomp node (automatically added to the stomp nodes group when instantiated)
             StompNode(
                     x = center_of_boss_position[0] + (calculated_radius * cos(i * angle_change)), 
