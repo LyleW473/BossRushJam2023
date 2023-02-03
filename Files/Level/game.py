@@ -329,7 +329,10 @@ class Game:
 
                             # Damage the current boss by the amount of damage that was passed into the bamboo projectile
                             # Note: This allows for different damage values for e.g. different weapons
-                            self.bosses_dict[self.bosses_dict["CurrentBoss"]].health -= bamboo_projectile.damage_amount
+                            self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= bamboo_projectile.damage_amount
+
+                            # Play the boss' damaged flash effect
+                            self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTimer"] = self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTime"]
 
         # --------------------------------------------------------------------------------------
         # Bamboo piles
@@ -388,7 +391,9 @@ class Game:
                         
                         # Damage the player by the stomp attack node damage
                         self.player.player_gameplay_info_dict["CurrentHealth"] -= stomp_attack_node.damage_amount
-                        
+
+                        # Set the damaged flash effect timer to the damage flash effect time set (damaged flashing effect)
+                        self.player.player_gameplay_info_dict["DamagedFlashEffectTimer"] = self.player.player_gameplay_info_dict["DamagedFlashEffectTime"]
 
     def look_for_world_tile_collisions(self, item, other_group):
         

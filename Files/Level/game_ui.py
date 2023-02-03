@@ -162,7 +162,7 @@ class GameUI:
             # --------------------------------------
             # Bar that changes depending on the health of the current boss
 
-            health_bar_width = max((self.current_boss.health / self.current_boss.maximum_health ) * self.dimensions["boss_bar"]["width"], 0)
+            health_bar_width = max((self.current_boss.extra_information_dict["CurrentHealth"] / self.current_boss.extra_information_dict["MaximumHealth"] ) * self.dimensions["boss_bar"]["width"], 0)
             pygame_draw_rect(
                             surface = self.surface,
                             color = "firebrick3",
@@ -193,7 +193,7 @@ class GameUI:
                 # Edge at the end of the changing part of the boss' health
                 pygame_draw_line(
                                 surface = self.surface, 
-                                color = "gray51",
+                                color = (200, 44, 44),
                                 start_pos = ((self.dimensions["boss_bar"]["x"] + health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), self.dimensions["boss_bar"]["y"]),
                                 end_pos = ((self.dimensions["boss_bar"]["x"] + health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), self.dimensions["boss_bar"]["y"] + self.dimensions["boss_bar"]["height"]),
                                 width = self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"]
@@ -217,7 +217,7 @@ class GameUI:
             # Health bar text:
 
             # Update the text that will be displayed on the screen depending on the boss' current health
-            boss_health_text = f'{max(self.current_boss.health, 0)} / {self.current_boss.maximum_health}'
+            boss_health_text = f'{max(self.current_boss.extra_information_dict["CurrentHealth"], 0)} / {self.current_boss.extra_information_dict["MaximumHealth"]}'
 
             # Calculate the font size, used to position the text at the center of the health bar
             boss_health_text_font_size = self.dimensions["boss_bar"]["text_font"].size(boss_health_text)

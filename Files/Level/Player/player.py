@@ -4,6 +4,7 @@ from Global.settings import *
 from Level.Player.building_tile import BuildingTile
 from Level.Player.bamboo_projectiles import BambooProjectile
 from math import degrees, sin, cos, atan2, pi, dist
+from Global.functions import change_image_colour
 
 class Player(Generic):
     
@@ -71,7 +72,11 @@ class Player(Generic):
                                         "AmountOfBambooResource": 30,
                                         "MaximumAmountOfBambooResource": 30,
                                         "CurrentHealth": 100,
-                                        "MaximumHealth": 100
+                                        "MaximumHealth": 100,
+
+                                        # Damage flash effect
+                                        "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
+                                        "DamagedFlashEffectTimer": None
                                          }
 
         # A dictionary containing the tools and information relating to those tools
@@ -260,6 +265,9 @@ class Player(Generic):
         # Increment the animation frame counter based on time
         self.animation_frame_counter += 1000 * self.delta_time
 
+        # Update the damage flash effect timer (if it has been set to the damage flash effect timer)
+        self.update_damage_flash_effect_timer()
+
         # --------------------------------------
         # Identifying the direction that the player is looking toward.
         """ 
@@ -379,6 +387,13 @@ class Player(Generic):
 
         # ---------------------------------------------------------------------------------
         # Set the image to be this animation frame
+
+        # If the player has been damaged
+        if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
+            # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
+            current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = (255, 255, 255))
+        
+        # Set the image to be this animation frame
         self.image = current_animation_image
 
         # ---------------------------------------------------------------------------------
@@ -428,14 +443,21 @@ class Player(Generic):
         - The camera position must be subtracted so that the image is drawn within the limits of the screen.
         - Half of the image width and height is subtracted so that the rotation of the player image is centered within the player rect.
         """
-        pygame.draw.rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
+        # pygame.draw.rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
         
         # If the current animation state is "Run"
         if self.current_animation_state == "Run":
 
             # ---------------------------------------------------------------------------------
             # Assigning the head image
+
+            # Set the head image to be the default version of the head image
             head_image = self.head_dict[self.current_player_element][self.current_look_direction][self.animation_index]
+
+            # If the damage flash effect timer is counting down (i.e. the player has been damaged)
+            if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
+                # Set the head image to be the flashed version of the head image (a white flash effect)
+                head_image = change_image_colour(current_animation_image = head_image, desired_colour = (255, 255, 255))
         
             # ---------------------------------------------------------------------------------
             # Drawing the torso and the head
@@ -458,7 +480,7 @@ class Player(Generic):
                 # Left or right
                 case _ if self.current_look_direction == "Left" or self.current_look_direction == "Right":
                     head_adjustment_y = 0
-
+            
             # Draw the head on top the torso
             self.surface.blit(head_image, ((self.rect.centerx - self.camera_position[0]) - int(head_image.get_width()/ 2), head_adjustment_y + torso_position[1] - head_image.get_height()))
 
@@ -489,11 +511,33 @@ class Player(Generic):
                     # Set the player direction into a list consisting of the two directions the player is facing. E.g. ["Up", "Left"]
                     self.player_direction = self.current_look_direction.split()
 
-                # Set the image to be the images that correspond with the direction that the player is facing
-                self.image = self.animations_dict[self.current_player_element]["Idle"][self.current_look_direction][self.animation_index]
+                # ------------------------------------------------------------------------------------------------------------
+                # Changing the image if damaged 
+
+                # If the damage flash effect timer is counting down (i.e. the player has been damaged)
+                if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
+                    # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
+                    self.image = change_image_colour(current_animation_image = current_animation_image, desired_colour = (0, 0, 0))
 
             # Draw the idle animation
             self.draw(surface = self.surface, x = (self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), y = (self.rect.centery - self.camera_position[1]) - int(self.image.get_height() / 2))
+
+    def update_damage_flash_effect_timer(self):
+        
+        # Updates the damage flash effect timer
+
+        # If there has been a timer set for the damage flash effect
+        if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
+
+            # If the timer has not finished counting
+            if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] > 0:
+                # Decrease the timer
+                self.player_gameplay_info_dict["DamagedFlashEffectTimer"] -= 1000 * self.delta_time
+            
+            # If the timer has finished counting
+            if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] <= 0:
+                # Set the damage flash effect timer back to None
+                self.player_gameplay_info_dict["DamagedFlashEffectTimer"] = None
     
     # ---------------------------------------------------------------------------------
     # Movement       
@@ -1064,15 +1108,18 @@ class Player(Generic):
             # --------------------------------------
             # Updating building tool removal timer
 
-            # If there is a timer that has been set to start counting and the timer is less than the removal cooldown
-            if self.tools["BuildingTool"]["LastTileRemovedTimer"] != None and self.tools["BuildingTool"]["LastTileRemovedTimer"] < self.tools["BuildingTool"]["RemovalCooldown"]:
-                # Increase the timer
-                self.tools["BuildingTool"]["LastTileRemovedTimer"] += 1000 * self.delta_time
+            # If there is a timer that has been set to start counting
+            if self.tools["BuildingTool"]["LastTileRemovedTimer"] != None:
+                
+                # If the timer is less than  to the removal cooldown of building tiles
+                if self.tools["BuildingTool"]["LastTileRemovedTimer"] < self.tools["BuildingTool"]["RemovalCooldown"]:
+                    # Increase the timer
+                    self.tools["BuildingTool"]["LastTileRemovedTimer"] += 1000 * self.delta_time
             
-            # If there is a timer that has been set to start counting and the timer is greater than or equal to the removal cooldown of building tiles
-            elif self.tools["BuildingTool"]["LastTileRemovedTimer"] != None and self.tools["BuildingTool"]["LastTileRemovedTimer"] >= self.tools["BuildingTool"]["RemovalCooldown"]:
-                # Set the last tile removed timer back to None
-                self.tools["BuildingTool"]["LastTileRemovedTimer"] = None
+                # If the timer is greater than or equal to the removal cooldown of building tiles
+                if self.tools["BuildingTool"]["LastTileRemovedTimer"] >= self.tools["BuildingTool"]["RemovalCooldown"]:
+                    # Set the last tile removed timer back to None
+                    self.tools["BuildingTool"]["LastTileRemovedTimer"] = None
             
             # --------------------------------------
             # Checking for input to remove building tiles
@@ -1307,6 +1354,8 @@ class Player(Generic):
             bamboo_projectile.move_projectile()
     
     def run(self, delta_time):
+
+
 
         #pygame.draw.line(self.surface, "white", (self.surface.get_width() / 2, 0), (self.surface.get_width() / 2, self.surface.get_height()))
         

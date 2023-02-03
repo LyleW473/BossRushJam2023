@@ -252,7 +252,7 @@ class DisplayCard:
             # Edge at the end of the changing part of the player's health
             pygame_draw_line(
                             surface = self.surface, 
-                            color = "gray51",
+                            color = (0, 150, 0),
                             start_pos = ((health_bar_measurements[0] + green_health_bar_width) - (self.extra_information_dict["changing_health_bar_edge_thickness"] / 2), health_bar_measurements[1]),
                             end_pos = ((health_bar_measurements[0] + green_health_bar_width) - (self.extra_information_dict["changing_health_bar_edge_thickness"] / 2), health_bar_measurements[1] + health_bar_measurements[3]),
                             width = self.extra_information_dict["changing_health_bar_edge_thickness"]

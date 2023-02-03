@@ -5,6 +5,8 @@ from pygame.draw import line as pygame_draw_line
 from pygame import Rect as pygame_Rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.mask import from_surface as pygame_mask_from_surface
+from Global.functions import change_image_colour
+from random import choice as random_choice
 
 class SikaDeerBoss(Generic):
 
@@ -31,11 +33,7 @@ class SikaDeerBoss(Generic):
         self.camera_position
         """
         
-        # Health of the boss
-        self.health = 7500
-        # Maximum health of the boss
-        self.maximum_health = 7500
-        
+        # A dictionary containing information relating to the behaviour of the Sika deer boss
         self.behaviour_patterns_dict = {
                                     # The current action that the boss is performing
                                     "CurrentAction": "Stomp",
@@ -62,6 +60,18 @@ class SikaDeerBoss(Generic):
                                     #           }
                                     }
 
+        # A dictionary containing extra information about the Sika deer boss
+        self.extra_information_dict = {    
+                                        # Health
+                                        "CurrentHealth": 7500,
+                                        "MaximumHealth": 7500,
+
+                                        # Damage flash effect
+                                        "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
+                                        "DamagedFlashEffectTimer": None
+                                        
+                                      }
+        
         # ---------------------------------------------------
         # Animations
 
@@ -85,6 +95,9 @@ class SikaDeerBoss(Generic):
         self.stomp_controller = StompController(scale_multiplier = scale_multiplier)
 
         print(self.behaviour_patterns_dict)
+    
+    # ----------------------------------------------------------------------------------
+    # Animations
 
     def play_animations(self):
 
@@ -97,7 +110,15 @@ class SikaDeerBoss(Generic):
         # The current animation list
         current_animation_list = SikaDeerBoss.ImagesDict[self.behaviour_patterns_dict["CurrentAction"]]
         # The current animation image
-        self.image = current_animation_list[self.animation_index]
+        current_animation_image = current_animation_list[self.animation_index]
+
+        # If the boss has been damaged
+        if self.extra_information_dict["DamagedFlashEffectTimer"] != None:
+            # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
+            current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = random_choice(((255, 255, 255), (255, 0, 0))))
+        
+        # Set the image to be the current animation image
+        self.image = current_animation_image
 
         # -----------------------------------
         # Updating animation
@@ -106,6 +127,8 @@ class SikaDeerBoss(Generic):
         # match current_action:
 
         #     case "Stomp":
+
+        # If the current action is to "Stomp"
         if current_action == "Stomp":
                 
                 # If the stomp attack has not been completed
@@ -129,10 +152,6 @@ class SikaDeerBoss(Generic):
                         # Reset the timer (adding will help with accuracy)
                         self.behaviour_patterns_dict[current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[current_action]["TimeBetweenAnimFrames"] 
 
-
-                            
-
-                        
                     # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
                     if self.animation_index == (len(SikaDeerBoss.ImagesDict[current_action]) - 1) and (self.behaviour_patterns_dict[current_action]["AnimationFrameTimer"] <= 0):
                         # Go the the first animation frame (reset the animation)
@@ -149,9 +168,31 @@ class SikaDeerBoss(Generic):
                     # Reset the animation index
                     self.animation_index = 0
 
+        # -----------------------------------
         # Update animation frame timers
+
         self.behaviour_patterns_dict[current_action]["AnimationFrameTimer"] -= 1000 * self.delta_time
         self.behaviour_patterns_dict["Stomp"]["DurationTimer"] -= 1000 * self.delta_time
+
+        # Update damage flash effect timer
+        self.update_damage_flash_effect_timer()
+
+    def update_damage_flash_effect_timer(self):
+        
+        # Updates the damage flash effect timer
+
+        # If there has been a timer set for the damage flash effect
+        if self.extra_information_dict["DamagedFlashEffectTimer"] != None:
+
+            # If the timer has not finished counting
+            if self.extra_information_dict["DamagedFlashEffectTimer"] > 0:
+                # Decrease the timer
+                self.extra_information_dict["DamagedFlashEffectTimer"] -= 1000 * self.delta_time
+            
+            # If the timer has finished counting
+            if self.extra_information_dict["DamagedFlashEffectTimer"] <= 0:
+                # Set the damage flash effect timer back to None
+                self.extra_information_dict["DamagedFlashEffectTimer"] = None
 
     def update_stomp_attacks(self):
         
