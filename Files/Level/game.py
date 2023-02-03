@@ -758,7 +758,7 @@ class Game:
 
 
     def run(self, delta_time):
-        print(self.player.player_gameplay_info_dict["CurrentHealth"])
+
         # Update the game UI
         self.update_game_ui(delta_time = delta_time)
 

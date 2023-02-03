@@ -20,10 +20,11 @@ class GameUI:
         # A dictionary containing information such as the HP the player has, the current tool equipped, amount of bamboo resource, etc.
         self.player_gameplay_info_dict = player_gameplay_info_dict
 
+
         # A dictionary containing information for each element of the game UI
         self.dimensions = {
                             "player_tools": { "x": round(25 / scale_multiplier),
-                                                            "y": round(50 / scale_multiplier),
+                                                            "y": round(140 / scale_multiplier),
                                                             "width": round(125 / scale_multiplier),
                                                             "height": round(125 / scale_multiplier),
                                                             "spacing_y": round(20 / scale_multiplier),
@@ -36,13 +37,21 @@ class GameUI:
                                 "starting_position_from_inner_rect": (round(10 / scale_multiplier), round(10 / scale_multiplier)),
                                 "spacing_y_between_stats": round(12 / scale_multiplier),
                                 "spacing_x_between_image_and_text" : round(15 / scale_multiplier),
-                            }
-                            }
+                                "scale_multiplier": scale_multiplier,
+
+                                # Health bar
+                                "spacing_y_between_stats_and_health_bar": round(20 / scale_multiplier),
+                                "health_bar_height": round(50 / scale_multiplier), # The width is calculated inside the display card class, using the inner body rect
+                                "health_bar_border_radius": 10,
+                                "health_bar_outline_thickness": 2,
+                                            },
+
+                          }
                             
         # A dictionary containing the display cards of all the elements of the game UI
         self.display_cards_dict = {
                                     "player_tools": [],
-                                    "player_stats": []
+                                    "player_stats": [],
                                   }
 
         # A dictionary containing the images for the player stats
@@ -94,26 +103,22 @@ class GameUI:
         # Creates the players' stats' display cards
         
         # Create player stats cards and add it to the list in the player stats of the display cards dictionary
-        self.display_cards_dict["player_stats"].append(DisplayCard(
-                                                                rect = pygame.Rect(
-                                                                                    self.dimensions["player_stats"]["x"],
-                                                                                    self.dimensions["player_stats"]["y"], 
-                                                                                    self.dimensions["player_stats"]["width"], 
-                                                                                    self.dimensions["player_stats"]["height"]
-                                                                                    ),
-                                                                surface = self.surface, 
-                                                                alpha_surface = pygame.Surface((self.dimensions["player_stats"]["width"], self.dimensions["player_stats"]["height"])),
-                                                                images = [self.stats_images_dict["BuildingTiles"], self.stats_images_dict["BambooResource"]],
-                                                                text_font = pygame.font.Font("graphics/Fonts/player_stats_font.ttf", 32),
-                                                                extra_information_dict = {   
-                                                                                        "starting_position_from_inner_rect": (round(10 / self.scale_multiplier), round(10 / self.scale_multiplier)),
-                                                                                        "spacing_y_between_stats": round(12 / self.scale_multiplier),
-                                                                                        "spacing_x_between_image_and_text" : round(15 / self.scale_multiplier),
-                                                                                        "scale_multiplier": self.scale_multiplier
-                                                                                        },
-                                                                purpose = "PlayerStats"
-                                                            )
-                                                        )
+        self.display_cards_dict["player_stats"].append(DisplayCard
+                                                                    (
+                                                                        rect = pygame.Rect(
+                                                                                            self.dimensions["player_stats"]["x"],
+                                                                                            self.dimensions["player_stats"]["y"], 
+                                                                                            self.dimensions["player_stats"]["width"], 
+                                                                                            self.dimensions["player_stats"]["height"]
+                                                                                            ),
+                                                                        surface = self.surface, 
+                                                                        alpha_surface = pygame.Surface((self.dimensions["player_stats"]["width"], self.dimensions["player_stats"]["height"])),
+                                                                        images = [self.stats_images_dict["BuildingTiles"], self.stats_images_dict["BambooResource"]],
+                                                                        text_font = pygame.font.Font("graphics/Fonts/player_stats_font.ttf", 32),
+                                                                        extra_information_dict = {key:value for key, value in self.dimensions["player_stats"].items() if key not in ["x", "y", "width", "height"]}, # Adds extra information into a dictionary
+                                                                        purpose = "PlayerStats"
+                                                                    )
+                                                                )
 
     def draw_display_cards(self):
 

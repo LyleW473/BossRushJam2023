@@ -70,7 +70,7 @@ class Player(Generic):
                                         "CurrentToolEquipped": "BambooAssaultRifle",
                                         "AmountOfBambooResource": 75,
                                         "MaximumAmountOfBambooResource": 120,
-                                        "CurrentHealth": 50,
+                                        "CurrentHealth": 100,
                                         "MaximumHealth": 100
                                          }
 

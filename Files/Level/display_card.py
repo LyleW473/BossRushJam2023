@@ -1,4 +1,4 @@
-from pygame import draw as pygame_draw
+from pygame.draw import rect as pygame_draw_rect
 from pygame import Rect as pygame_Rect
 from Global.functions import draw_text
 
@@ -9,6 +9,7 @@ class DisplayCard:
     alpha_surface_alpha_level = 125
     border_thickness = 12
     inner_outline_thickness = 1
+    outer_outline_thickness = 2
 
     def __init__(self, rect, surface, alpha_surface, images, purpose, text_font = None, extra_information_dict = None):
         
@@ -54,7 +55,7 @@ class DisplayCard:
 
         # ------------------------------
         # Drawing the outer body
-        pygame_draw.rect(
+        pygame_draw_rect(
                         surface = self.alpha_surface, 
                         color = "darkgreen", 
                         rect = pygame_Rect(0, 0, self.rect.width, self.rect.height), 
@@ -70,7 +71,7 @@ class DisplayCard:
                                 )
         
         # Drawing the inner body
-        pygame_draw.rect(surface = self.alpha_surface, color = (120, 120, 120), rect = inner_body_rect, width = 0)
+        pygame_draw_rect(surface = self.alpha_surface, color = (120, 120, 120), rect = inner_body_rect, width = 0)
 
         # Return the inner body rect
         return inner_body_rect
@@ -79,7 +80,7 @@ class DisplayCard:
 
         # Inner border outline (Other approach would be creating a new rect and inflating it in place with 2 * the inner outline thickness)
         # Note: This uses the inner body rect's starting position on the screen and moves back by the inner outline thickness, increasing the height and width of the entire rect by the (inner outline thickness * 2).
-        pygame_draw.rect(
+        pygame_draw_rect(
                         surface = self.surface, 
                         color = "white", 
                         rect = pygame_Rect(
@@ -91,11 +92,16 @@ class DisplayCard:
                     )
 
         # Outer body outline
-        pygame_draw.rect(
+        pygame_draw_rect(
                         surface = self.surface, 
                         color = "black", 
-                        rect = self.rect, 
-                        width = 1
+                        rect = (
+                                self.rect.x - DisplayCard.outer_outline_thickness,
+                                self.rect.y - DisplayCard.outer_outline_thickness,
+                                self.rect.width + (DisplayCard.outer_outline_thickness * 2),
+                                self.rect.height + (DisplayCard.outer_outline_thickness * 2),
+                               ),
+                        width = DisplayCard.outer_outline_thickness
                         )
     
     # --------------------------------------------
@@ -164,6 +170,86 @@ class DisplayCard:
                 font = self.text_font,
                 x = bamboo_resource_image_position[0] + self.images_size[1][0] + self.extra_information_dict["spacing_x_between_image_and_text"],
                 y = bamboo_resource_image_position[1],
+                surface = self.surface, 
+                scale_multiplier = self.extra_information_dict["scale_multiplier"]
+                )
+        
+        # -----------------------------------------------------------------
+        # Drawing the health bar
+
+
+        # Difference between the bottom of the inner body rect and the bottom of the last 
+        bottom_of_inner_body_rect = self.rect.y + (inner_body_rect.y + inner_body_rect.height)
+        bottom_of_final_stat = (bamboo_resource_image_position[1] + self.images_size[1][1])
+    
+        dy = bottom_of_inner_body_rect - bottom_of_final_stat
+        displacement_from_bottom_of_final_stat = (dy - self.extra_information_dict["health_bar_height"]) / 2
+
+        health_bar_measurements = (
+                                bamboo_resource_image_position[0], # x
+                                bottom_of_final_stat + displacement_from_bottom_of_final_stat, # y
+                                inner_body_rect.width - (self.extra_information_dict["starting_position_from_inner_rect"][0] * 2), # width
+                                self.extra_information_dict["health_bar_height"] # height
+                               )
+        # Health bar outer outline
+        pygame_draw_rect(
+                        surface = self.surface,
+                        color = "black", 
+                        rect = (
+                                health_bar_measurements[0] - self.extra_information_dict["health_bar_outline_thickness"], 
+                                health_bar_measurements[1] - self.extra_information_dict["health_bar_outline_thickness"], 
+                                health_bar_measurements[2] + (self.extra_information_dict["health_bar_outline_thickness"] * 2),
+                                health_bar_measurements[3] + (self.extra_information_dict["health_bar_outline_thickness"] * 2)
+                                ),
+                        width = 0,
+                        border_radius = self.extra_information_dict["health_bar_border_radius"]
+                        )
+
+        # Default health bar in red
+        pygame_draw_rect(
+                        surface = self.surface,
+                        color = "red", 
+                        rect = (
+                                health_bar_measurements[0], 
+                                health_bar_measurements[1], 
+                                health_bar_measurements[2],
+                                health_bar_measurements[3]
+                                ),
+                        width = 0,
+                        border_radius = self.extra_information_dict["health_bar_border_radius"]
+                        )
+
+        # The width should be the percentage of the current health compared to the maximum health, multiplied by the default health bar width
+        # Limit the width to be 0 if the player's current health is negative
+        green_health_bar_width = max((player_gameplay_info_dict["CurrentHealth"] / player_gameplay_info_dict["MaximumHealth"]) * health_bar_measurements[2], 0)
+
+        # Update the text that will be displayed on the screen depending on the player's current health
+        players_health_text = f'{max(player_gameplay_info_dict["CurrentHealth"], 0)} / {player_gameplay_info_dict["MaximumHealth"]}'
+
+        # Calculate the font size, used to position the text at the center of the health bar
+        players_health_text_font_size = self.text_font.size(players_health_text)
+
+        # Current health bar in green
+        pygame_draw_rect(
+                        surface = self.surface,
+                        color = "green", 
+                        rect = (
+                                health_bar_measurements[0], 
+                                health_bar_measurements[1], 
+                                green_health_bar_width,
+                                health_bar_measurements[3]
+                                ),
+                        width = 0,
+                        border_radius = self.extra_information_dict["health_bar_border_radius"]
+                        )      
+
+        # Draw the text displaying the amount of bamboo resource
+        draw_text(
+                text = players_health_text, 
+                text_colour = "white",
+                font = self.text_font,
+                x = (health_bar_measurements[0] + (health_bar_measurements[2] / 2)) - ((players_health_text_font_size[0] / self.extra_information_dict["scale_multiplier"]) / 2),
+                y = (health_bar_measurements[1] + (health_bar_measurements[3] / 2)) - ((players_health_text_font_size[1] / self.extra_information_dict["scale_multiplier"]) / 2),
                 surface = self.surface, 
                 scale_multiplier = self.extra_information_dict["scale_multiplier"]
                 )
