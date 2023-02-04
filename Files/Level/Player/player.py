@@ -1452,15 +1452,33 @@ class Player(Generic):
                         # If there is nothing in between the center of the player and where the bamboo projectile will be spawned
                         if no_tile_in_between == True:
                             
+
+                            # ----------------------------------------
                             # Create a bamboo projectile, spawning it at the tip of the gun (Starts at the center of the player but has an added distance which displaces it to right in front of the gun)
                             # Note: The center of the bamboo projectile is placed at the co-ordinates
-                            bamboo_projectile = BambooProjectile(
-                                                                x = self.rect.centerx + distance_x,
-                                                                y = self.rect.centery + distance_y,
-                                                                angle = self.look_angle,
-                                                                damage_amount = self.tools["BambooAssaultRifle"]["WeaponDamage"]
-                                                                )
-                
+
+                            # If frenzy mode is not activated when shooting:
+                            if self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                                # Set the "is_frenzy_mode_projectile" attribute to False
+                                bamboo_projectile = BambooProjectile(
+                                                                    x = self.rect.centerx + distance_x,
+                                                                    y = self.rect.centery + distance_y,
+                                                                    angle = self.look_angle,
+                                                                    damage_amount = self.tools["BambooAssaultRifle"]["WeaponDamage"],
+                                                                    is_frenzy_mode_projectile = False
+                                                                    )
+                            
+                            # If frenzy mode is not activated when shooting:
+                            elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+                                # Set the "is_frenzy_mode_projectile" attribute to True
+                                bamboo_projectile = BambooProjectile(
+                                                                    x = self.rect.centerx + distance_x,
+                                                                    y = self.rect.centery + distance_y,
+                                                                    angle = self.look_angle,
+                                                                    damage_amount = self.tools["BambooAssaultRifle"]["WeaponDamage"],
+                                                                    is_frenzy_mode_projectile = True
+                                                                    )
+                                
                         
                             # Add the bamboo projectile to the bamboo projectiles group
                             self.sprite_groups["BambooProjectiles"].add(bamboo_projectile)
@@ -1478,6 +1496,28 @@ class Player(Generic):
 
         # For all bamboo projectiles
         for bamboo_projectile in self.sprite_groups["BambooProjectiles"]:
+            
+            # If the bamboo projectile was created whilst frenzy mode was activated
+            if bamboo_projectile.is_frenzy_mode_projectile == True:
+
+                # If the player has activated frenzy mode
+                if self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+
+                    # Note: The copy of the original image is so that we don't continuously add onto the current RGB values of the projectile's image (otherwise it will become completely white)
+
+                    # Set the bamboo projectile image to be the same colour as the player when in frenzy mode
+                    bamboo_projectile.image = change_image_colour(current_animation_image = bamboo_projectile.original_image.copy(), desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
+
+                # If the player has not activated frenzy mode
+                elif self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                    
+                    # Note: This check is so that once the frenzy mode is over, all images need to be reset back to the original image
+
+                    # If the bamboo projectile's image is not the original image
+                    if bamboo_projectile.image != bamboo_projectile.original_image:
+                        # Set the image back to the original image
+                        bamboo_projectile.image = bamboo_projectile.original_image
+
 
             # Update the bamboo projectile's delta time
             bamboo_projectile.delta_time = self.delta_time
