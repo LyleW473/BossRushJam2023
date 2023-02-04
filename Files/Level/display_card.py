@@ -2,6 +2,8 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import line as pygame_draw_line
 from pygame import Rect as pygame_Rect
 from Global.functions import draw_text
+from pygame import Surface as pygame_Surface
+from Global.settings import BAR_ALPHA_LEVEL
 
 
 class DisplayCard:
@@ -38,6 +40,10 @@ class DisplayCard:
 
             # Dictionary holding extra information
             self.extra_information_dict = extra_information_dict
+
+            # Create an attribute to keep track if the health bar alpha surface has been created
+            # Note: This is so that we don't need to check if a key "health_bar_alpha_surface" exists in the extra information dict O(n) time complexity
+            self.health_bar_alpha_surface_created = False
 
             # A list of the size of each "stat" image
             self.images_size = [self.images[i].get_size() for i in range(0, len(self.images))]
@@ -178,6 +184,7 @@ class DisplayCard:
         # -----------------------------------------------------------------
         # Drawing the health bar
 
+        # Player's health bar
 
         # Difference between the bottom of the inner body rect and the bottom of the last 
         bottom_of_inner_body_rect = self.rect.y + (inner_body_rect.y + inner_body_rect.height)
@@ -192,13 +199,24 @@ class DisplayCard:
                                 inner_body_rect.width - (self.extra_information_dict["starting_position_from_inner_rect"][0] * 2), # width
                                 self.extra_information_dict["health_bar_height"] # height
                                )
+
+        # If a health bar alpha surface has not been created
+        if self.health_bar_alpha_surface_created == False:
+            # Create the health bar alpha surface and set an alpha level and color key
+            self.extra_information_dict["health_bar_alpha_surface"] = pygame_Surface((health_bar_measurements[2], self.extra_information_dict["health_bar_height"]))
+            self.extra_information_dict["health_bar_alpha_surface"].set_colorkey("black")
+            self.extra_information_dict["health_bar_alpha_surface"].set_alpha(BAR_ALPHA_LEVEL)
+
+            # Set this attribute to True so that another health bar alpha surface is not created
+            self.health_bar_alpha_surface_created = True
+
         # Empty health bar
         pygame_draw_rect(
-                        surface = self.surface,
+                        surface = self.extra_information_dict["health_bar_alpha_surface"],
                         color = "gray21", # "dimgray"
                         rect = (
-                                health_bar_measurements[0], 
-                                health_bar_measurements[1], 
+                                0, 
+                                0,
                                 health_bar_measurements[2],
                                 health_bar_measurements[3]
                                 ),
@@ -220,11 +238,11 @@ class DisplayCard:
 
         # First half of the current health bar
         pygame_draw_rect(
-                        surface = self.surface,
+                        surface = self.extra_information_dict["health_bar_alpha_surface"],
                         color = (0, 128, 0), 
                         rect = (
-                                health_bar_measurements[0], 
-                                health_bar_measurements[1], 
+                                0, 
+                                0, 
                                 green_health_bar_width,
                                 (health_bar_measurements[3] / 2)
                                 ),
@@ -234,11 +252,11 @@ class DisplayCard:
 
         # Second half of the current health bar
         pygame_draw_rect(
-                        surface = self.surface,
+                        surface = self.extra_information_dict["health_bar_alpha_surface"],
                         color = "green4", 
                         rect = (
-                                health_bar_measurements[0], 
-                                health_bar_measurements[1] + (health_bar_measurements[3] / 2), 
+                                0, 
+                                0 + (health_bar_measurements[3] / 2), 
                                 green_health_bar_width,
                                 (health_bar_measurements[3] / 2) 
                                 ),
@@ -251,26 +269,16 @@ class DisplayCard:
 
             # Edge at the end of the changing part of the player's health
             pygame_draw_line(
-                            surface = self.surface, 
+                            surface = self.extra_information_dict["health_bar_alpha_surface"], 
                             color = (0, 150, 0),
-                            start_pos = ((health_bar_measurements[0] + green_health_bar_width) - (self.extra_information_dict["changing_health_bar_edge_thickness"] / 2), health_bar_measurements[1]),
-                            end_pos = ((health_bar_measurements[0] + green_health_bar_width) - (self.extra_information_dict["changing_health_bar_edge_thickness"] / 2), health_bar_measurements[1] + health_bar_measurements[3]),
+                            start_pos = ((0 + green_health_bar_width) - (self.extra_information_dict["changing_health_bar_edge_thickness"] / 2), 0),
+                            end_pos = ((0 + green_health_bar_width) - (self.extra_information_dict["changing_health_bar_edge_thickness"] / 2), 0 + health_bar_measurements[3]),
                             width = self.extra_information_dict["changing_health_bar_edge_thickness"]
                             )
-        
-        # -----------------------------------------
-        # Player health text
 
-        # Draw the text displaying the player's health
-        draw_text(
-                text = players_health_text, 
-                text_colour = "white",
-                font = self.text_font,
-                x = (health_bar_measurements[0] + (health_bar_measurements[2] / 2)) - ((players_health_text_font_size[0] / self.extra_information_dict["scale_multiplier"]) / 2),
-                y = (health_bar_measurements[1] + (health_bar_measurements[3] / 2)) - ((players_health_text_font_size[1] / self.extra_information_dict["scale_multiplier"]) / 2),
-                surface = self.surface, 
-                scale_multiplier = self.extra_information_dict["scale_multiplier"]
-                )
+        # --------------------------------------
+        # Draw the alpha surface onto the main surface
+        self.surface.blit(self.extra_information_dict["health_bar_alpha_surface"], (health_bar_measurements[0], health_bar_measurements[1]))
 
         # -----------------------------------------
         # Health bar outer outline
@@ -287,6 +295,20 @@ class DisplayCard:
                         width = self.extra_information_dict["health_bar_outline_thickness"],
                         border_radius = self.extra_information_dict["health_bar_border_radius"]
                         )
+        
+        # -----------------------------------------
+        # Player health text
+
+        # Draw the text displaying the player's health
+        draw_text(
+                text = players_health_text, 
+                text_colour = "white",
+                font = self.text_font,
+                x = (health_bar_measurements[0] + (health_bar_measurements[2] / 2)) - ((players_health_text_font_size[0] / self.extra_information_dict["scale_multiplier"]) / 2),
+                y = (health_bar_measurements[1] + (health_bar_measurements[3] / 2)) - ((players_health_text_font_size[1] / self.extra_information_dict["scale_multiplier"]) / 2),
+                surface = self.surface, 
+                scale_multiplier = self.extra_information_dict["scale_multiplier"]
+                )
         
     # --------------------------------------------
     # Main draw method

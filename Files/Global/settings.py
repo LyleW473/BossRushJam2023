@@ -4,3 +4,6 @@ screen_height = 900
 
 # Tile size
 TILE_SIZE = 16
+
+# The global alpha level set for bars e.g. Health bars, frenzy mode bar, etc.
+BAR_ALPHA_LEVEL = 200

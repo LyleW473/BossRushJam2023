@@ -5,8 +5,9 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import line as pygame_draw_line
 from pygame.image import load as load_image
 from Level.display_card import DisplayCard
-from Global.settings import TILE_SIZE
+from Global.settings import TILE_SIZE, BAR_ALPHA_LEVEL
 from Global.functions import draw_text, sin_change_object_colour
+from pygame import Surface as pygame_Surface
 
 class GameUI:
 
@@ -64,6 +65,7 @@ class GameUI:
                                 "changing_frenzy_mode_bar_edge_thickness": 3,
                                 "frenzy_mode_bar_outline_thickness": 3,
                                 "frenzy_mode_value_text_font": pygame_font_Font("graphics/Fonts/frenzy_mode_value_font.ttf", 18),
+                                
 
                                 # Frenzy mode glow visual effect (The bar will glow at a slow rate, once activated, the effect is synced with the player's visual effect)
                                 "frenzy_mode_visual_effect_colour": self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"].copy(),
@@ -97,6 +99,20 @@ class GameUI:
         # Create display cards
         self.create_player_tools_display_cards()
         self.create_player_stats_display_cards()
+
+        # Alpha surfaces
+
+        # Frenzy mode bar
+        self.dimensions["player_stats"]["frenzy_mode_bar_alpha_surface"] =  pygame_Surface((self.dimensions["player_stats"]["frenzy_mode_bar_width"], self.dimensions["player_stats"]["frenzy_mode_bar_height"]))
+        self.dimensions["player_stats"]["frenzy_mode_bar_alpha_surface"].set_colorkey("black")
+        self.dimensions["player_stats"]["frenzy_mode_bar_alpha_surface"].set_alpha(BAR_ALPHA_LEVEL)
+
+        # Boss' health bar
+        self.dimensions["boss_bar"]["alpha_surface"] =  pygame_Surface((self.dimensions["boss_bar"]["width"], self.dimensions["boss_bar"]["height"]))
+        self.dimensions["boss_bar"]["alpha_surface"].set_colorkey("black")
+        self.dimensions["boss_bar"]["alpha_surface"].set_alpha(BAR_ALPHA_LEVEL)
+
+
 
     def create_player_tools_display_cards(self):
 
@@ -158,16 +174,19 @@ class GameUI:
         
         # If a boss has been spawned
         if self.current_boss != None:
-            
+
+            # Fill the boss bar's alpha surface with black
+            self.dimensions["boss_bar"]["alpha_surface"].fill("black")
+
             # --------------------------------------
             # Default body
 
             pygame_draw_rect(
-                            surface = self.surface,
+                            surface = self.dimensions["boss_bar"]["alpha_surface"],
                             color = "gray21",
                             rect = pygame_Rect(
-                                            self.dimensions["boss_bar"]["x"],
-                                            self.dimensions["boss_bar"]["y"],
+                                            0,
+                                            0,
                                             self.dimensions["boss_bar"]["width"],
                                             self.dimensions["boss_bar"]["height"]
                                             ),
@@ -179,11 +198,11 @@ class GameUI:
 
             health_bar_width = max((self.current_boss.extra_information_dict["CurrentHealth"] / self.current_boss.extra_information_dict["MaximumHealth"] ) * self.dimensions["boss_bar"]["width"], 0)
             pygame_draw_rect(
-                            surface = self.surface,
+                            surface = self.dimensions["boss_bar"]["alpha_surface"],
                             color = "firebrick3",
                             rect = pygame_Rect(
-                                            self.dimensions["boss_bar"]["x"],
-                                            self.dimensions["boss_bar"]["y"],
+                                            0,
+                                            0,
                                             health_bar_width,
                                             self.dimensions["boss_bar"]["height"] / 2
                                             ),
@@ -191,11 +210,11 @@ class GameUI:
                             )
 
             pygame_draw_rect(
-                            surface = self.surface,
+                            surface = self.dimensions["boss_bar"]["alpha_surface"],
                             color = "firebrick4",
                             rect = pygame_Rect(
-                                            self.dimensions["boss_bar"]["x"],
-                                            self.dimensions["boss_bar"]["y"] + (self.dimensions["boss_bar"]["height"] / 2),
+                                            0,
+                                            0 + (self.dimensions["boss_bar"]["height"] / 2),
                                             health_bar_width,
                                             self.dimensions["boss_bar"]["height"] / 2
                                             ),
@@ -207,12 +226,16 @@ class GameUI:
 
                 # Edge at the end of the changing part of the boss' health
                 pygame_draw_line(
-                                surface = self.surface, 
+                                surface = self.dimensions["boss_bar"]["alpha_surface"], 
                                 color = (200, 44, 44),
-                                start_pos = ((self.dimensions["boss_bar"]["x"] + health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), self.dimensions["boss_bar"]["y"]),
-                                end_pos = ((self.dimensions["boss_bar"]["x"] + health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), self.dimensions["boss_bar"]["y"] + self.dimensions["boss_bar"]["height"]),
+                                start_pos = ((health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), 0),
+                                end_pos = ((health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), self.dimensions["boss_bar"]["height"]),
                                 width = self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"]
                                 )
+
+            # --------------------------------------
+            # Draw the alpha surface onto the main surface
+            self.surface.blit(self.dimensions["boss_bar"]["alpha_surface"], (self.dimensions["boss_bar"]["x"], self.dimensions["boss_bar"]["y"]))
 
             # --------------------------------------
             # Outline
@@ -250,15 +273,18 @@ class GameUI:
 
     def draw_player_frenzy_mode_bar(self):
 
+        # Fill the frenzy mode bar's alpha surface with black
+        self.dimensions["player_stats"]["frenzy_mode_bar_alpha_surface"].fill("black")
+
         # --------------------------------------
         # Default body
 
         pygame_draw_rect(
-                        surface = self.surface,
+                        surface = self.dimensions["player_stats"]["frenzy_mode_bar_alpha_surface"],
                         color = "gray21",
                         rect = pygame_Rect(
-                                        self.dimensions["player_stats"]["frenzy_mode_bar_x"],
-                                        self.dimensions["player_stats"]["frenzy_mode_bar_y"],
+                                        0,
+                                        0,
                                         self.dimensions["player_stats"]["frenzy_mode_bar_width"],
                                         self.dimensions["player_stats"]["frenzy_mode_bar_height"]
                                         ),
@@ -270,7 +296,7 @@ class GameUI:
         # Calculate the height of the bar
         frenzy_mode_bar_height = max(self.player_gameplay_info_dict["CurrentFrenzyModeValue"] / self.player_gameplay_info_dict["MaximumFrenzyModeValue"] * self.dimensions["player_stats"]["frenzy_mode_bar_height"], 0)
         # Calculate the y position based on the height of the bar (int(frenzy_mode_bar_height) so that the bar doesn't get misaligned with decimal increments in the frenzy mode value)
-        frenzy_mode_bar_y_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_y"] + self.dimensions["player_stats"]["frenzy_mode_bar_height"]) - int(frenzy_mode_bar_height)
+        frenzy_mode_bar_y_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_height"]) - int(frenzy_mode_bar_height)
 
         # If the player has not activated frenzy mode
         if self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
@@ -337,10 +363,10 @@ class GameUI:
         
         # Drawing the frenzy mode bar
         pygame_draw_rect(
-                        surface = self.surface,
+                        surface = self.dimensions["player_stats"]["frenzy_mode_bar_alpha_surface"],
                         color = frenzy_mode_bar_colour[0],
                         rect = pygame_Rect(
-                                        self.dimensions["player_stats"]["frenzy_mode_bar_x"],
+                                        0,
                                         frenzy_mode_bar_y_pos,
                                         self.dimensions["player_stats"]["frenzy_mode_bar_width"] / 2,
                                         frenzy_mode_bar_height
@@ -349,10 +375,10 @@ class GameUI:
                         ) 
 
         pygame_draw_rect(
-                        surface = self.surface,
+                        surface = self.dimensions["player_stats"]["frenzy_mode_bar_alpha_surface"],
                         color = frenzy_mode_bar_colour[1],
                         rect = pygame_Rect(
-                                        self.dimensions["player_stats"]["frenzy_mode_bar_x"] + (self.dimensions["player_stats"]["frenzy_mode_bar_width"] / 2),
+                                        0 + (self.dimensions["player_stats"]["frenzy_mode_bar_width"] / 2),
                                         frenzy_mode_bar_y_pos,
                                         self.dimensions["player_stats"]["frenzy_mode_bar_width"] / 2,
                                         frenzy_mode_bar_height
@@ -363,9 +389,12 @@ class GameUI:
         # Only draw the edge when the height of the frenzy mode bar is greater than 0
         if frenzy_mode_bar_height > 0:
             
+            # If the player has not activated frenzy mode
             if self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                # Set the edge colour as the default colour
                 bar_edge_colour = (174, 50, 205)
-
+            
+            # If the player has activated frenzy mode
             elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
                 # Set the bar edge as the current frenzy mode visual effect colour 
                 # Note: Call the darker colour lambda function again for a colour that will always be darker than the bar
@@ -373,12 +402,17 @@ class GameUI:
 
             # Edge at the end of the changing part of the boss' health
             pygame_draw_line(
-                            surface = self.surface, 
+                            surface = self.dimensions["player_stats"]["frenzy_mode_bar_alpha_surface"], 
                             color = bar_edge_colour,
-                            start_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_x"], frenzy_mode_bar_y_pos - (self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"] / 2)),
-                            end_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_x"] + self.dimensions["player_stats"]["frenzy_mode_bar_width"], frenzy_mode_bar_y_pos - (self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"] / 2)),
+                            start_pos = (0, frenzy_mode_bar_y_pos - (self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"] / 2)),
+                            end_pos = (0 + self.dimensions["player_stats"]["frenzy_mode_bar_width"], frenzy_mode_bar_y_pos - (self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"] / 2)),
                             width = self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"]
                             )
+        
+        # --------------------------------------
+        # Draw the alpha surface onto the main surface
+        self.surface.blit(self.dimensions["player_stats"]["frenzy_mode_bar_alpha_surface"], (self.dimensions["player_stats"]["frenzy_mode_bar_x"], self.dimensions["player_stats"]["frenzy_mode_bar_y"]))
+        
         # --------------------------------------
         # Outline
         pygame_draw_rect(
@@ -392,7 +426,7 @@ class GameUI:
                                         ),
                         width = self.dimensions["player_stats"]["frenzy_mode_bar_outline_thickness"]
                             )
-
+        
         # --------------------------------------
         # Frenzy mode bar text:
 
@@ -412,7 +446,7 @@ class GameUI:
                 surface = self.surface, 
 
                 )
-    
+
     def draw_display_cards(self):
 
         # For each tool display card
