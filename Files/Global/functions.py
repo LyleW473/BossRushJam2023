@@ -1,6 +1,7 @@
 from pygame.transform import smoothscale
 from pygame import Surface as pygame_Surface
 from pygame import BLEND_RGB_ADD as pygame_BLEND_RGB_ADD
+from math import sin, radians
 
 def draw_text(text, text_colour, font, x, y, surface, scale_multiplier = None):
 
@@ -30,3 +31,47 @@ def change_image_colour(current_animation_image, desired_colour = (255, 255, 255
 
         # Return the coloured animation image (The result should be an image that has a different colour on top)
         return current_animation_image
+
+def sin_change_object_colour(current_sin_angle, angle_time_gradient, colour_to_change, original_colour, delta_time, plus_or_minus_list, min_max_colours):
+
+        """ Explanations of parameters:
+        current_sin_angle = The current sin angle
+        angle_time_gradient = The rate of change in the angle over time
+        colour_to_change = The colour that will be changed and returned 
+        original_colour = The original colour so that the midpoint colour can be found, so that the colour value can oscillate between the minimum and maximum colour values
+        plus_or_minus_list = A list containing values -1, 0 or 1, which will indicate whether we add, subtract or do nothing 
+        delta_time = delta time to increase the current angle
+        """
+        # Find the midpoint colour, so that the colour value will oscillate between the minimum colour and the maximum colour passed in
+        midpoint_colour = [
+                            round(original_colour[0] - ((min_max_colours[0][0] - min_max_colours[1][0]) / 2)), 
+                            round(original_colour[1] - ((min_max_colours[0][1] - min_max_colours[1][1]) / 2)),
+                            round(original_colour[2] - ((min_max_colours[0][2] - min_max_colours[1][2]) / 2))
+                          ] 
+
+        # Set the colour to change to be the midpoint colour
+        colour_to_change = midpoint_colour
+        
+        # Find the differences in colour between the midpoint and the original colour
+        colour_differences = (abs(original_colour[0] - midpoint_colour[0]), abs(original_colour[1] - midpoint_colour[1]), abs(original_colour[2] - midpoint_colour[2]))
+
+        # Change the colour
+        for i in range(0, len(colour_to_change)):
+            
+            # If plus or minus value is 0, go to the next RGB value
+            if plus_or_minus_list[i] == 0:
+                continue
+            
+            # If plus or minus value is 1, add the colour difference at this angle
+            elif plus_or_minus_list[i] == 1:
+                colour_to_change[i] += (colour_differences[i] * sin(radians(current_sin_angle)))
+            
+            # If plus or minus value is -1, subtract the colour difference at this angle
+            elif plus_or_minus_list[i] == -1:
+                colour_to_change[i] -= (colour_differences[i] * sin(radians(current_sin_angle)))
+
+        # Increase the current sin angle
+        current_sin_angle += angle_time_gradient * delta_time
+
+        # Return the changed colour and the changed sin angle
+        return colour_to_change, current_sin_angle

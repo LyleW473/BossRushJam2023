@@ -5,6 +5,7 @@ from Level.Player.building_tile import BuildingTile
 from Level.Player.bamboo_projectiles import BambooProjectile
 from math import degrees, sin, cos, atan2, pi, dist
 from Global.functions import change_image_colour
+from Global.functions import sin_change_object_colour
 
 class Player(Generic):
     
@@ -80,29 +81,34 @@ class Player(Generic):
 
                                         # ------------------------------------------------
                                         # Frenzy mode
-                                        "CurrentFrenzyModeValue": 90,
+                                        "CurrentFrenzyModeValue": 100,
                                         "MaximumFrenzyModeValue": 100,
                                         "DealDamageFrenzyModeIncrement": 0.75,
                                         "TakeDamageFrenzyModeIncrement": 0.5,
                                         "BlockDamageFrenzyModeIncrement": 1,
                                         
                                         # Time 
-                                        "FrenzyModeTime": 6000, # Duration of the frenzy mode in milliseconds
+                                        "FrenzyModeTime": 6000, #6000, # Duration of the frenzy mode in milliseconds
                                         "FrenzyModeTimer": None,
                                         
                                         # Gradient to decrease the frenzy mode value from the highest value to the lowest value
-                                        "FrenzyModeValueGradient": ((100 - 0) * 1000) / 6000, # HighestValue - LowestValue / Time to reach lowest value from highest value
+                                        "FrenzyModeValueGradient": ((0 - 100)) / 6,
                                         "FrenzyModeFireRateBoost": 1, # The increased fire rate multiplier
                                         
                                         
                                         # Frenzy mode visual effect
-                                        "FrenzyModeVisualEffectColour": (255, 20, 147),
+                                        "FrenzyModeVisualEffectMinMaxColours" : ((128, 50, 128), (255, 50, 180)), #((255, 50, 180), (128, 50, 128)),
+                                        "FrenzyModeVisualEffectColour": [255 , 50, 180], # Have the visual effect colour start at the max value for calculations 
+                                        "FrenzyModeVisualEffectAngleTimeGradient": (360 - 0) / 0.8, # The rate of change of the angle over time (time in seconds)
+                                        "FrenzyModeVisualEffectCurrentSinAngle": 0,
+                                        "FrenzyModeVisualEffectRGBValuesPlusOrMinus": (1, 0, -1),
 
                                         # ------------------------------------------------
                                         # Damage flash effect
                                         "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
                                         "DamagedFlashEffectTimer": None
                                          }
+
 
         # A dictionary containing the tools and information relating to those tools
         self.tools  =  {
@@ -149,6 +155,7 @@ class Player(Generic):
                                           },
                         }
 
+        self.current_sin_angle = 0
     # ---------------------------------------------------------------------------------
     # Animations
 
@@ -546,18 +553,6 @@ class Player(Generic):
                     # Set the player direction into a list consisting of the two directions the player is facing. E.g. ["Up", "Left"]
                     self.player_direction = self.current_look_direction.split()
 
-                # ------------------------------------------------------------------------------------------------------------
-                # Changing the image if damaged 
-
-                # If the damage flash effect timer is counting down (i.e. the player has been damaged)
-                if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
-                    # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
-                    self.image = change_image_colour(current_animation_image = current_animation_image, desired_colour = (0, 0, 0))
-                # If the player is in frenzy mode
-                elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
-                    # Colour the player as the current frenzy mode colour
-                    self.image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
-
             # Draw the idle animation
             self.draw(surface = self.surface, x = (self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), y = (self.rect.centery - self.camera_position[1]) - int(self.image.get_height() / 2))
 
@@ -577,8 +572,6 @@ class Player(Generic):
             if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] <= 0:
                 # Set the damage flash effect timer back to None
                 self.player_gameplay_info_dict["DamagedFlashEffectTimer"] = None
-
-    # def update_frenzy_mode_effect_timer:
 
     # ---------------------------------------------------------------------------------
     # Movement       
@@ -1197,7 +1190,7 @@ class Player(Generic):
 
                 # Decrease the current frenzy mode value (The player cannot increase their frenzy mode value whilst frenzy mode is activated)
                 # Limit the lowest the current frenzy mode value can be to 0
-                self.player_gameplay_info_dict["CurrentFrenzyModeValue"] = max(self.player_gameplay_info_dict["CurrentFrenzyModeValue"] - (self.player_gameplay_info_dict["FrenzyModeValueGradient"] * self.delta_time), 0)
+                self.player_gameplay_info_dict["CurrentFrenzyModeValue"] = max(self.player_gameplay_info_dict["CurrentFrenzyModeValue"] + (self.player_gameplay_info_dict["FrenzyModeValueGradient"] * self.delta_time), 0)
 
             # If the timer is less than or equal to 0
             if self.player_gameplay_info_dict["FrenzyModeTimer"] <= 0:
@@ -1207,7 +1200,36 @@ class Player(Generic):
 
                 # Reset the frenzy mode fire rate boost back to 1
                 self.player_gameplay_info_dict["FrenzyModeFireRateBoost"] = 1
+
+    def update_frenzy_mode_colour(self):
         
+        # Updates the frenzy
+
+        # Change the colour of the player and update the current sin angle
+        self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"], self.player_gameplay_info_dict["FrenzyModeVisualEffectCurrentSinAngle"] = sin_change_object_colour(
+                                                                                                                                
+                                                                                                                                # The current sin angle
+                                                                                                                                current_sin_angle = self.player_gameplay_info_dict["FrenzyModeVisualEffectCurrentSinAngle"],
+
+                                                                                                                                # The rate of change in the sin angle over time
+                                                                                                                                angle_time_gradient = self.player_gameplay_info_dict["FrenzyModeVisualEffectAngleTimeGradient"], 
+
+                                                                                                                                # Set the colour that will be changed (the return value)
+                                                                                                                                colour_to_change = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"],
+
+                                                                                                                                # Set the original colour as either the min or max colour 
+                                                                                                                                # Note:  The order does not matter because the colour will always start at the midpoint RGB value
+                                                                                                                                original_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectMinMaxColours"][0],
+
+                                                                                                                                # The minimum and maximum colours
+                                                                                                                                min_max_colours = self.player_gameplay_info_dict["FrenzyModeVisualEffectMinMaxColours"],
+
+                                                                                                                                # A list containing values indicating whether we should subtract or add for each RGB value at a given angle, e.g. (-1, 0, 1)
+                                                                                                                                plus_or_minus_list = self.player_gameplay_info_dict["FrenzyModeVisualEffectRGBValuesPlusOrMinus"],
+
+                                                                                                                                # Delta time to increase the angle over time
+                                                                                                                                delta_time = self.delta_time
+                                                                                                                                                                            )
     # ---------------------------------------
     # Building 
 
@@ -1470,9 +1492,6 @@ class Player(Generic):
     
     def run(self, delta_time):
 
-
-        #pygame.draw.line(self.surface, "white", (self.surface.get_width() / 2, 0), (self.surface.get_width() / 2, self.surface.get_height()))
-        
         # Update the delta time
         self.delta_time = delta_time
 
@@ -1500,6 +1519,9 @@ class Player(Generic):
 
         # Update the frenzy mode timer
         self.update_frenzy_mode_timer()
+
+        # Update the frenzy mode colour's RGB values
+        self.update_frenzy_mode_colour()
 
         # Draw the player tool
         self.draw_player_tool()

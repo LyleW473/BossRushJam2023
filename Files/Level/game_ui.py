@@ -6,7 +6,7 @@ from pygame.draw import line as pygame_draw_line
 from pygame.image import load as load_image
 from Level.display_card import DisplayCard
 from Global.settings import TILE_SIZE
-from Global.functions import draw_text
+from Global.functions import draw_text, sin_change_object_colour
 
 class GameUI:
 
@@ -63,7 +63,12 @@ class GameUI:
                                 "frenzy_mode_bar_height": round( 500 / scale_multiplier),
                                 "changing_frenzy_mode_bar_edge_thickness": 3,
                                 "frenzy_mode_bar_outline_thickness": 3,
-                                "frenzy_mode_value_text_font": pygame_font_Font("graphics/Fonts/frenzy_mode_value_font.ttf", 18)
+                                "frenzy_mode_value_text_font": pygame_font_Font("graphics/Fonts/frenzy_mode_value_font.ttf", 18),
+
+                                # Frenzy mode glow visual effect (The bar will glow at a slow rate, once activated, the effect is synced with the player's visual effect)
+                                "frenzy_mode_visual_effect_colour": self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"].copy(),
+                                "frenzy_mode_visual_effect_angle_time_gradient": (360 - 0) / 2, # The rate of change of the angle over time (time in seconds)
+                                "frenzy_mode_visual_effect_current_sin_angle": 0,
 
                                             },
                             "boss_bar": {
@@ -260,16 +265,80 @@ class GameUI:
                         width = 0
                         ) 
         # --------------------------------------
-        # Bar that changes depending on the value of the 
+        # Bar that changes depending on the frenzy mode value
 
         # Calculate the height of the bar
         frenzy_mode_bar_height = max(self.player_gameplay_info_dict["CurrentFrenzyModeValue"] / self.player_gameplay_info_dict["MaximumFrenzyModeValue"] * self.dimensions["player_stats"]["frenzy_mode_bar_height"], 0)
         # Calculate the y position based on the height of the bar (int(frenzy_mode_bar_height) so that the bar doesn't get misaligned with decimal increments in the frenzy mode value)
         frenzy_mode_bar_y_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_y"] + self.dimensions["player_stats"]["frenzy_mode_bar_height"]) - int(frenzy_mode_bar_height)
 
+        # If the player has not activated frenzy mode
+        if self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+
+            # If the frenzy mode bar is not completely full
+            if self.player_gameplay_info_dict["CurrentFrenzyModeValue"] != self.player_gameplay_info_dict["MaximumFrenzyModeValue"]:
+                # Set the colour of the bar to be the default colours
+                frenzy_mode_bar_colour = ("darkorchid2", "darkorchid3")
+
+            # If the frenzy mode bar is completely full
+            elif self.player_gameplay_info_dict["CurrentFrenzyModeValue"] == self.player_gameplay_info_dict["MaximumFrenzyModeValue"]:
+                
+                # Note: This is not synced with the player, but a separate visual effect to indicate that the bar is full
+                
+                # Lambda function to offset the rgb values of the current frenzy mode colour
+                darker_colour = lambda x: x - min(self.dimensions["player_stats"]["frenzy_mode_visual_effect_colour"])
+                
+                # Set the colour of the bar to oscillate slowly with the visual effect settings
+                self.dimensions["player_stats"]["frenzy_mode_visual_effect_colour"], self.dimensions["player_stats"]["frenzy_mode_visual_effect_current_sin_angle"] = sin_change_object_colour(
+                                                                                                                                        
+                                                                                                            # The current sin angle
+                                                                                                            current_sin_angle = self.dimensions["player_stats"]["frenzy_mode_visual_effect_current_sin_angle"],
+
+                                                                                                            # The rate of change in the sin angle over time
+                                                                                                            angle_time_gradient = self.dimensions["player_stats"]["frenzy_mode_visual_effect_angle_time_gradient"], 
+
+                                                                                                            # Set the colour that will be changed (the return value)
+                                                                                                            colour_to_change = self.dimensions["player_stats"]["frenzy_mode_visual_effect_colour"],
+
+                                                                                                            # Set the original colour as either the min or max colour 
+                                                                                                            # Note:  The order does not matter because the colour will always start at the midpoint RGB value
+                                                                                                            original_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectMinMaxColours"][0],
+
+                                                                                                            # The minimum and maximum colours
+                                                                                                            min_max_colours = self.player_gameplay_info_dict["FrenzyModeVisualEffectMinMaxColours"],
+
+                                                                                                            # A list containing values indicating whether we should subtract or add for each RGB value at a given angle, e.g. (-1, 0, 1)
+                                                                                                            plus_or_minus_list = self.player_gameplay_info_dict["FrenzyModeVisualEffectRGBValuesPlusOrMinus"],
+
+                                                                                                            # Delta time to increase the angle over time
+                                                                                                            delta_time = self.delta_time
+                                                                                                                                                                                    )
+
+                # Set the frenzy mode bar colour (A tuple because the bar is made up of two rectangles)
+                frenzy_mode_bar_colour = (
+                                        self.dimensions["player_stats"]["frenzy_mode_visual_effect_colour"], 
+                                        tuple(darker_colour(self.dimensions["player_stats"]["frenzy_mode_visual_effect_colour"][i]) for i in range(0, len(self.dimensions["player_stats"]["frenzy_mode_visual_effect_colour"])))
+                                        )
+
+        # If the player has activated frenzy mode
+        if self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+
+            # Note: This is synced to the visual effect of the player
+            
+            # Lambda function to offset the rgb values of the current frenzy mode colour
+            darker_colour = lambda x: x - 10
+
+            # Set the frenzy mode bar colour (A tuple because the bar is made up of two rectangles)
+            frenzy_mode_bar_colour = (
+                                    self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"], 
+                                    tuple(darker_colour(self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"][i]) for i in range(0, len(self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])))
+                                    
+                                    )
+        
+        # Drawing the frenzy mode bar
         pygame_draw_rect(
                         surface = self.surface,
-                        color = "darkorchid2",
+                        color = frenzy_mode_bar_colour[0],
                         rect = pygame_Rect(
                                         self.dimensions["player_stats"]["frenzy_mode_bar_x"],
                                         frenzy_mode_bar_y_pos,
@@ -281,7 +350,7 @@ class GameUI:
 
         pygame_draw_rect(
                         surface = self.surface,
-                        color = "darkorchid3",
+                        color = frenzy_mode_bar_colour[1],
                         rect = pygame_Rect(
                                         self.dimensions["player_stats"]["frenzy_mode_bar_x"] + (self.dimensions["player_stats"]["frenzy_mode_bar_width"] / 2),
                                         frenzy_mode_bar_y_pos,
@@ -293,11 +362,19 @@ class GameUI:
 
         # Only draw the edge when the height of the frenzy mode bar is greater than 0
         if frenzy_mode_bar_height > 0:
+            
+            if self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                bar_edge_colour = (174, 50, 205)
+
+            elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+                # Set the bar edge as the current frenzy mode visual effect colour 
+                # Note: Call the darker colour lambda function again for a colour that will always be darker than the bar
+                bar_edge_colour = tuple(darker_colour(frenzy_mode_bar_colour[1][i]) for i in range(0, len(self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])))
 
             # Edge at the end of the changing part of the boss' health
             pygame_draw_line(
                             surface = self.surface, 
-                            color = (174, 50, 205),
+                            color = bar_edge_colour,
                             start_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_x"], frenzy_mode_bar_y_pos - (self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"] / 2)),
                             end_pos = (self.dimensions["player_stats"]["frenzy_mode_bar_x"] + self.dimensions["player_stats"]["frenzy_mode_bar_width"], frenzy_mode_bar_y_pos - (self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"] / 2)),
                             width = self.dimensions["player_stats"]["changing_frenzy_mode_bar_edge_thickness"]

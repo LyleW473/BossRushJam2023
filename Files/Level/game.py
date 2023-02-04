@@ -347,7 +347,8 @@ class Game:
 
         # Look for collisions between the player and bamboo piles, and only delete the bamboo pile if there is a collision and the player does not currently have the maximum amount of bamboo resource
         player_and_bamboo_piles_collision_list = pygame.sprite.spritecollide(self.player, self.bamboo_piles_group, dokill = False, collided = pygame.sprite.collide_rect)
-        if len(player_and_bamboo_piles_collision_list) > 0 and (self.player.player_gameplay_info_dict["AmountOfBambooResource"] != self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]):
+        if len(player_and_bamboo_piles_collision_list) > 0 and \
+            ((self.player.player_gameplay_info_dict["AmountOfBambooResource"] != self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]) or (self.player.player_gameplay_info_dict["CurrentHealth"] != self.player.player_gameplay_info_dict["MaximumHealth"])):
             
             # Remove the bamboo pile from the bamboo piles group
             self.bamboo_piles_group.remove(player_and_bamboo_piles_collision_list)
