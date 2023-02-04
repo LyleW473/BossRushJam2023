@@ -334,11 +334,13 @@ class Game:
                             # Play the boss' damaged flash effect
                             self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTimer"] = self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTime"]
 
-                            # Increase the player's frenzy mode meter by the deal damage increment amount, limiting it to the maximum frenzy mode value
-                            self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
-                                                                                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["DealDamageFrenzyModeIncrement"],
-                                                                                                self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
-                                                                                                )
+                            # If the player's frenzy mode is not activated
+                            if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                                # Increase the player's frenzy mode meter by the deal damage increment amount, limiting it to the maximum frenzy mode value
+                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
+                                                                                                    self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["DealDamageFrenzyModeIncrement"],
+                                                                                                    self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
+                                                                                                    )
 
         # --------------------------------------------------------------------------------------
         # Bamboo piles
@@ -388,11 +390,14 @@ class Game:
 
                     # If the stomp attack node was blocked by a building tile
                     if collision_result[1] == "BuildingTile":
-                        # Increase the player's frenzy mode meter by the block damage increment amount, limiting it to the maximum frenzy mode value
-                        self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
-                                                                                            self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["BlockDamageFrenzyModeIncrement"],
-                                                                                            self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
-                                                                                            )
+
+                        # If the player's frenzy mode is not activated
+                        if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                            # Increase the player's frenzy mode meter by the block damage increment amount, limiting it to the maximum frenzy mode value
+                            self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
+                                                                                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["BlockDamageFrenzyModeIncrement"],
+                                                                                                self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
+                                                                                                )
 
                 # --------------------------------
                 # Player
@@ -412,11 +417,13 @@ class Game:
                         # Set the damaged flash effect timer to the damage flash effect time set (damaged flashing effect)
                         self.player.player_gameplay_info_dict["DamagedFlashEffectTimer"] = self.player.player_gameplay_info_dict["DamagedFlashEffectTime"]
 
-                        # Increase the player's frenzy mode meter by the take damage increment amount, limiting it to the maximum frenzy mode value
-                        self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
-                                                                                            self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["TakeDamageFrenzyModeIncrement"],
-                                                                                            self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
-                                                                                            )
+                        # If the player's frenzy mode is not activated
+                        if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                            # Increase the player's frenzy mode meter by the take damage increment amount, limiting it to the maximum frenzy mode value
+                            self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
+                                                                                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["TakeDamageFrenzyModeIncrement"],
+                                                                                                self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
+                                                                                                )
 
     def look_for_world_tile_collisions(self, item, other_group):
         

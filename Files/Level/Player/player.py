@@ -78,13 +78,27 @@ class Player(Generic):
                                         "CurrentHealth": 100,
                                         "MaximumHealth": 100,
 
+                                        # ------------------------------------------------
                                         # Frenzy mode
-                                        "CurrentFrenzyModeValue": 0,
+                                        "CurrentFrenzyModeValue": 90,
                                         "MaximumFrenzyModeValue": 100,
                                         "DealDamageFrenzyModeIncrement": 0.75,
                                         "TakeDamageFrenzyModeIncrement": 0.5,
                                         "BlockDamageFrenzyModeIncrement": 1,
+                                        
+                                        # Time 
+                                        "FrenzyModeTime": 6000, # Duration of the frenzy mode in milliseconds
+                                        "FrenzyModeTimer": None,
+                                        
+                                        # Gradient to decrease the frenzy mode value from the highest value to the lowest value
+                                        "FrenzyModeValueGradient": ((100 - 0) * 1000) / 6000, # HighestValue - LowestValue / Time to reach lowest value from highest value
+                                        "FrenzyModeFireRateBoost": 1, # The increased fire rate multiplier
+                                        
+                                        
+                                        # Frenzy mode visual effect
+                                        "FrenzyModeVisualEffectColour": (255, 20, 147),
 
+                                        # ------------------------------------------------
                                         # Damage flash effect
                                         "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
                                         "DamagedFlashEffectTimer": None
@@ -403,6 +417,11 @@ class Player(Generic):
         if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
             # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
             current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = (255, 255, 255))
+
+        # If the player is in frenzy mode
+        elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+            # Colour the player as the current frenzy mode colour
+            current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
         
         # Set the image to be this animation frame
         self.image = current_animation_image
@@ -469,7 +488,12 @@ class Player(Generic):
             if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
                 # Set the head image to be the flashed version of the head image (a white flash effect)
                 head_image = change_image_colour(current_animation_image = head_image, desired_colour = (255, 255, 255))
-        
+            
+            # If the player is in frenzy mode
+            elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+                # Colour the player as the current frenzy mode colour
+                head_image = change_image_colour(current_animation_image = head_image, desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
+
             # ---------------------------------------------------------------------------------
             # Drawing the torso and the head
 
@@ -529,6 +553,10 @@ class Player(Generic):
                 if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
                     # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
                     self.image = change_image_colour(current_animation_image = current_animation_image, desired_colour = (0, 0, 0))
+                # If the player is in frenzy mode
+                elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+                    # Colour the player as the current frenzy mode colour
+                    self.image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
 
             # Draw the idle animation
             self.draw(surface = self.surface, x = (self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), y = (self.rect.centery - self.camera_position[1]) - int(self.image.get_height() / 2))
@@ -549,7 +577,9 @@ class Player(Generic):
             if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] <= 0:
                 # Set the damage flash effect timer back to None
                 self.player_gameplay_info_dict["DamagedFlashEffectTimer"] = None
-    
+
+    # def update_frenzy_mode_effect_timer:
+
     # ---------------------------------------------------------------------------------
     # Movement       
 
@@ -1075,13 +1105,36 @@ class Player(Generic):
         
         # If the player is pressing the left mouse button
         if pygame.mouse.get_pressed()[0]:
+            
+            # ---------------------------------------------------------------------------------------------------
+            # Assigning tool image
 
+            # If the current tool is the "BuildingTool"
             if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BuildingTool":
+                # Set the tool image as the building tool
                 tool_image = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]["Images"]["Up"]
 
-            if self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
+            # If the current tool is anything but the "BuildingTool":
+            elif self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
+
                 # Assign the weapon image
                 tool_image = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]["Images"][self.current_look_direction]
+            
+            # ---------------------------------------------------
+            # Checking for if we need to change the image colour if there is a visual effect that must be played
+
+            # If the player has been damaged
+            if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
+                # Set the tool to be a flashed version of the current animation image (a white flash effect)
+                tool_image = change_image_colour(current_animation_image = tool_image, desired_colour = (255, 255, 255))
+
+            # If the player is in frenzy mode
+            elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+                # Colour the weapon as the current frenzy mode colour
+                tool_image = change_image_colour(current_animation_image = tool_image, desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
+
+            # ---------------------------------------------------------------------------------------------------
+            # Assigning the weapon position
             
             # The following distance will ensure that the weapon is always "hypot_distance" away from the center of the player
             hypot_distance = 10
@@ -1103,11 +1156,58 @@ class Player(Generic):
                         ((self.rect.centerx - (tool_image.get_width() / 2))) + distance_x, 
                         ((self.rect.centery - (tool_image.get_height() / 2))) - distance_y
                     )
-                    
+
+            # ---------------------------------------------------------------------------------------------------
             # Draw the weapon at the position
+
             # pygame.draw.circle(self.scaled_surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), hypot_distance, 1)
             self.surface.blit(tool_image, (self.weapon_position[0] - self.camera_position[0], self.weapon_position[1] - self.camera_position[1]))
 
+    def activate_frenzy_mode(self):
+        
+        # Activates frenzy mode if the player presses the correct input key and the frenzy mode meter is completely filed up
+        
+        # If the frenzy mode meter / bar is completely filled up
+        if (self.player_gameplay_info_dict["CurrentFrenzyModeValue"] == self.player_gameplay_info_dict["MaximumFrenzyModeValue"]):
+            
+            # If the player presses the "space" key
+            if pygame.key.get_pressed()[pygame.K_SPACE]:
+
+                # Set the frenzy mode fire rate boost to 2
+                self.player_gameplay_info_dict["FrenzyModeFireRateBoost"] = 2
+
+                # Set the frenzy mode timer to start
+                self.player_gameplay_info_dict["FrenzyModeTimer"] = self.player_gameplay_info_dict["FrenzyModeTime"]
+                
+    def update_frenzy_mode_timer(self):
+    
+        # Updates the frenzy mode timer
+
+        # If a frenzy mode timer has been set to start counting down 
+        if self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+            
+            # --------------------------------------
+            # Updating timers
+
+            # If the timer is greater than 0 
+            if self.player_gameplay_info_dict["FrenzyModeTimer"] > 0:
+
+                # Decrease the frenzy mode timer
+                self.player_gameplay_info_dict["FrenzyModeTimer"] -= 1000 * self.delta_time
+
+                # Decrease the current frenzy mode value (The player cannot increase their frenzy mode value whilst frenzy mode is activated)
+                # Limit the lowest the current frenzy mode value can be to 0
+                self.player_gameplay_info_dict["CurrentFrenzyModeValue"] = max(self.player_gameplay_info_dict["CurrentFrenzyModeValue"] - (self.player_gameplay_info_dict["FrenzyModeValueGradient"] * self.delta_time), 0)
+
+            # If the timer is less than or equal to 0
+            if self.player_gameplay_info_dict["FrenzyModeTimer"] <= 0:
+
+                # Set the shooting cooldown timer back to None
+                self.player_gameplay_info_dict["FrenzyModeTimer"] = None
+
+                # Reset the frenzy mode fire rate boost back to 1
+                self.player_gameplay_info_dict["FrenzyModeFireRateBoost"] = 1
+        
     # ---------------------------------------
     # Building 
 
@@ -1283,23 +1383,25 @@ class Player(Generic):
         # pygame.draw.circle(self.scaled_surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), 50, 1)
 
         # If the current tool equipped by the player is not the building tool
-        if self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
-            
+        if self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":       
+
             # --------------------------------------
             # Updating shooting cooldown timers
-            
+
             # The current weapon selected (as a temp variable)
             current_weapon = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]
 
-            # If there is a timer that has been set to start counting and the timer is greater than 0 (counts down from the shooting cooldown)
-            if current_weapon["ShootingCooldownTimer"] != None and current_weapon["ShootingCooldownTimer"] > 0:
-                # Increase the timer
-                current_weapon["ShootingCooldownTimer"] -= 1000 * self.delta_time
+            # If there is a timer that has been set to start counting
+            if current_weapon["ShootingCooldownTimer"] != None:
+                # If the timer is greater than 0 (counts down from the shooting cooldown)
+                if current_weapon["ShootingCooldownTimer"] > 0:
+                    # Increase the timer
+                    current_weapon["ShootingCooldownTimer"] -= 1000 * self.delta_time * self.player_gameplay_info_dict["FrenzyModeFireRateBoost"]
 
-            # If there is a timer that has been set to start counting and the timer is less than or equal to 0 (counts down from the shooting cooldown)
-            elif current_weapon["ShootingCooldownTimer"] != None and current_weapon["ShootingCooldownTimer"] <= 0:
-                # Set the shooting cooldown timer back to None
-                current_weapon["ShootingCooldownTimer"] = None
+                # If the timer is less than or equal to 0 (counts down from the shooting cooldown)
+                if current_weapon["ShootingCooldownTimer"] <= 0:
+                    # Set the shooting cooldown timer back to None
+                    current_weapon["ShootingCooldownTimer"] = None
 
             # If the left mouse button has been pressed and the player has enough resources to shoot
             if pygame.mouse.get_pressed()[0] == True and (self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon["BambooResourceDepletionAmount"]) >= 0:
@@ -1349,8 +1451,10 @@ class Player(Generic):
                             # Set the shooting cooldown timer to the shooting cooldown set
                             self.tools["BambooAssaultRifle"]["ShootingCooldownTimer"] = self.tools["BambooAssaultRifle"]["ShootingCooldown"]
 
-                            # Remove the amount of bamboo resource set for the bamboo assault rifle
-                            self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BambooAssaultRifle"]["BambooResourceDepletionAmount"]
+                            # If the player isn't in frenzy mode
+                            if self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                                # Remove the amount of bamboo resource set for the bamboo assault rifle
+                                self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BambooAssaultRifle"]["BambooResourceDepletionAmount"]
 
         # ---------------------------------------------------------------------------------
         # Updating bamboo projectiles 
@@ -1365,7 +1469,6 @@ class Player(Generic):
             bamboo_projectile.move_projectile()
     
     def run(self, delta_time):
-
 
 
         #pygame.draw.line(self.surface, "white", (self.surface.get_width() / 2, 0), (self.surface.get_width() / 2, self.surface.get_height()))
@@ -1388,6 +1491,15 @@ class Player(Generic):
         
         # Create / update a mask for pixel - perfect collisions
         self.mask = pygame.mask.from_surface(self.image)
+
+        # ----------------------------------
+        # Gameplay
+
+        # Activate frenzy mode if the conditions are met
+        self.activate_frenzy_mode()
+
+        # Update the frenzy mode timer
+        self.update_frenzy_mode_timer()
 
         # Draw the player tool
         self.draw_player_tool()
