@@ -59,7 +59,10 @@ class Game:
         self.guidelines_surface.set_colorkey("black")
         self.guidelines_surface.set_alpha(90)
 
+        # ---------------------------------------------------------------------------------
+        # Cursor images
 
+        self.default_cursor_image = pygame.image.load("graphics/Cursors/Default.png").convert_alpha()
     # --------------------------------------------------------------------------------------
     # Camera methods
 
@@ -739,10 +742,15 @@ class Game:
             # Update the current boss' camera position 
             current_boss.camera_position = self.camera_position
 
-            # print(current_boss.health)
-
             # Draw guidelines between the player and the boss
-            self.draw_guidelines_between_a_and_b(a = current_boss.rect.center, b = self.player.rect.center)
+            self.game_ui.draw_guidelines_between_a_and_b(
+                                                        a = current_boss.rect.center, 
+                                                        b = self.player.rect.center, 
+                                                        camera_position = self.camera_position, 
+                                                        guidelines_segments_thickness = self.guidelines_segments_thickness,
+                                                        guidelines_surface = self.guidelines_surface,
+                                                        main_surface = self.scaled_surface
+                                                        )
 
             # Run the boss
             current_boss.run()
@@ -750,36 +758,14 @@ class Game:
         # If the current boss is spawning
         elif current_boss == None and hasattr(self, "bosses_dict") and self.bosses_dict["ValidSpawningPosition"] != None:
             # Draw guidelines between the player and the boss' spawning location
-            self.draw_guidelines_between_a_and_b(a = (self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)), b = self.player.rect.center)
-
-    def draw_guidelines_between_a_and_b(self, a, b):
-
-        # Draws guidelines between the two subjects
-    
-        # The number of segments desired for the guidelines
-        number_of_segments = 6
-
-        # Calculate the distance between the a and b
-        dx, dy = a[0] - b[0], a[1] - b[1]
-
-        # Calculate the length of each segment 
-        segment_length_x = dx / (number_of_segments * 2)
-        segment_length_y = dy / (number_of_segments * 2)
-
-        # Fill the cursor guidelines surface with black. (The colour-key has been set to black)
-        self.guidelines_surface.fill("black")
-
-        # Draw
-        for i in range(1, (number_of_segments * 2) + 1, 2):     
-            pygame.draw.line(
-                surface = self.guidelines_surface, 
-                color = "white",
-                start_pos = ((b[0] - self.camera_position[0]) + (segment_length_x * i), (b[1] - self.camera_position[1]) + (segment_length_y * i)),
-                end_pos = ((b[0] - self.camera_position[0]) + (segment_length_x * (i + 1)), (b[1] - self.camera_position[1]) + (segment_length_y * (i + 1))),
-                width = self.guidelines_segments_thickness)
-
-        # Draw the cursor guidelines surface onto the main surface
-        self.scaled_surface.blit(self.guidelines_surface, (0, 0))
+            self.game_ui.draw_guidelines_between_a_and_b(
+                                                        a = (self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)), 
+                                                        b = self.player.rect.center,
+                                                        camera_position = self.camera_position,
+                                                        guidelines_segments_thickness = self.guidelines_segments_thickness,
+                                                        guidelines_surface = self.guidelines_surface,
+                                                        main_surface = self.scaled_surface
+                                                        )
 
     # --------------------------------------------------------------------------------------
     # Game UI methods
@@ -793,11 +779,12 @@ class Game:
         
         # Current boss
         self.game_ui.current_boss = self.boss_group.sprite
+            
+        # Mouse position 
+        # Note: Take away the camera position so that we do not need to create a camera position attribute for the game UI
+        self.game_ui.mouse_position = (self.player.mouse_position[0] - self.camera_position[0], self.player.mouse_position[1] - self.camera_position[1])
 
     def run(self, delta_time):
-
-        # Update the game UI
-        self.update_game_ui(delta_time = delta_time)
 
         # Fill the scaled surface with a colour
         self.scaled_surface.fill("cornsilk4")
@@ -825,6 +812,9 @@ class Game:
 
         # Update and run the boss
         self.update_and_run_boss(delta_time = delta_time)
+
+        # Update the game UI
+        self.update_game_ui(delta_time = delta_time)
         
         # Run the game UI 
         self.game_ui.run()

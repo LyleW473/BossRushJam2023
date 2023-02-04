@@ -57,10 +57,6 @@ class Player(Generic):
         """
         self.look_angle = 0
         """
-        # ---------------------------------------------------------------------------------
-        # Cursor images
-
-        self.default_cursor_image = pygame.image.load("graphics/Cursors/Default.png").convert_alpha()
 
         # ---------------------------------------------------------------------------------
         # Shooting, building etc.
@@ -155,7 +151,6 @@ class Player(Generic):
                                           },
                         }
 
-        self.current_sin_angle = 0
     # ---------------------------------------------------------------------------------
     # Animations
 
@@ -1075,11 +1070,6 @@ class Player(Generic):
         - "-dy" because the y axis is flipped in PYgame
         """
         self.look_angle = atan2(-dy, dx) % (2 * pi)
-
-        # Draw the new cursor
-        # Blit the cursor image at the mouse position divided by the scale multiplier, subtracting half of the cursor image's width and height
-        self.surface.blit(self.default_cursor_image, ((self.mouse_position[0] - self.camera_position[0]) - (self.default_cursor_image.get_width()/ 2), (self.mouse_position[1] - self.camera_position[1]) - (self.default_cursor_image.get_height() / 2)))
-
     # ---------------------------------------------------------------------------------
     # Gameplay
 
@@ -1230,6 +1220,7 @@ class Player(Generic):
                                                                                                                                 # Delta time to increase the angle over time
                                                                                                                                 delta_time = self.delta_time
                                                                                                                                                                             )
+    
     # ---------------------------------------
     # Building 
 

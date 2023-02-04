@@ -25,6 +25,9 @@ class GameUI:
         # The current boss
         self.current_boss = None
 
+        # The current mouse position
+        self.mouse_position = None
+
         # The tools that the player has
         self.player_tools = player_tools
         
@@ -100,6 +103,7 @@ class GameUI:
         self.create_player_tools_display_cards()
         self.create_player_stats_display_cards()
 
+        # ------------------------------------------------------------
         # Alpha surfaces
 
         # Frenzy mode bar
@@ -112,6 +116,9 @@ class GameUI:
         self.dimensions["boss_bar"]["alpha_surface"].set_colorkey("black")
         self.dimensions["boss_bar"]["alpha_surface"].set_alpha(BAR_ALPHA_LEVEL)
 
+        # ------------------------------------------------------------
+        # Cursor image
+        self.default_cursor_image = load_image("graphics/Cursors/Default.png").convert_alpha()
 
 
     def create_player_tools_display_cards(self):
@@ -459,6 +466,43 @@ class GameUI:
             # Draw the card, passing in the player tools dictionary and the players gameplay info dictionary
             stats_display_card.draw(player_tools = self.player_tools, player_gameplay_info_dict = self.player_gameplay_info_dict)
 
+    def draw_mouse_cursor(self):
+
+        # Draws the new cursor
+
+        # Blit the cursor image at the mouse position, subtracting half of the cursor image's width and height
+        self.surface.blit(self.default_cursor_image, (self.mouse_position[0] - (self.default_cursor_image.get_width()/ 2), self.mouse_position[1]- (self.default_cursor_image.get_height() / 2)))
+
+    def draw_guidelines_between_a_and_b(self, a, b, guidelines_surface, main_surface, camera_position, guidelines_segments_thickness):
+
+        # Draws guidelines between the two subjects
+        """ Note: This is a method of the Game class because """
+    
+        # The number of segments desired for the guidelines
+        number_of_segments = 6
+
+        # Calculate the distance between the a and b
+        dx, dy = a[0] - b[0], a[1] - b[1]
+
+        # Calculate the length of each segment 
+        segment_length_x = dx / (number_of_segments * 2)
+        segment_length_y = dy / (number_of_segments * 2)
+
+        # Fill the guidelines surface with black. (The colour-key has been set to black)
+        guidelines_surface.fill("black")
+
+        # Draw lines
+        for i in range(1, (number_of_segments * 2) + 1, 2):     
+            pygame_draw_line(
+                surface = guidelines_surface, 
+                color = "white",
+                start_pos = ((b[0] - camera_position[0]) + (segment_length_x * i), (b[1] - camera_position[1]) + (segment_length_y * i)),
+                end_pos = ((b[0] - camera_position[0]) + (segment_length_x * (i + 1)), (b[1] - camera_position[1]) + (segment_length_y * (i + 1))),
+                width = guidelines_segments_thickness)
+
+        # Draw the guidelines surface onto the main surface
+        main_surface.blit(guidelines_surface, (0, 0))
+
     def run(self):
 
         # Draw the display cards onto the screen
@@ -469,5 +513,8 @@ class GameUI:
 
         # Draw the player's frenzy mode bar
         self.draw_player_frenzy_mode_bar()
+
+        # Draw the mouse cursor
+        self.draw_mouse_cursor()
 
 
