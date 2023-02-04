@@ -96,6 +96,9 @@ class StompNode(pygame_sprite_Sprite):
         # The amount of damage that the stomp node deals
         self.damage_amount = 10
 
+        # Attribute used so that the boss only takes damage when the projectile was reflected at it
+        self.reflected = False
+
     def move(self, delta_time):
 
         # Moves the projectile / node

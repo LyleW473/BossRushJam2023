@@ -79,12 +79,15 @@ class Player(Generic):
                                         # Frenzy mode
                                         "CurrentFrenzyModeValue": 100,
                                         "MaximumFrenzyModeValue": 100,
-                                        "DealDamageFrenzyModeIncrement": 0.75,
+                                        
+                                        # Values for increasing the current frenzy mode value depending on what the player did
+                                        "DealDamageFrenzyModeIncrement": 0.75, 
                                         "TakeDamageFrenzyModeIncrement": 0.5,
-                                        "BlockDamageFrenzyModeIncrement": 1,
+                                        "BlockDamageFrenzyModeIncrement": 0.25,
+                                        "ReflectDamageFrenzyModeIncrement": 0.75, 
                                         
                                         # Time 
-                                        "FrenzyModeTime": 6000, #6000, # Duration of the frenzy mode in milliseconds
+                                        "FrenzyModeTime": 6000, # Duration of the frenzy mode in milliseconds
                                         "FrenzyModeTimer": None,
                                         
                                         # Gradient to decrease the frenzy mode value from the highest value to the lowest value
@@ -1245,8 +1248,9 @@ class Player(Generic):
                     # Set the last tile removed timer back to None
                     self.tools["BuildingTool"]["LastTileRemovedTimer"] = None
             
+
             # --------------------------------------
-            # Checking for input to remove building tiles
+            # Highlighting any tiles that are hovered over
 
             # Look for collisions between the player's mouse and any placed building tile
             # Note: Used for removing building tiles and highlighting tiles
@@ -1269,8 +1273,8 @@ class Player(Generic):
                                 width = 2
                                 )
 
-            # ------------------
-            # Highlighting any tiles that 
+            # --------------------------------------
+            # Checking for input to remove building tiles
 
             # If the player pressed the right mouse button and there is an existing building tile
             if pygame.mouse.get_pressed()[2] and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0:

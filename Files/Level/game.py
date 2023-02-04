@@ -389,11 +389,40 @@ class Game:
 
                 # Look for tile rect collisions between the stomp attack nodes and world / building tiles
                 if collision_result != None:
-                    # Remove the stomp attack node from the group if there is a collision
-                    self.stomp_attack_nodes_group.remove(stomp_attack_node)
+                    
+                    # --------------------------------
+                    # Building tiles
 
                     # If the stomp attack node was blocked by a building tile
                     if collision_result[1] == "BuildingTile":
+                        
+                        # Reflect the stomp attack node
+                        stomp_attack_node.horizontal_gradient *= -1
+                        stomp_attack_node.vertical_gradient *= -1
+                        stomp_attack_node.reflected = True
+
+                        # Take one life away from the building tile
+                        collision_result[0].lives -= 1
+
+                        # If the building tile has run out of lives
+                        if collision_result[0].lives <= 0:
+
+                            # Remove the building tile from the world tiles group
+                            self.world_tiles_group.remove(collision_result[0])
+
+                            # Remove the building tile from the world tiles dictionary
+                            self.world_tiles_dict.pop(collision_result[0])
+
+                            # "Create" an empty tile where the building tile was
+                            self.empty_tiles_dict[(collision_result[0].rect.x, collision_result[0].rect.y, collision_result[0].rect.width, collision_result[0].rect.height)] = len(self.empty_tiles_dict)
+
+                            # Remove the building tile from the existing building tiles list
+                            self.player.tools["BuildingTool"]["ExistingBuildingTilesList"].remove(collision_result[0])
+
+                            # If the building tile to remove is in the neighbouring tiles dictionary (keys)
+                            if collision_result[0] in self.player.neighbouring_tiles_dict.keys():
+                                # Remove the building tile
+                                self.player.neighbouring_tiles_dict.pop(collision_result[0])
 
                         # If the player's frenzy mode is not activated
                         if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
@@ -402,14 +431,21 @@ class Game:
                                                                                                 self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["BlockDamageFrenzyModeIncrement"],
                                                                                                 self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                 )
+                    # --------------------------------
+                    # World tiles
 
+                    # If the collided tile was a world tile
+                    elif collision_result[1]  == "WorldTile":
+                        # Remove the stomp attack node from the group if there is a collision
+                        self.stomp_attack_nodes_group.remove(stomp_attack_node)
+                
                 # --------------------------------
                 # Player
 
                 # Look for tile rect collisions between the stomp attack nodes and the player
                 if stomp_attack_node.rect.colliderect(self.player.rect):
 
-                    # Check for a pixel-perfect collision between the bamboo projectile and the current boss
+                    # Check for a pixel-perfect collision between the stomp attack node and the player
                     if pygame.sprite.collide_mask(stomp_attack_node, self.player) != None:
 
                         # Remove the stomp attack node from the group if there is a collision
@@ -426,6 +462,33 @@ class Game:
                             # Increase the player's frenzy mode meter by the take damage increment amount, limiting it to the maximum frenzy mode value
                             self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
                                                                                                 self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["TakeDamageFrenzyModeIncrement"],
+                                                                                                self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
+                                                                                                )
+                
+                # --------------------------------
+                # Boss
+
+                # Look for tile rect collisions between the stomp attack nodes and the current boss
+                # Only enter if there is a rect collision and the stomp attack node was reflected
+                if stomp_attack_node.rect.colliderect(self.bosses_dict[self.bosses_dict["CurrentBoss"]].rect) and stomp_attack_node.reflected == True:
+
+                    # Check for a pixel-perfect collision between the bamboo projectile and the current boss
+                    if pygame.sprite.collide_mask(stomp_attack_node, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
+
+                        # Remove the stomp attack node from the group if there is a collision
+                        self.stomp_attack_nodes_group.remove(stomp_attack_node)
+                        
+                        # Damage the boss by 5 times the stomp attack node damage
+                        self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= (stomp_attack_node.damage_amount * 5)
+
+                        # Set the damaged flash effect timer to the damage flash effect time set (damaged flashing effect)
+                        self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTimer"] = self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTime"]
+
+                        # If the player's frenzy mode is not activated
+                        if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                            # Increase the player's frenzy mode meter by the reflect damage increment amount, limiting it to the maximum frenzy mode value
+                            self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
+                                                                                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["ReflectDamageFrenzyModeIncrement"],
                                                                                                 self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                 )
 
