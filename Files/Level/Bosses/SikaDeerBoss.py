@@ -40,7 +40,7 @@ class SikaDeerBoss(Generic, AI):
         """
         # The current action that the boss is performing
         self.current_action = "Chase"
-        self.previous_actions_list = []
+        self.previous_actions_list = [("Stomp", 0)] # Start off with Stomp inside the previous actions list so that the boss waits the cooldown timer after spawning
         
         # A dictionary containing information relating to the behaviour of the Sika deer boss
         self.behaviour_patterns_dict = {
@@ -53,8 +53,8 @@ class SikaDeerBoss(Generic, AI):
                                             "Duration": 6000, # How long the attack will be performed
                                             "DurationTimer": None, # Timer used to check if the attack is over
 
-                                            "Cooldown": 300000, 
-                                            "CooldownTimer": None
+                                            "Cooldown": 15000, 
+                                            "CooldownTimer": 15000
                                              },
 
                                     "Chase": { 
@@ -68,8 +68,8 @@ class SikaDeerBoss(Generic, AI):
         # A dictionary containing extra information about the Sika deer boss
         self.extra_information_dict = {    
                                         # Health
-                                        "CurrentHealth": 7500,
-                                        "MaximumHealth": 7500,
+                                        "CurrentHealth": 25000,
+                                        "MaximumHealth": 25000,
 
                                         # Damage flash effect
                                         "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
@@ -235,6 +235,9 @@ class SikaDeerBoss(Generic, AI):
                 # Note: When changed back to Chase, the "decide_action" method will be able to change to any other action
                 #### Could call decide_action here to switch between actions without going back to Chase
                 self.current_action = "Chase"
+                
+                # Reset the animation index
+                self.animation_index = 0
 
     def update_cooldown_timers(self):
         
@@ -345,11 +348,12 @@ class SikaDeerBoss(Generic, AI):
             # Create a list of all the actions that the AI can currently perform, if the action's cooldown timer is None
             action_list = [action for action in self.behaviour_patterns_dict.keys() if action != "Chase" and self.behaviour_patterns_dict[action]["CooldownTimer"] == None]
 
-            # Reset the animation index whenever we change the action
-            self.animation_index = 0
 
             # If there are any possible actions that the boss can perform
             if len(action_list) > 0:
+
+                # Reset the animation index whenever we change the action
+                self.animation_index = 0
 
                 # Set the duration timer to start counting down
                 self.behaviour_patterns_dict["Stomp"]["DurationTimer"] = self.behaviour_patterns_dict["Stomp"]["Duration"]
@@ -357,7 +361,10 @@ class SikaDeerBoss(Generic, AI):
                 # Choose a random action from the possible actions the boss can perform and set it as the current action
                 self.current_action = random_choice(action_list)
 
-                print("SET TO", self.current_action)
+                print("SET TO", self.current_action, self.animation_index)
+
+                # Reset the movement acceleration
+                self.reset_movement_acceleration()
 
             # If there are no possible actions that the boss can perform
             elif len(action_list) == 0: 

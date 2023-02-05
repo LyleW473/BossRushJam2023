@@ -505,7 +505,6 @@ class Game:
                     # Check for a pixel-perfect collision between the bamboo projectile and the current boss
                     if pygame.sprite.collide_mask(stomp_attack_node, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
                         
-                        print("yes")
                         # Remove the stomp attack node from the group if there is a collision
                         self.stomp_attack_nodes_group.remove(stomp_attack_node)
                         
@@ -557,6 +556,14 @@ class Game:
                     if building_tile_to_remove in self.player.neighbouring_tiles_dict.keys():
                         # Remove the building tile
                         self.player.neighbouring_tiles_dict.pop(building_tile_to_remove)
+
+                    # ------------------------------------------------------------------
+                    # Additional effects
+                    
+                    # If the boss is currently chasing the player
+                    if self.boss_group.sprite.current_action == "Chase":
+                        # Reset the boss' movement acceleration, so that they slow down
+                        self.boss_group.sprite.reset_movement_acceleration()
 
 
     def look_for_world_tile_collisions(self, item, other_group):
@@ -874,7 +881,7 @@ class Game:
 
             # Update the current boss with the current position of the player
             current_boss.players_position = self.player.rect.center
-            print(len(self.stomp_attack_nodes_group))
+
             # Draw guidelines between the player and the boss
             self.game_ui.draw_guidelines_between_a_and_b(
                                                         a = current_boss.rect.center, 
