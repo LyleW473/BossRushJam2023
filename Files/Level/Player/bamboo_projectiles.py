@@ -28,7 +28,6 @@ class BambooProjectile(Generic):
         elif is_frenzy_mode_projectile == True:
             # Set the time for the projectile to cover the desired distance travelled to be a smaller value for time
             time_to_travel_distance_at_final_velocity = BambooProjectile.default_time_to_travel_distance_at_final_velocity * 0.8 # t
-            print(time_to_travel_distance_at_final_velocity)
 
         # Calculate the horizontal and vertical distance the projectile must travel based on the desired distance travelled
         horizontal_distance = desired_distance_travelled * cos(angle)

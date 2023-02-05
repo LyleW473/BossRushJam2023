@@ -7,6 +7,7 @@ from pygame.draw import circle as pygame_draw_circle
 from pygame.mask import from_surface as pygame_mask_from_surface
 from Global.functions import change_image_colour
 from random import choice as random_choice
+from pygame import Surface as pygame_Surface
 
 class SikaDeerBoss(Generic):
 
@@ -140,9 +141,9 @@ class SikaDeerBoss(Generic):
                         # If this animation is one of the keyframes where the boss has stomped
                         if (self.animation_index == 0 and self.behaviour_patterns_dict[current_action]["DurationTimer"] != self.behaviour_patterns_dict[current_action]["Duration"]) \
                             or self.animation_index == 5:
-
-                            # Create a stomp attack
-                            self.stomp_controller.create_stomp_nodes(center_of_boss_position = (self.rect.centerx, self.rect.centery))
+                            
+                            # Create stomp attack nodes
+                            self.stomp_controller.create_stomp_nodes(center_of_boss_position = (self.rect.centerx, self.rect.centery), desired_number_of_nodes = 12)
 
                             # print("STOMP", self.animation_index, self.behaviour_patterns_dict[current_action]["DurationTimer"], self.behaviour_patterns_dict[current_action]["Duration"])
 
@@ -194,7 +195,7 @@ class SikaDeerBoss(Generic):
                 # Set the damage flash effect timer back to None
                 self.extra_information_dict["DamagedFlashEffectTimer"] = None
 
-    def update_stomp_attacks(self):
+    def update_and_draw_stomp_attacks(self):
         
         # If there are any stomp attack nodes inside the stomp nodes
         if len(StompController.nodes_group) > 0:
@@ -202,13 +203,41 @@ class SikaDeerBoss(Generic):
             # For each stomp attack in the group
             for stomp_attack_node in StompController.nodes_group:
                 
-                # Circle will be drawn in the center of the node rect
-                pygame_draw_circle(surface = self.surface, color = "white", center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = 1)
-                # The center of the rectangle is at the position calculated when the node was created
-                pygame_draw_rect(surface = self.surface, color = "red", rect = (stomp_attack_node.rect.x - self.camera_position[0], stomp_attack_node.rect.y - self.camera_position[1], stomp_attack_node.rect.width, stomp_attack_node.rect.height), width = 1)
+                # If the stomp attack node has not been reflected
+                if stomp_attack_node.reflected == False:
+                    # First circle (Lightest colour)
+                    pygame_draw_circle(surface = self.surface, color = (63, 42, 39), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = 0)
+
+                    # Outline (Darkest colour)
+                    pygame_draw_circle(surface = self.surface, color = 	(40, 32, 30), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = int(stomp_attack_node.radius / 3))
+
+                    # Second circle (Middle colour)
+                    pygame_draw_circle(surface = self.surface, color = 	(93, 72, 67), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius * (0.45), width = 0)
+                    
+                # If the stomp attack node has not been reflected
+                elif stomp_attack_node.reflected == True:
+                    
+                    # First circle (Lightest colour)
+                    pygame_draw_circle(surface = self.surface, color = (63 + 90, 42, 39), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = 0)
+
+                    # Outline (Darkest colour)
+                    pygame_draw_circle(surface = self.surface, color = 	(40 + 90, 32, 30), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = int(stomp_attack_node.radius / 3))
+
+                    # Second circle (Middle colour)
+                    pygame_draw_circle(surface = self.surface, color = 	(93 + 90, 72, 67), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius * (0.45), width = 0)
+                    
+
+
+                # # The center of the rectangle is at the position calculated when the node was created
+                # pygame_draw_rect(surface = self.surface, color = "red", rect = (stomp_attack_node.rect.x - self.camera_position[0], stomp_attack_node.rect.y - self.camera_position[1], stomp_attack_node.rect.width, stomp_attack_node.rect.height), width = 1)
 
                 # Move the stomp attack node
                 stomp_attack_node.move(delta_time = self.delta_time)
+
+                # If the current radius of the stomp attack node is less than the maximum node radius set
+                if stomp_attack_node.radius < self.stomp_controller.maximum_node_radius:
+                    # Increase the radius of the current rect
+                    stomp_attack_node.increase_size(delta_time = self.delta_time)
 
     def run(self):
         
@@ -216,12 +245,12 @@ class SikaDeerBoss(Generic):
         pygame_draw_line(self.surface, "white", (0 - self.camera_position[0], self.rect.centery - self.camera_position[1]), (self.surface.get_width() - self.camera_position[0], self.rect.centery - self.camera_position[1]))
         pygame_draw_line(self.surface, "white", (self.rect.centerx - self.camera_position[0], 0 - self.camera_position[1]), (self.rect.centerx - self.camera_position[0], self.surface.get_height() - self.camera_position[1]))
 
+        # Update and draw the stomp attacks
+        self.update_and_draw_stomp_attacks()
+
         # Draw the boss
         self.draw(surface = self.surface, x = self.rect.x - self.camera_position[0], y = self.rect.y - self.camera_position[1])
         
-        # Draw the stomp attacks
-        self.update_stomp_attacks()
-
         # Play animations
         self.play_animations()
                 

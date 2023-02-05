@@ -16,12 +16,11 @@ class StompController(Generic):
         self.minimum_node_radius = 20 / scale_multiplier
             
         # Maximum radius of each node
-        self.maximum_node_radius = 32 / scale_multiplier
+        self.maximum_node_radius = 40 / scale_multiplier
 
-    def create_stomp_nodes(self, center_of_boss_position):
+    def create_stomp_nodes(self, center_of_boss_position, desired_number_of_nodes):
 
         # Given a desired number of "nodes" and the radius of each node, calculate the circumference and diameter
-        desired_number_of_nodes = 16
         radius_of_each_node = self.minimum_node_radius 
 
         # Equation: Radius of each node = (circumference / number of nodes) / 2, rearranged to calculate circumference
@@ -44,15 +43,16 @@ class StompController(Generic):
                     x = center_of_boss_position[0] + (calculated_radius * cos(i * angle_change)), 
                     y = center_of_boss_position[1] + (calculated_radius * sin(i * angle_change)) + 20, # + 20 so that the stomp nodes are positioned below the boss
                     radius = self.minimum_node_radius,
+                    maximum_radius = self.maximum_node_radius,
                     angle = i * angle_change # Angle that the node will travel towards
                      ),
 
 class StompNode(pygame_sprite_Sprite):
 
     # This image is only used for masks
-    base_image = load_image("graphics/BossAttacks/StompAttack.png").convert()
+    base_image = load_image("graphics/BossAttacks/StompAttack.png").convert_alpha()
 
-    def __init__(self, x, y, radius, angle):
+    def __init__(self, x, y, radius, maximum_radius, angle):
 
         # Inherit from the pygame.sprite.Sprite class
         pygame_sprite_Sprite.__init__(self)
@@ -70,7 +70,7 @@ class StompNode(pygame_sprite_Sprite):
         desired_distance_travelled = 4 * TILE_SIZE
 
         # The time for the projectile to cover the desired distance travelled
-        time_to_travel_distance_at_final_velocity = 0.5 # t
+        time_to_travel_distance_at_final_velocity = 0.6 # t
 
         # Calculate the horizontal and vertical distance the projectile must travel based on the desired distance travelled
         horizontal_distance = desired_distance_travelled * cos(angle)
@@ -82,7 +82,19 @@ class StompNode(pygame_sprite_Sprite):
 
         # The attributes that will hold the new x and y positions of the projectile / node (for more accurate movement as the floating point values are saved)
         self.new_position_centerx = self.rect.centerx
-        self.new_position_centery = self.rect.centery
+        self.new_position_centery = self.rect.centery   
+
+        # ------------------------------------------------------------------------------
+        # Dynamic radius
+
+        # Time to increase from the minimum radius to the maximum radius
+        time_to_increase_from_min_to_max_radius = 2.5
+        
+        # The rate of change in the radius over time
+        self.radius_time_gradient = (maximum_radius - radius) / time_to_increase_from_min_to_max_radius
+
+        # Attribute to save the radius for floating point accuracy when rounding
+        self.new_radius = radius
 
         # ------------------------------------------------------------------------------
         # Other
@@ -110,3 +122,31 @@ class StompNode(pygame_sprite_Sprite):
         # Vertical movement
         self.new_position_centery += self.vertical_gradient * delta_time
         self.rect.centery = round(self.new_position_centery)
+
+    
+    def increase_size(self, delta_time):
+
+        # Increases the size of the stomp node, in place
+        
+        # Save the center of the stomp node before adjusting the radius
+        # Note: This is because adjusting with small values of the radius is inaccurate
+        center_before_changing = self.rect.centerx
+
+        # Increase the radius
+        self.new_radius += self.radius_time_gradient * delta_time
+        self.radius = round(self.new_radius)
+
+        # Set the width and height as the new radius
+        self.rect.width = self.radius * 2
+        self.rect.height = self.radius * 2
+
+        # Set the center back to the original center 
+        self.rect.centerx = center_before_changing
+
+    def rescale_image(self):
+
+        # Rescales the image for pixel-perfect collision 
+        # Note: This is done when the rect of the stomp attack node collides with something (So that we only scale the image when we want to check for pixel perfect collision)
+
+        # Rescale to be the diameter of the image
+        self.image = scale_image(StompNode.base_image, (self.radius * 2, self.radius * 2))

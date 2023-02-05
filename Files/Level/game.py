@@ -393,43 +393,54 @@ class Game:
                     # --------------------------------
                     # Building tiles
 
-                    # If the stomp attack node was blocked by a building tile
-                    if collision_result[1] == "BuildingTile":
+                    # If the stomp attack node image is not the same as the diameter of the attack node 
+                    """ Note: This is here instead of inside the stomp attack node's increase_size method to avoid resizing the image everytime the attack node's size is changed
+                    - The rect has already been adjusted according to the changed radius
+                    """
+                    if stomp_attack_node.image.get_width() != (stomp_attack_node.radius * 2):
+                        # Rescale the image for pixel-perfect collision
+                        stomp_attack_node.rescale_image()
+                    
+                    # Check for a pixel-perfect collision between the stomp attack node and the building tile
+                    if pygame.sprite.collide_mask(stomp_attack_node, collision_result[0]) != None:
                         
-                        # Reflect the stomp attack node
-                        stomp_attack_node.horizontal_gradient *= -1
-                        stomp_attack_node.vertical_gradient *= -1
-                        stomp_attack_node.reflected = True
+                        # If the stomp attack node was blocked by a building tile
+                        if collision_result[1] == "BuildingTile":
+                            
+                            # Reflect the stomp attack node, increasing its speed by 1.75
+                            stomp_attack_node.horizontal_gradient *= -1.75 
+                            stomp_attack_node.vertical_gradient *= -1.75
+                            stomp_attack_node.reflected = True
 
-                        # Take one life away from the building tile
-                        collision_result[0].lives -= 1
+                            # Take one life away from the building tile
+                            collision_result[0].lives -= 1
 
-                        # If the building tile has run out of lives
-                        if collision_result[0].lives <= 0:
+                            # If the building tile has run out of lives
+                            if collision_result[0].lives <= 0:
 
-                            # Remove the building tile from the world tiles group
-                            self.world_tiles_group.remove(collision_result[0])
+                                # Remove the building tile from the world tiles group
+                                self.world_tiles_group.remove(collision_result[0])
 
-                            # Remove the building tile from the world tiles dictionary
-                            self.world_tiles_dict.pop(collision_result[0])
+                                # Remove the building tile from the world tiles dictionary
+                                self.world_tiles_dict.pop(collision_result[0])
 
-                            # "Create" an empty tile where the building tile was
-                            self.empty_tiles_dict[(collision_result[0].rect.x, collision_result[0].rect.y, collision_result[0].rect.width, collision_result[0].rect.height)] = len(self.empty_tiles_dict)
+                                # "Create" an empty tile where the building tile was
+                                self.empty_tiles_dict[(collision_result[0].rect.x, collision_result[0].rect.y, collision_result[0].rect.width, collision_result[0].rect.height)] = len(self.empty_tiles_dict)
 
-                            # Remove the building tile from the existing building tiles list
-                            self.player.tools["BuildingTool"]["ExistingBuildingTilesList"].remove(collision_result[0])
+                                # Remove the building tile from the existing building tiles list
+                                self.player.tools["BuildingTool"]["ExistingBuildingTilesList"].remove(collision_result[0])
 
-                            # If the building tile to remove is in the neighbouring tiles dictionary (keys)
-                            if collision_result[0] in self.player.neighbouring_tiles_dict.keys():
-                                # Remove the building tile
-                                self.player.neighbouring_tiles_dict.pop(collision_result[0])
+                                # If the building tile to remove is in the neighbouring tiles dictionary (keys)
+                                if collision_result[0] in self.player.neighbouring_tiles_dict.keys():
+                                    # Remove the building tile
+                                    self.player.neighbouring_tiles_dict.pop(collision_result[0])
 
-                        # If the player's frenzy mode is not activated
-                        if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
-                            # Increase the player's frenzy mode meter by the block damage increment amount, limiting it to the maximum frenzy mode value
-                            self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
-                                                                                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["BlockDamageFrenzyModeIncrement"],
-                                                                                                self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
+                            # If the player's frenzy mode is not activated
+                            if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                                # Increase the player's frenzy mode meter by the block damage increment amount, limiting it to the maximum frenzy mode value
+                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
+                                                                                                    self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["BlockDamageFrenzyModeIncrement"],
+                                                                                                    self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                 )
                     # --------------------------------
                     # World tiles
@@ -444,6 +455,14 @@ class Game:
 
                 # Look for tile rect collisions between the stomp attack nodes and the player
                 if stomp_attack_node.rect.colliderect(self.player.rect):
+                    
+                    # If the stomp attack node image is not the same as the diameter of the attack node 
+                    """ Note: This is here instead of inside the stomp attack node's increase_size method to avoid resizing the image everytime the attack node's size is changed
+                    - The rect has already been adjusted according to the changed radius
+                    """
+                    if stomp_attack_node.image.get_width() != (stomp_attack_node.radius * 2):
+                        # Rescale the image for pixel-perfect collision
+                        stomp_attack_node.rescale_image()
 
                     # Check for a pixel-perfect collision between the stomp attack node and the player
                     if pygame.sprite.collide_mask(stomp_attack_node, self.player) != None:
@@ -471,6 +490,14 @@ class Game:
                 # Look for tile rect collisions between the stomp attack nodes and the current boss
                 # Only enter if there is a rect collision and the stomp attack node was reflected
                 if stomp_attack_node.rect.colliderect(self.bosses_dict[self.bosses_dict["CurrentBoss"]].rect) and stomp_attack_node.reflected == True:
+                    
+                    # If the stomp attack node image is not the same as the diameter of the attack node 
+                    """ Note: This is here instead of inside the stomp attack node's increase_size method to avoid resizing the image everytime the attack node's size is changed
+                    - The rect has already been adjusted according to the changed radius
+                    """
+                    if stomp_attack_node.image.get_width() != (stomp_attack_node.radius * 2):
+                        # Rescale the image for pixel-perfect collision
+                        stomp_attack_node.rescale_image()
 
                     # Check for a pixel-perfect collision between the bamboo projectile and the current boss
                     if pygame.sprite.collide_mask(stomp_attack_node, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
