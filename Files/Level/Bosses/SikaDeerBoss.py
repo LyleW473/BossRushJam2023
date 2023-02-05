@@ -73,7 +73,10 @@ class SikaDeerBoss(Generic, AI):
 
                                         # Damage flash effect
                                         "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
-                                        "DamagedFlashEffectTimer": None
+                                        "DamagedFlashEffectTimer": None,
+
+                                        # Knockback damage
+                                        "KnockbackDamage": 20,
                                         
                                       }
         
@@ -261,7 +264,7 @@ class SikaDeerBoss(Generic, AI):
 
                     # Pop the previous action out of the previous actions list
                     self.previous_actions_list.pop(previous_action_tuple[1])
-    
+
     # ----------------------------------------------------------------------------------
     # Gameplay
 
@@ -394,6 +397,9 @@ class SikaDeerBoss(Generic, AI):
 
         # Update the cooldown timers
         self.update_cooldown_timers()
+
+        # Update the knockback collision idle timer
+        self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
 
         # Create / update a mask for pixel - perfect collisions
         self.mask = pygame_mask_from_surface(self.image)

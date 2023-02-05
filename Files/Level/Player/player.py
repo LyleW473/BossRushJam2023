@@ -105,7 +105,20 @@ class Player(Generic):
                                         # ------------------------------------------------
                                         # Damage flash effect
                                         "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
-                                        "DamagedFlashEffectTimer": None
+                                        "DamagedFlashEffectTimer": None,
+
+
+                                        # ------------------------------------------------
+                                        # Knockback
+
+                                        "KnockbackTime": 320, # Time that the player is knocked back for in milliseconds
+                                        "KnockbackTimer": None,
+                                        "KnockbackDistanceTravelled": 8 * TILE_SIZE, # The distance the player will travel 
+
+                                        # Gradients are set when the player is knocked back by a boss
+                                        # "KnockbackHorizontalDistanceTimeGradient": None,
+                                        # "KnockbackVerticalDistanceTimeGradient": None,
+
                                          }
 
 
@@ -669,290 +682,293 @@ class Player(Generic):
 
         # Handles the movement of the player
 
-        # (For floating point accuracy)
-        next_position_x = self.rect.x
-        next_position_y = self.rect.y
-
-        # If the "a" key is pressed
-        if pygame.key.get_pressed()[pygame.K_a] and pygame.key.get_pressed()[pygame.K_d] == False:
-
-            # If the player is decelerating currently
-            if self.decelerating == True:
-                # Stop decelerating
-                self.decelerating = False
-
-            # Update the direction variables
-            self.update_direction_variables()
-
-            # Handle tile collisions
-            self.handle_tile_collisions()
-
-            # If the player isn't decelerating currently
-            if self.decelerating == False:
-
-                # ---------------------------------------------------------------------------------
-                # Acceleration
-
-                # Execute the movement acceleration method
-                self.movement_acceleration()
-
-                # ---------------------------------------------------------------------------------
-                # Moving the player
-
-                """ Reasons for the following check:
-                - Rounding the position could result in the player constantly being 1 pixel away from the tile)
-                - Int is so that if self.dx = 0.123925 or a number close to 0, this would still cause the same problem
-                """
-                if int(self.dx) != 0:
-
-                    # If moving left will place the player out of the screen
-                    if self.rect.left - self.movement_suvat_s <= 0:
-                        # Set the player's x position to be at 0
-                        self.rect.left = 0
-
-                    # Otherwise
-                    elif self.rect.left - self.movement_suvat_s > 0:
-                        # Move the player left
-                        next_position_x -= self.dx
-                        self.rect.x = round(next_position_x)
-
-        # If the "d" key is pressed
-        elif pygame.key.get_pressed()[pygame.K_d] and pygame.key.get_pressed()[pygame.K_a] == False:
-
-            # If the player is decelerating currently
-            if self.decelerating == True:
-                # Stop decelerating
-                self.decelerating = False
-            
-            # Update the direction variables
-            self.update_direction_variables()
-
-            # Handle tile collisions
-            self.handle_tile_collisions()
-
-            # If the player isn't decelerating currently
-            if self.decelerating == False:
-                
-                # ---------------------------------------------------------------------------------
-                # Acceleration
-
-                # Execute the movement acceleration method
-                self.movement_acceleration()
-
-                # ---------------------------------------------------------------------------------
-                # Moving the player 
-
-                """ Reasons for the following check:
-                - Rounding the position could result in the player constantly being 1 pixel away from the tile)
-                - Int is so that if self.dx = 0.123925 or a number close to 0, this would still cause the same problem
-                """       
-                if int(self.dx) != 0:
-
-                    # If moving right will place the player out of the tile map / out of the screen
-                    if self.rect.right + self.movement_suvat_s >= self.last_tile_position[0]:
-                        # Set the player's right position to be at the last tile position in the tile map
-                        self.rect.right = self.last_tile_position[0]
-
-                    # Otherwise
-                    elif self.rect.right + self.movement_suvat_s < self.last_tile_position[0]:
-                        # Move the player right
-                        next_position_x += self.dx
-                        self.rect.x = round(next_position_x)
-
-        # If the "w" key is pressed
-        if pygame.key.get_pressed()[pygame.K_w] and pygame.key.get_pressed()[pygame.K_s] == False:
-
-            # If the player is decelerating currently
-            if self.decelerating == True:
-                # Stop decelerating
-                self.decelerating = False
-            
-            # Update the direction variables
-            self.update_direction_variables()
-
-            # Handle tile collisions
-            self.handle_tile_collisions()
-
-            # If the player isn't decelerating currently
-            if self.decelerating == False:
-                
-                # ---------------------------------------------------------------------------------
-                # Acceleration
-
-                # Execute the movement acceleration method
-                self.movement_acceleration()
-
-                # ---------------------------------------------------------------------------------
-                # Moving the player
-
-                """ Reasons for the following check:
-                - Rounding the position could result in the player constantly being 1 pixel away from the tile)
-                - Int is so that if self.dy = 0.2348232 or a number close to 0, this would still cause the same problem
-                """
-                if int(self.dy) != 0:
-                    # If moving up will place the player out of the screen
-                    if self.rect.top - self.movement_suvat_s < 0:
-                        # Set the player's top position to be at the top of the screen 
-                        self.rect.top = 0
-
-                    # Otherwise
-                    elif self.rect.top - self.movement_suvat_s >= 0:
-                        # Move the player up
-                        next_position_y -= self.dy
-                        self.rect.y = round(next_position_y)
-
-        # If the "s" key is pressed
-        elif pygame.key.get_pressed()[pygame.K_s] and pygame.key.get_pressed()[pygame.K_w] == False:
-
-            # If the player is decelerating currently
-            if self.decelerating == True:
-                # Stop decelerating
-                self.decelerating = False
-
-            # Update the direction variables
-            self.update_direction_variables()
-            
-            # Handle tile collisions
-            self.handle_tile_collisions()
-
-            # If the player isn't decelerating currently
-            if self.decelerating == False:
-                
-                # ---------------------------------------------------------------------------------
-                # Acceleration
-
-                # Execute the movement acceleration method
-                self.movement_acceleration()
-
-                # ---------------------------------------------------------------------------------
-                # Moving the player
-
-                """ Reasons for the following check:
-                - Rounding the position could result in the player constantly being 1 pixel away from the tile)
-                - Int is so that if self.dy = 0.2348232 or a number close to 0, this would still cause the same problem
-                """
-                if int(self.dy) != 0:
-
-                    # If moving down will place the player out of the tile map
-                    if self.rect.bottom + self.movement_suvat_s > self.last_tile_position[1]:
-                        # Set the player's bottom position to the y position of the last tile position
-                        self.rect.bottom = self.last_tile_position[1] 
-
-                    # Otherwise
-                    elif self.rect.bottom + self.movement_suvat_s <= self.last_tile_position[1]:
-                        # Move the player down
-                        next_position_y += self.dy
-                        self.rect.y = round(next_position_y)
-
-        # ---------------------------------------------------------------------------------
-        # Deceleration
-
-        # If the player has let go of all movement input keys or if the deceleration has already started
-        if (pygame.key.get_pressed()[pygame.K_a] == False and pygame.key.get_pressed()[pygame.K_d] == False and pygame.key.get_pressed()[pygame.K_w] == False and pygame.key.get_pressed()[pygame.K_s] == False and self.movement_suvat_u > 0) or self.decelerating == True:
+        # Only allow the player to move if they have not been knocked back
+        if self.player_gameplay_info_dict["KnockbackTimer"] == None:
 
             # (For floating point accuracy)
-            # Note: This is declared here because self.rect.x or self.rect.y may have changed 
-            next_position_x_2 = self.rect.x
-            next_position_y_2 = self.rect.y
+            next_position_x = self.rect.x
+            next_position_y = self.rect.y
+
+            # If the "a" key is pressed
+            if pygame.key.get_pressed()[pygame.K_a] and pygame.key.get_pressed()[pygame.K_d] == False:
+
+                # If the player is decelerating currently
+                if self.decelerating == True:
+                    # Stop decelerating
+                    self.decelerating = False
+
+                # Update the direction variables
+                self.update_direction_variables()
+
+                # Handle tile collisions
+                self.handle_tile_collisions()
+
+                # If the player isn't decelerating currently
+                if self.decelerating == False:
+
+                    # ---------------------------------------------------------------------------------
+                    # Acceleration
+
+                    # Execute the movement acceleration method
+                    self.movement_acceleration()
+
+                    # ---------------------------------------------------------------------------------
+                    # Moving the player
+
+                    """ Reasons for the following check:
+                    - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+                    - Int is so that if self.dx = 0.123925 or a number close to 0, this would still cause the same problem
+                    """
+                    if int(self.dx) != 0:
+
+                        # If moving left will place the player out of the screen
+                        if self.rect.left - self.movement_suvat_s <= 0:
+                            # Set the player's x position to be at 0
+                            self.rect.left = 0
+
+                        # Otherwise
+                        elif self.rect.left - self.movement_suvat_s > 0:
+                            # Move the player left
+                            next_position_x -= self.dx
+                            self.rect.x = round(next_position_x)
+
+            # If the "d" key is pressed
+            elif pygame.key.get_pressed()[pygame.K_d] and pygame.key.get_pressed()[pygame.K_a] == False:
+
+                # If the player is decelerating currently
+                if self.decelerating == True:
+                    # Stop decelerating
+                    self.decelerating = False
                 
-            if self.decelerating == False:
-                # Set the decelerating player attribute to True
-                self.decelerating = True
+                # Update the direction variables
+                self.update_direction_variables()
 
-            # If the player has stopped decelerating
-            if self.movement_suvat_u <= 0:
-                # Set the decelerating player attribute back to False
-                self.decelerating = False
-                # If the current velocity of the player is less than 0
-                if self.movement_suvat_u < 0:
-                    # Set the current velocity to 0
-                    self.movement_suvat_u = 0
+                # Handle tile collisions
+                self.handle_tile_collisions()
 
-            # If the player's current velocity is greater than 0
-            if self.movement_suvat_u > 0:
-                # Decelerate the player / decrease the velocity
-                self.movement_suvat_u -= (self.deceleration_from_final_movement_velocity * self.delta_time)
+                # If the player isn't decelerating currently
+                if self.decelerating == False:
+                    
+                    # ---------------------------------------------------------------------------------
+                    # Acceleration
 
-            # Limit the current velocity to 0
-            self.movement_suvat_u = max(self.movement_suvat_u, 0)
+                    # Execute the movement acceleration method
+                    self.movement_acceleration()
 
-            # Set the distance travelled based on the current velocity
-            self.movement_suvat_s = ((self.movement_suvat_u * self.delta_time) + (0.5 * self.movement_suvat_a * (self.delta_time ** 2)))
+                    # ---------------------------------------------------------------------------------
+                    # Moving the player 
 
-            # Handle tile collisions again
-            # Note: When decelerating, dx will have to keep changing
-            self.handle_tile_collisions()
+                    """ Reasons for the following check:
+                    - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+                    - Int is so that if self.dx = 0.123925 or a number close to 0, this would still cause the same problem
+                    """       
+                    if int(self.dx) != 0:
+
+                        # If moving right will place the player out of the tile map / out of the screen
+                        if self.rect.right + self.movement_suvat_s >= self.last_tile_position[0]:
+                            # Set the player's right position to be at the last tile position in the tile map
+                            self.rect.right = self.last_tile_position[0]
+
+                        # Otherwise
+                        elif self.rect.right + self.movement_suvat_s < self.last_tile_position[0]:
+                            # Move the player right
+                            next_position_x += self.dx
+                            self.rect.x = round(next_position_x)
+
+            # If the "w" key is pressed
+            if pygame.key.get_pressed()[pygame.K_w] and pygame.key.get_pressed()[pygame.K_s] == False:
+
+                # If the player is decelerating currently
+                if self.decelerating == True:
+                    # Stop decelerating
+                    self.decelerating = False
+                
+                # Update the direction variables
+                self.update_direction_variables()
+
+                # Handle tile collisions
+                self.handle_tile_collisions()
+
+                # If the player isn't decelerating currently
+                if self.decelerating == False:
+                    
+                    # ---------------------------------------------------------------------------------
+                    # Acceleration
+
+                    # Execute the movement acceleration method
+                    self.movement_acceleration()
+
+                    # ---------------------------------------------------------------------------------
+                    # Moving the player
+
+                    """ Reasons for the following check:
+                    - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+                    - Int is so that if self.dy = 0.2348232 or a number close to 0, this would still cause the same problem
+                    """
+                    if int(self.dy) != 0:
+                        # If moving up will place the player out of the screen
+                        if self.rect.top - self.movement_suvat_s < 0:
+                            # Set the player's top position to be at the top of the screen 
+                            self.rect.top = 0
+
+                        # Otherwise
+                        elif self.rect.top - self.movement_suvat_s >= 0:
+                            # Move the player up
+                            next_position_y -= self.dy
+                            self.rect.y = round(next_position_y)
+
+            # If the "s" key is pressed
+            elif pygame.key.get_pressed()[pygame.K_s] and pygame.key.get_pressed()[pygame.K_w] == False:
+
+                # If the player is decelerating currently
+                if self.decelerating == True:
+                    # Stop decelerating
+                    self.decelerating = False
+
+                # Update the direction variables
+                self.update_direction_variables()
+                
+                # Handle tile collisions
+                self.handle_tile_collisions()
+
+                # If the player isn't decelerating currently
+                if self.decelerating == False:
+                    
+                    # ---------------------------------------------------------------------------------
+                    # Acceleration
+
+                    # Execute the movement acceleration method
+                    self.movement_acceleration()
+
+                    # ---------------------------------------------------------------------------------
+                    # Moving the player
+
+                    """ Reasons for the following check:
+                    - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+                    - Int is so that if self.dy = 0.2348232 or a number close to 0, this would still cause the same problem
+                    """
+                    if int(self.dy) != 0:
+
+                        # If moving down will place the player out of the tile map
+                        if self.rect.bottom + self.movement_suvat_s > self.last_tile_position[1]:
+                            # Set the player's bottom position to the y position of the last tile position
+                            self.rect.bottom = self.last_tile_position[1] 
+
+                        # Otherwise
+                        elif self.rect.bottom + self.movement_suvat_s <= self.last_tile_position[1]:
+                            # Move the player down
+                            next_position_y += self.dy
+                            self.rect.y = round(next_position_y)
 
             # ---------------------------------------------------------------------------------
-            # Decelerating in the last direction the player was moving towards
+            # Deceleration
 
-            """ Reasons for the following int(self.dx) or int(self.dy) checks:
-            - Rounding the position could result in the player constantly being 1 pixel away from the tile)
-            - Int is so that if self.dx = 0.123925 or a number close to 0, this would still cause the same problem
-            """               
-            # If the player was moving right
-            if self.direction_variables_dict["Right"] == True:
+            # If the player has let go of all movement input keys or if the deceleration has already started
+            if (pygame.key.get_pressed()[pygame.K_a] == False and pygame.key.get_pressed()[pygame.K_d] == False and pygame.key.get_pressed()[pygame.K_w] == False and pygame.key.get_pressed()[pygame.K_s] == False and self.movement_suvat_u > 0) or self.decelerating == True:
 
-                if int(self.dx) != 0:
+                # (For floating point accuracy)
+                # Note: This is declared here because self.rect.x or self.rect.y may have changed 
+                next_position_x_2 = self.rect.x
+                next_position_y_2 = self.rect.y
+                    
+                if self.decelerating == False:
+                    # Set the decelerating player attribute to True
+                    self.decelerating = True
 
-                    # If moving right will place the player out of the tile map / out of the screen
-                    if self.rect.right + self.movement_suvat_s >= self.last_tile_position[0]:
-                        # Set the player's right position to be at the last tile position in the tile map
-                        self.rect.right = self.last_tile_position[0]
+                # If the player has stopped decelerating
+                if self.movement_suvat_u <= 0:
+                    # Set the decelerating player attribute back to False
+                    self.decelerating = False
+                    # If the current velocity of the player is less than 0
+                    if self.movement_suvat_u < 0:
+                        # Set the current velocity to 0
+                        self.movement_suvat_u = 0
 
-                    # Otherwise
-                    elif self.rect.right + self.movement_suvat_s < self.last_tile_position[0]:
-                        # Move the player right
-                        next_position_x_2 += self.dx
-                        self.rect.x = round(next_position_x_2)
+                # If the player's current velocity is greater than 0
+                if self.movement_suvat_u > 0:
+                    # Decelerate the player / decrease the velocity
+                    self.movement_suvat_u -= (self.deceleration_from_final_movement_velocity * self.delta_time)
 
-            # If the player was moving left
-            elif self.direction_variables_dict["Left"] == True:
+                # Limit the current velocity to 0
+                self.movement_suvat_u = max(self.movement_suvat_u, 0)
 
-                if int(self.dx) != 0:
-        
-                    # If moving left will place the player out of the screen
-                    if self.rect.left - self.movement_suvat_s <= 0:
-                        # Set the player's x position to be at 0
-                        self.rect.left = 0
+                # Set the distance travelled based on the current velocity
+                self.movement_suvat_s = ((self.movement_suvat_u * self.delta_time) + (0.5 * self.movement_suvat_a * (self.delta_time ** 2)))
 
-                    # Otherwise
-                    elif self.rect.left - self.movement_suvat_s > 0:
-                        # Move the player left
-                        next_position_x_2 -= self.dx
-                        self.rect.x = round(next_position_x_2)
+                # Handle tile collisions again
+                # Note: When decelerating, dx will have to keep changing
+                self.handle_tile_collisions()
 
-            # If the player was moving up
-            elif self.direction_variables_dict["Up"] == True:
+                # ---------------------------------------------------------------------------------
+                # Decelerating in the last direction the player was moving towards
 
-                if int(self.dy) != 0:
+                """ Reasons for the following int(self.dx) or int(self.dy) checks:
+                - Rounding the position could result in the player constantly being 1 pixel away from the tile)
+                - Int is so that if self.dx = 0.123925 or a number close to 0, this would still cause the same problem
+                """               
+                # If the player was moving right
+                if self.direction_variables_dict["Right"] == True:
 
-                    # If moving up will place the player out of the screen
-                    if self.rect.top - self.movement_suvat_s < 0:
-                        # Set the player's top position to be at the top of the screen 
-                        self.rect.top = 0
+                    if int(self.dx) != 0:
 
-                    # Otherwise
-                    elif self.rect.top - self.movement_suvat_s >= 0:
-                        # Move the player up
-                        next_position_y_2 -= self.dy
-                        self.rect.y = round(next_position_y_2)
-                
-            # If the player was moving down
-            elif self.direction_variables_dict["Down"] == True:
+                        # If moving right will place the player out of the tile map / out of the screen
+                        if self.rect.right + self.movement_suvat_s >= self.last_tile_position[0]:
+                            # Set the player's right position to be at the last tile position in the tile map
+                            self.rect.right = self.last_tile_position[0]
 
-                if int(self.dy) != 0:
+                        # Otherwise
+                        elif self.rect.right + self.movement_suvat_s < self.last_tile_position[0]:
+                            # Move the player right
+                            next_position_x_2 += self.dx
+                            self.rect.x = round(next_position_x_2)
 
-                    # If moving down will place the player out of the tile map
-                    if self.rect.bottom + self.movement_suvat_s > self.last_tile_position[1]:
-                        # Set the player's bottom position to the y position of the last tile position
-                        self.rect.bottom = self.last_tile_position[1] 
+                # If the player was moving left
+                elif self.direction_variables_dict["Left"] == True:
 
-                    # Otherwise
-                    elif self.rect.bottom + self.movement_suvat_s <= self.last_tile_position[1]:
-                        # Move the player down
-                        next_position_y_2 += self.dy
-                        self.rect.y = round(next_position_y_2)
+                    if int(self.dx) != 0:
+            
+                        # If moving left will place the player out of the screen
+                        if self.rect.left - self.movement_suvat_s <= 0:
+                            # Set the player's x position to be at 0
+                            self.rect.left = 0
+
+                        # Otherwise
+                        elif self.rect.left - self.movement_suvat_s > 0:
+                            # Move the player left
+                            next_position_x_2 -= self.dx
+                            self.rect.x = round(next_position_x_2)
+
+                # If the player was moving up
+                elif self.direction_variables_dict["Up"] == True:
+
+                    if int(self.dy) != 0:
+
+                        # If moving up will place the player out of the screen
+                        if self.rect.top - self.movement_suvat_s < 0:
+                            # Set the player's top position to be at the top of the screen 
+                            self.rect.top = 0
+
+                        # Otherwise
+                        elif self.rect.top - self.movement_suvat_s >= 0:
+                            # Move the player up
+                            next_position_y_2 -= self.dy
+                            self.rect.y = round(next_position_y_2)
+                    
+                # If the player was moving down
+                elif self.direction_variables_dict["Down"] == True:
+
+                    if int(self.dy) != 0:
+
+                        # If moving down will place the player out of the tile map
+                        if self.rect.bottom + self.movement_suvat_s > self.last_tile_position[1]:
+                            # Set the player's bottom position to the y position of the last tile position
+                            self.rect.bottom = self.last_tile_position[1] 
+
+                        # Otherwise
+                        elif self.rect.bottom + self.movement_suvat_s <= self.last_tile_position[1]:
+                            # Move the player down
+                            next_position_y_2 += self.dy
+                            self.rect.y = round(next_position_y_2)
 
     # ---------------------------------------------------------------------------------
     # Collisions      
@@ -1224,6 +1240,34 @@ class Player(Generic):
                                                                                                                                 delta_time = self.delta_time
                                                                                                                                                                             )
     
+    def perform_knockback(self):
+
+        # Performs the knockback if the player collides with the current boss
+        
+        # If the knockback timer has been set to start counting down
+        if self.player_gameplay_info_dict["KnockbackTimer"] != None:
+            
+            # Assign the new player position, using the horizontal and vertical distance time gradients
+
+            new_position_center_x = self.rect.centerx 
+            new_position_center_y = self.rect.centery
+
+            new_position_center_x  += self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] * self.delta_time
+            new_position_center_y -= self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] * self.delta_time
+
+            self.rect.centerx = round(new_position_center_x)
+            self.rect.centery = round(new_position_center_y)
+
+            # If the knockback timer has not finished counting down
+            if self.player_gameplay_info_dict["KnockbackTimer"] > 0:
+                # Decrease the timer
+                self.player_gameplay_info_dict["KnockbackTimer"] -= 1000 * self.delta_time
+
+            # If the knockback timer has finished counting down
+            if self.player_gameplay_info_dict["KnockbackTimer"] <= 0:
+                # Reset the knockback timer back to None
+                self.player_gameplay_info_dict["KnockbackTimer"] = None
+
     # ---------------------------------------
     # Building 
 
@@ -1568,3 +1612,4 @@ class Player(Generic):
         # Handle player shooting
         self.handle_shooting()
 
+        self.perform_knockback()

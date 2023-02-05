@@ -6,7 +6,7 @@ from Level.game_ui import GameUI
 from Level.bamboo_pile import BambooPile
 from random import choice as random_choice
 from random import randrange as random_randrange
-from math import dist
+from math import sin, cos, dist
 from os import listdir as os_listdir
 
 class Game:
@@ -525,47 +525,72 @@ class Game:
         # -------------------------------------------------------------------------------------- 
         # Bosses
 
-        # If there is a current boss and there is at least one existing building tile
-        if self.boss_group.sprite != None and (len(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0):
+        # If there is a current boss
+        if self.boss_group.sprite != None:
             
-            # Find the index of the building tile in the existing building tiles list if there is a rect collision between the tile and the boss
-            building_collision_result_index = self.boss_group.sprite.rect.collidelist(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"])
+            # If there is at least one existing building tile
+            if (len(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0):
             
-            # If there is a collision
-            if building_collision_result_index != -1:
+                # Find the index of the building tile in the existing building tiles list if there is a rect collision between the tile and the boss
+                building_collision_result_index = self.boss_group.sprite.rect.collidelist(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"])
                 
-                # Check for pixel-perfect collision between the boss and the building tile
-                if pygame.sprite.collide_mask(self.boss_group.sprite, self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]) != None:
+                # If there is a collision
+                if building_collision_result_index != -1:
                     
-                    # Temporary variable for the building tile to remove
-                    building_tile_to_remove = self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]
+                    # Check for pixel-perfect collision between the boss and the building tile
+                    if pygame.sprite.collide_mask(self.boss_group.sprite, self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]) != None:
+                        
+                        # Temporary variable for the building tile to remove
+                        building_tile_to_remove = self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]
 
-                    # Remove the building tile from the world tiles group
-                    self.world_tiles_group.remove(building_tile_to_remove)
+                        # Remove the building tile from the world tiles group
+                        self.world_tiles_group.remove(building_tile_to_remove)
 
-                    # Remove the building tile from the world tiles dictionary
-                    self.world_tiles_dict.pop(building_tile_to_remove)
+                        # Remove the building tile from the world tiles dictionary
+                        self.world_tiles_dict.pop(building_tile_to_remove)
 
-                    # "Create" an empty tile where the building tile was
-                    self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
+                        # "Create" an empty tile where the building tile was
+                        self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
 
-                    # Remove the building tile from the existing building tiles list
-                    self.player.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(building_collision_result_index)
+                        # Remove the building tile from the existing building tiles list
+                        self.player.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(building_collision_result_index)
 
-                    # If the building tile to remove is in the neighbouring tiles dictionary (keys)
-                    if building_tile_to_remove in self.player.neighbouring_tiles_dict.keys():
-                        # Remove the building tile
-                        self.player.neighbouring_tiles_dict.pop(building_tile_to_remove)
+                        # If the building tile to remove is in the neighbouring tiles dictionary (keys)
+                        if building_tile_to_remove in self.player.neighbouring_tiles_dict.keys():
+                            # Remove the building tile
+                            self.player.neighbouring_tiles_dict.pop(building_tile_to_remove)
 
-                    # ------------------------------------------------------------------
-                    # Additional effects
-                    
-                    # If the boss is currently chasing the player
-                    if self.boss_group.sprite.current_action == "Chase":
-                        # Reset the boss' movement acceleration, so that they slow down
-                        self.boss_group.sprite.reset_movement_acceleration()
+                        # ------------------------------------------------------------------
+                        # Additional effects
+                        
+                        # If the boss is currently chasing the player
+                        if self.boss_group.sprite.current_action == "Chase":
+                            # Reset the boss' movement acceleration, so that they slow down
+                            self.boss_group.sprite.reset_movement_acceleration()
 
+            # If there is pixel-perfect collision and the boss is not currently idling after the knockback 
+            # Note: Second check is so that the player doesn't keep setting off the idle timer in quick succession
+            if pygame.sprite.collide_mask(self.boss_group.sprite, self.player) and \
+                (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None):
 
+                # Knockback the player
+                self.player.player_gameplay_info_dict["KnockbackAttackDirection"] = [self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"]]
+                self.player.player_gameplay_info_dict["KnockbackTimer"] = self.player.player_gameplay_info_dict["KnockbackTime"]
+
+                # Set the horizontal and vertical distance the player should travel based on the angle the boss hit it
+                # Note: Divided by 1000 because the knockback time is in milliseconds
+                self.player.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * cos(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
+                self.player.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * sin(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
+
+                # Set the boss to stop moving momentarily
+                self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] = self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTime"]
+
+                # Reset the boss' movement acceleration
+                self.boss_group.sprite.reset_movement_acceleration()
+
+                # Damage the player by the amount of knockback damage the current boss deals
+                self.player.player_gameplay_info_dict["CurrentHealth"] = max(self.player.player_gameplay_info_dict["CurrentHealth"] - self.boss_group.sprite.extra_information_dict["KnockbackDamage"], 0)
+                
     def look_for_world_tile_collisions(self, item, other_group):
         
         # Helper method to find collisions between items in another specified group and world tiles

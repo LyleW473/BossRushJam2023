@@ -33,19 +33,23 @@ class AI:
                                         "NewPositionCenterX": self.rect.centerx,
                                         "NewPositionCenterY": self.rect.centery,
 
-                                        "DistanceThreshold": 50,
+                                        "DistanceThreshold": 20,
 
                                         # Starting velocity for accelerated movement, these will be changed over time     
                                         "HorizontalSuvatU" : 0,
-                                        "VerticalSuvatU": 0
+                                        "VerticalSuvatU": 0,
 
+                                        # The amount of time the boss has to wait after knocking back a player
+                                        "KnockbackCollisionIdleTime": 400,
+                                        "KnockbackCollisionIdleTimer": None,
 
                                         }
     
     def move(self):
         
-        # If the distance between the AI and the player is greater than the distance threshold
-        if dist(self.movement_information_dict["CurrentPosition"], self.movement_information_dict["PlayersPosition"]) > self.movement_information_dict["DistanceThreshold"]:
+        # If the distance between the AI and the player is greater than the distance threshold and there is no timer set for the cooldown after knockback collision
+        if dist(self.movement_information_dict["CurrentPosition"], self.movement_information_dict["PlayersPosition"]) > self.movement_information_dict["DistanceThreshold"] and \
+            self.movement_information_dict["KnockbackCollisionIdleTimer"] == None:
             
             # ------------------------------------------------------------------------------------------
             # Moving the AI
@@ -159,3 +163,20 @@ class AI:
             
         # Set the vertical distance travelled based on the current velocity of the boss
         self.movement_information_dict["VerticalSuvatS"] = ((self.movement_information_dict["VerticalSuvatU"] * self.movement_information_dict["DeltaTime"]) + (0.5 * self.movement_information_dict["VerticalSuvatA"] * (self.movement_information_dict["DeltaTime"] ** 2)))
+
+    def update_knockback_collision_idle_timer(self, delta_time):
+        
+        # Updates the knockback collision idle timer (The period of time the AI will idle after knocking back the player)
+        
+        # If there has been a timer set to count down
+        if self.movement_information_dict["KnockbackCollisionIdleTimer"] != None:
+            
+            # If the timer has not finished counting
+            if self.movement_information_dict["KnockbackCollisionIdleTimer"] > 0:
+                # Decrease the timer
+                self.movement_information_dict["KnockbackCollisionIdleTimer"] -= 1000  * delta_time
+
+            # If the timer has finished counting
+            if self.movement_information_dict["KnockbackCollisionIdleTimer"] <= 0:
+                # Reset the timer back to None
+                self.movement_information_dict["KnockbackCollisionIdleTimer"] = None
