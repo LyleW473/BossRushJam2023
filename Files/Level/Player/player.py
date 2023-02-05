@@ -96,8 +96,8 @@ class Player(Generic):
                                         
                                         
                                         # Frenzy mode visual effect
-                                        "FrenzyModeVisualEffectMinMaxColours" : ((128, 50, 128), (255, 50, 180)), #((255, 50, 180), (128, 50, 128)),
-                                        "FrenzyModeVisualEffectColour": [255 , 50, 180], # Have the visual effect colour start at the max value for calculations 
+                                        "FrenzyModeVisualEffectMinMaxColours" : ((128, 50, 128), (255, 50, 180)),
+                                        "FrenzyModeVisualEffectColour": [255 , 50, 180], # Have the visual effect colour start at either min or max colour (does not matter which one)
                                         "FrenzyModeVisualEffectAngleTimeGradient": (360 - 0) / 0.8, # The rate of change of the angle over time (time in seconds)
                                         "FrenzyModeVisualEffectCurrentSinAngle": 0,
                                         "FrenzyModeVisualEffectRGBValuesPlusOrMinus": (1, 0, -1),

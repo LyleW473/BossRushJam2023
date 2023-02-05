@@ -7,7 +7,6 @@ from pygame.draw import circle as pygame_draw_circle
 from pygame.mask import from_surface as pygame_mask_from_surface
 from Global.functions import change_image_colour
 from random import choice as random_choice
-from pygame import Surface as pygame_Surface
 
 class SikaDeerBoss(Generic):
 
@@ -203,33 +202,45 @@ class SikaDeerBoss(Generic):
             # For each stomp attack in the group
             for stomp_attack_node in StompController.nodes_group:
                 
+                # ---------------------------------------------------------------------------
+                # Drawing the stomp attack node
+                
+                # ---------------------------------
+                # Assigning the colours
+
                 # If the stomp attack node has not been reflected
                 if stomp_attack_node.reflected == False:
-                    # First circle (Lightest colour)
-                    pygame_draw_circle(surface = self.surface, color = (63, 42, 39), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = 0)
-
-                    # Outline (Darkest colour)
-                    pygame_draw_circle(surface = self.surface, color = 	(40, 32, 30), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = int(stomp_attack_node.radius / 3))
-
-                    # Second circle (Middle colour)
-                    pygame_draw_circle(surface = self.surface, color = 	(93, 72, 67), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius * (0.45), width = 0)
                     
+                    # Set the circle colours to be the default colours
+                    circle_colours = ((63, 42, 39), (40, 32, 30), (93, 72, 67)) 
+
                 # If the stomp attack node has not been reflected
                 elif stomp_attack_node.reflected == True:
                     
-                    # First circle (Lightest colour)
-                    pygame_draw_circle(surface = self.surface, color = (63 + 90, 42, 39), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = 0)
+                     # Set the circle colours to be the reflected colours
+                    circle_colours = ((63 + stomp_attack_node.reflected_additive_colour[1], 42, 39), (40 + stomp_attack_node.reflected_additive_colour[1], 32, 30), (93 + stomp_attack_node.reflected_additive_colour[1], 72, 67)) 
 
-                    # Outline (Darkest colour)
-                    pygame_draw_circle(surface = self.surface, color = 	(40 + 90, 32, 30), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = int(stomp_attack_node.radius / 3))
+                    # Change the value of the reflected colour
+                    stomp_attack_node.change_reflected_colour_value(delta_time = self.delta_time)
 
-                    # Second circle (Middle colour)
-                    pygame_draw_circle(surface = self.surface, color = 	(93 + 90, 72, 67), center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius * (0.45), width = 0)
-                    
+                # ---------------------------------
+                # Drawing the circles
 
+                # First circle (Lightest colour)
+                pygame_draw_circle(surface = self.surface, color = circle_colours[0], center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = 0)
+
+                # Outline (Darkest colour)
+                pygame_draw_circle(surface = self.surface, color = 	circle_colours[1], center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = int(stomp_attack_node.radius / 3))
+
+                # Second circle (Middle colour)
+                pygame_draw_circle(surface = self.surface, color = 	circle_colours[2], center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius * (0.45), width = 0)
+                
 
                 # # The center of the rectangle is at the position calculated when the node was created
                 # pygame_draw_rect(surface = self.surface, color = "red", rect = (stomp_attack_node.rect.x - self.camera_position[0], stomp_attack_node.rect.y - self.camera_position[1], stomp_attack_node.rect.width, stomp_attack_node.rect.height), width = 1)
+
+                # ---------------------------------------------------------------------------
+                # Other
 
                 # Move the stomp attack node
                 stomp_attack_node.move(delta_time = self.delta_time)

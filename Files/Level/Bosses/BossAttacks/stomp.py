@@ -1,7 +1,7 @@
 from Global.generic import Generic
 from pygame.sprite import Sprite as pygame_sprite_Sprite
 from pygame import Rect as pygame_Rect
-from math import pi, cos, sin
+from math import pi, cos, sin, radians
 from Global.settings import TILE_SIZE
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
@@ -108,8 +108,20 @@ class StompNode(pygame_sprite_Sprite):
         # The amount of damage that the stomp node deals
         self.damage_amount = 10
 
+        # --------------------------------------
+        # Reflected
+
         # Attribute used so that the boss only takes damage when the projectile was reflected at it
         self.reflected = False
+
+        # The additive colour added on top of the default colours for the stomp attack node
+        self.reflected_additive_colour = [120, 120] # 1st item is the original, 2nd item is the one that changes
+
+        # The rate of change of the angle over time (time in seconds)
+        self.reflected_angle_time_gradient = (360 - 0) / 2
+
+        # The sin angle used to assign the current colour
+        self.reflected_current_sin_angle = 0
 
     def move(self, delta_time):
 
@@ -123,7 +135,6 @@ class StompNode(pygame_sprite_Sprite):
         self.new_position_centery += self.vertical_gradient * delta_time
         self.rect.centery = round(self.new_position_centery)
 
-    
     def increase_size(self, delta_time):
 
         # Increases the size of the stomp node, in place
@@ -150,3 +161,13 @@ class StompNode(pygame_sprite_Sprite):
 
         # Rescale to be the diameter of the image
         self.image = scale_image(StompNode.base_image, (self.radius * 2, self.radius * 2))
+
+    def change_reflected_colour_value(self, delta_time):
+        
+        # Changes the colour value of the reflected additive colour over time
+
+        # Set the reflected additive colour to oscillate between 0 and the original reflected additive colour
+        self.reflected_additive_colour[1] = self.reflected_additive_colour[0]  * (sin(radians(self.reflected_current_sin_angle)) ** 2)
+
+        # Increase the current sin angle over time
+        self.reflected_current_sin_angle += self.reflected_angle_time_gradient * delta_time
