@@ -448,11 +448,11 @@ class Game:
                     # --------------------------------
                     # World tiles
 
-                    # If the collided tile was a world tile
-                    elif collision_result[1]  == "WorldTile":
-                        # Remove the stomp attack node from the group if there is a collision
-                        self.stomp_attack_nodes_group.remove(stomp_attack_node)
-                
+                        # If the collided tile was a world tile
+                        elif collision_result[1]  == "WorldTile":
+                            # Remove the stomp attack node from the group if there is a collision
+                            self.stomp_attack_nodes_group.remove(stomp_attack_node)
+                    
                 # --------------------------------
                 # Player
 
@@ -504,7 +504,8 @@ class Game:
 
                     # Check for a pixel-perfect collision between the bamboo projectile and the current boss
                     if pygame.sprite.collide_mask(stomp_attack_node, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
-
+                        
+                        print("yes")
                         # Remove the stomp attack node from the group if there is a collision
                         self.stomp_attack_nodes_group.remove(stomp_attack_node)
                         
@@ -521,6 +522,42 @@ class Game:
                                                                                                 self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["ReflectDamageFrenzyModeIncrement"],
                                                                                                 self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                 )
+
+        # -------------------------------------------------------------------------------------- 
+        # Bosses
+
+        # If there is a current boss and there is at least one existing building tile
+        if self.boss_group.sprite != None and (len(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0):
+            
+            # Find the index of the building tile in the existing building tiles list if there is a rect collision between the tile and the boss
+            building_collision_result_index = self.boss_group.sprite.rect.collidelist(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"])
+            
+            # If there is a collision
+            if building_collision_result_index != -1:
+                
+                # Check for pixel-perfect collision between the boss and the building tile
+                if pygame.sprite.collide_mask(self.boss_group.sprite, self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]) != None:
+                    
+                    # Temporary variable for the building tile to remove
+                    building_tile_to_remove = self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]
+
+                    # Remove the building tile from the world tiles group
+                    self.world_tiles_group.remove(building_tile_to_remove)
+
+                    # Remove the building tile from the world tiles dictionary
+                    self.world_tiles_dict.pop(building_tile_to_remove)
+
+                    # "Create" an empty tile where the building tile was
+                    self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
+
+                    # Remove the building tile from the existing building tiles list
+                    self.player.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(building_collision_result_index)
+
+                    # If the building tile to remove is in the neighbouring tiles dictionary (keys)
+                    if building_tile_to_remove in self.player.neighbouring_tiles_dict.keys():
+                        # Remove the building tile
+                        self.player.neighbouring_tiles_dict.pop(building_tile_to_remove)
+
 
     def look_for_world_tile_collisions(self, item, other_group):
         
@@ -837,7 +874,7 @@ class Game:
 
             # Update the current boss with the current position of the player
             current_boss.players_position = self.player.rect.center
-
+            print(len(self.stomp_attack_nodes_group))
             # Draw guidelines between the player and the boss
             self.game_ui.draw_guidelines_between_a_and_b(
                                                         a = current_boss.rect.center, 

@@ -53,7 +53,7 @@ class SikaDeerBoss(Generic, AI):
                                             "Duration": 6000, # How long the attack will be performed
                                             "DurationTimer": None, # Timer used to check if the attack is over
 
-                                            "Cooldown": 5000, 
+                                            "Cooldown": 300000, 
                                             "CooldownTimer": None
                                              },
 
