@@ -407,10 +407,13 @@ class Game:
                         # If the stomp attack node was blocked by a building tile
                         if collision_result[1] == "BuildingTile":
                             
-                            # Reflect the stomp attack node, increasing its speed by 1.75
-                            stomp_attack_node.horizontal_gradient *= -1.75 
-                            stomp_attack_node.vertical_gradient *= -1.75
-                            stomp_attack_node.reflected = True
+                            # If the stomp attack node has not been reflected already
+                            # Note: This is so that it does not bounce backwards and forwards when inside a tile
+                            if stomp_attack_node.reflected != True:
+                                # Reflect the stomp attack node, increasing its speed by 1.75
+                                stomp_attack_node.horizontal_gradient *= -1.75 
+                                stomp_attack_node.vertical_gradient *= -1.75
+                                stomp_attack_node.reflected = True
 
                             # Take one life away from the building tile
                             collision_result[0].lives -= 1
@@ -831,6 +834,9 @@ class Game:
 
             # Update the current boss' camera position 
             current_boss.camera_position = self.camera_position
+
+            # Update the current boss with the current position of the player
+            current_boss.players_position = self.player.rect.center
 
             # Draw guidelines between the player and the boss
             self.game_ui.draw_guidelines_between_a_and_b(

@@ -1421,7 +1421,8 @@ class Player(Generic):
                     current_weapon["ShootingCooldownTimer"] = None
 
             # If the left mouse button has been pressed and the player has enough resources to shoot
-            if pygame.mouse.get_pressed()[0] == True and (self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon["BambooResourceDepletionAmount"]) >= 0:
+            if pygame.mouse.get_pressed()[0] == True and \
+                ((self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon["BambooResourceDepletionAmount"]) >= 0 or self.player_gameplay_info_dict["FrenzyModeTimer"] != None):
 
                 # If the player's current weapon is the "BambooAssaultRifle"
                 if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooAssaultRifle":
