@@ -50,7 +50,7 @@ class Player(Generic):
         - This means that as soon as we find a collision between a tile and a player, where the difference between the two points (i.e. the sides of each item) is less than the collision tolerance, then this will register as a collision.
         - So if the difference between the points of collision is less than the collision tolerance, then this will be detected as a collision
         """
-        self.collision_tolerance = 5
+        self.collision_tolerance = TILE_SIZE
         
         # ---------------------------------------------------------------------------------
         # Angles
@@ -491,7 +491,7 @@ class Player(Generic):
         - The camera position must be subtracted so that the image is drawn within the limits of the screen.
         - Half of the image width and height is subtracted so that the rotation of the player image is centered within the player rect.
         """
-        # pygame.draw.rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
+        pygame.draw.rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
         
         # If the current animation state is "Run"
         if self.current_animation_state == "Run":
@@ -701,7 +701,7 @@ class Player(Generic):
                 self.update_direction_variables()
 
                 # Handle tile collisions
-                self.handle_tile_collisions()
+                self.handle_tile_collisions(distance_to_travel = self.movement_suvat_s)
 
                 # If the player isn't decelerating currently
                 if self.decelerating == False:
@@ -744,7 +744,7 @@ class Player(Generic):
                 self.update_direction_variables()
 
                 # Handle tile collisions
-                self.handle_tile_collisions()
+                self.handle_tile_collisions(distance_to_travel = self.movement_suvat_s)
 
                 # If the player isn't decelerating currently
                 if self.decelerating == False:
@@ -787,7 +787,7 @@ class Player(Generic):
                 self.update_direction_variables()
 
                 # Handle tile collisions
-                self.handle_tile_collisions()
+                self.handle_tile_collisions(distance_to_travel = self.movement_suvat_s)
 
                 # If the player isn't decelerating currently
                 if self.decelerating == False:
@@ -829,7 +829,7 @@ class Player(Generic):
                 self.update_direction_variables()
                 
                 # Handle tile collisions
-                self.handle_tile_collisions()
+                self.handle_tile_collisions(distance_to_travel = self.movement_suvat_s)
 
                 # If the player isn't decelerating currently
                 if self.decelerating == False:
@@ -897,7 +897,7 @@ class Player(Generic):
 
                 # Handle tile collisions again
                 # Note: When decelerating, dx will have to keep changing
-                self.handle_tile_collisions()
+                self.handle_tile_collisions(distance_to_travel = self.movement_suvat_s)
 
                 # ---------------------------------------------------------------------------------
                 # Decelerating in the last direction the player was moving towards
@@ -973,7 +973,7 @@ class Player(Generic):
     # ---------------------------------------------------------------------------------
     # Collisions      
 
-    def handle_tile_collisions(self):
+    def handle_tile_collisions(self, distance_to_travel):
         
         # Handles collisions between tiles and the player
 
@@ -983,8 +983,8 @@ class Player(Generic):
         # Horizontal collisions
 
         # Find the x collisions to the left and right of the player
-        x_collisions_left = pygame.Rect(self.rect.x - self.movement_suvat_s , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
-        x_collisions_right = pygame.Rect(self.rect.x + self.movement_suvat_s , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
+        x_collisions_left = pygame.Rect(self.rect.x - distance_to_travel , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
+        x_collisions_right = pygame.Rect(self.rect.x + distance_to_travel , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
 
         # If there is an x collision to the right of the player
         if x_collisions_right != None:
@@ -999,7 +999,7 @@ class Player(Generic):
             # If the difference between the player's right and the tile's left is less than the collision tolerance (there is a collision) and the player is trying to move in any direction but right
             elif abs(self.rect.right - x_collisions_right[0].rect.left) < self.collision_tolerance and self.direction_variables_dict["Right"] != True:
                 # Allow the player to move
-                self.dx = self.movement_suvat_s
+                self.dx = distance_to_travel
 
         # If there is an x collision to the left of the player
         if x_collisions_left != None:
@@ -1014,19 +1014,19 @@ class Player(Generic):
             # If the difference between the player's left and the tile's right is less than the collision tolerance (there is a collision) and the player is trying to move in any direction but left
             elif abs(self.rect.left - x_collisions_left[0].rect.right) < self.collision_tolerance and self.direction_variables_dict["Left"] != True:
                 # Allow the player to move
-                self.dx = self.movement_suvat_s
+                self.dx = distance_to_travel
 
         # If there is no x collision to the left of the player and there is no x collision to the right of the player
         elif x_collisions_left == None and x_collisions_right == None:
             # Allow the player to move
-            self.dx = self.movement_suvat_s
+            self.dx = distance_to_travel
 
         # ---------------------------------------------------------------------------------
         # Vertical collisions      
 
         # Find the collisions above and below the player
-        y_collisions_up = pygame.Rect(self.rect.x, self.rect.y - self.movement_suvat_s, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
-        y_collisions_down = pygame.Rect(self.rect.x, self.rect.y + self.movement_suvat_s, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
+        y_collisions_up = pygame.Rect(self.rect.x, self.rect.y - distance_to_travel, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
+        y_collisions_down = pygame.Rect(self.rect.x, self.rect.y + distance_to_travel, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
 
         # If there is an y collision above the player
         if y_collisions_up != None:
@@ -1041,7 +1041,7 @@ class Player(Generic):
             # If the difference between the player's top and the tile's bottom is less than the collision tolerance (there is a collision) and the player is trying to move in any direction but up
             elif abs(self.rect.top - y_collisions_up[0].rect.bottom) < self.collision_tolerance and self.direction_variables_dict["Up"] != True:
                 # Allow the player to move
-                self.dy = self.movement_suvat_s
+                self.dy = distance_to_travel
 
         # If there is an y collision below the player
         if y_collisions_down != None:
@@ -1056,12 +1056,12 @@ class Player(Generic):
             # If the difference between the player's bottom and the tile's top is less than the collision tolerance (there is a collision) and the player is trying to move in any direction but down
             elif abs(self.rect.bottom - y_collisions_down[0].rect.top) < self.collision_tolerance and self.direction_variables_dict["Down"] != True:
                 # Allow the player to move
-                self.dy = self.movement_suvat_s
+                self.dy = distance_to_travel
 
         # If there is no y collision above the player and there is no y collision below the player
         elif y_collisions_up == None and y_collisions_down == None:
             # Allow the player to move
-            self.dy = self.movement_suvat_s
+            self.dy = distance_to_travel
         
     # ---------------------------------------------------------------------------------
     # Mouse
@@ -1246,17 +1246,115 @@ class Player(Generic):
         
         # If the knockback timer has been set to start counting down
         if self.player_gameplay_info_dict["KnockbackTimer"] != None:
-            
-            # Assign the new player position, using the horizontal and vertical distance time gradients
 
+
+            """Notes:
+            - To avoid re-writing the collision checking system again: 
+                - First check the x collisions with the horizontal distance that the player should move
+                - Then check the y collisions with the vertical distance that the player should move
+            """
+            
+            # Temp variables to hold the center of the player
             new_position_center_x = self.rect.centerx 
             new_position_center_y = self.rect.centery
 
-            new_position_center_x  += self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] * self.delta_time
-            new_position_center_y -= self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] * self.delta_time
+            # ---------------------------------------------------------------------------------------------------------------------------------
+            # Updating the direction variables for collision checking 
 
-            self.rect.centerx = round(new_position_center_x)
-            self.rect.centery = round(new_position_center_y)
+            # If the horizontal distance time gradient is less than 0
+            if self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] < 0: 
+                # Check for collisions to the left of the player
+                self.direction_variables_dict["Left"] = True
+            # If the horizontal distance time gradient is greater than 0
+            elif self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] > 0:
+                # Check for collisions to the right of the player
+                self.direction_variables_dict["Right"] = True
+
+            # If the vertical distance time gradient is less than 0
+            if self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] > 0:
+                # Check for collisions above the player
+                self.direction_variables_dict["Up"] = True
+            # If the vertical distance time gradient is greater than 0
+            elif self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] < 0:
+                # Check for collisions below the player
+                self.direction_variables_dict["Down"] = True
+
+            # ---------------------------------------------------------------------------------------------------------------------------------
+            # Horizontal collision checking and movement
+
+            # Handle tile collisions with the x distance to travel
+            self.handle_tile_collisions(distance_to_travel = self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] * self.delta_time)
+
+            # If int(self.dx) is not 0
+            if int(self.dx) != 0:
+                
+                # If the movement distance is less than 0
+                if (self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] * self.delta_time) < 0:
+
+                    # If knocking the player to the left will place the player out of the tile map / out of the screen
+                    if self.rect.left - (self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] * self.delta_time) <= 0:
+                        # Set the player's x position to be at 0
+                        self.rect.left = 0
+
+                    # Otherwise
+                    elif self.rect.left - (self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] * self.delta_time) > 0:
+                        # Move the player left
+                        new_position_center_x += self.dx
+                        self.rect.centerx = round(new_position_center_x)
+
+                # If the movement distance is greater than 0
+                elif (self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] * self.delta_time) > 0:
+
+                    # If knocking the player to the right will place the player out of the tile map / out of the screen
+                    if self.rect.right + (self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] * self.delta_time) >= self.last_tile_position[0]:
+                        # Set the player's right position to be at the last tile position in the tile map
+                        self.rect.right = self.last_tile_position[0]
+
+                    # Otherwise
+                    elif self.rect.right + (self.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] * self.delta_time) < self.last_tile_position[0]:
+                        # Move the player right
+                        new_position_center_x += self.dx
+                        self.rect.centerx = round(new_position_center_x)
+
+            # ---------------------------------------------------------------------------------------------------------------------------------
+            # Vertical collision checking and movement
+
+            # Handle tile collisions with the y distance to travel
+            self.handle_tile_collisions(distance_to_travel = self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] * self.delta_time)
+
+            # If (self.dy) is not 0
+            if int(self.dy) != 0:
+
+                # If the movement distance is greater than 0
+                if (self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] * self.delta_time) > 0:
+
+                    # If moving up will place the player out of the screen
+                    if self.rect.top - (self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] * self.delta_time) < 0:
+                        # Set the player's top position to be at the top of the screen 
+                        self.rect.top = 0
+
+                    # Otherwise
+                    elif self.rect.top - (self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] * self.delta_time) >= 0:
+                        # Move the player up
+                        new_position_center_y -= self.dy
+                        self.rect.centery = round(new_position_center_y)
+                
+                # If the movement distance is less than 0
+                if (self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] * self.delta_time) < 0:
+
+                    # If moving down will place the player out of the tile map
+                    if self.rect.bottom + (self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] * self.delta_time) > self.last_tile_position[1]:
+                        # Set the player's bottom position to the y position of the last tile position
+                        self.rect.bottom = self.last_tile_position[1] 
+
+                    # Otherwise
+                    elif self.rect.bottom + (self.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] * self.delta_time) <= self.last_tile_position[1]:
+                        # Move the player down
+                        new_position_center_y -= self.dy
+                        self.rect.centery = round(new_position_center_y)
+
+            # ---------------------------------------------------------------------------------------------------------------------------------
+            # Updating the knockback timer
 
             # If the knockback timer has not finished counting down
             if self.player_gameplay_info_dict["KnockbackTimer"] > 0:
