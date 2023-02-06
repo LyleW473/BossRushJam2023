@@ -548,8 +548,8 @@ class Game:
         # -------------------------------------------------------------------------------------- 
         # Bosses
 
-        # If there is a current boss
-        if self.boss_group.sprite != None:
+        # If there is a current boss and they are alive
+        if self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
             
             # If there is at least one existing building tile
             if (len(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0):
@@ -1024,12 +1024,29 @@ class Game:
         # Find the neighbouring tiles for the player and the current boss
         self.find_neighbouring_tiles()
 
-        # Run the player methods
-        self.player.run(delta_time = delta_time)
+        # ---------------------------------------------------------
+        # Hierarchy of drawing with the player and the current boss:
 
-        # Update and run the boss
-        self.update_and_run_boss(delta_time = delta_time)
+        # If there is no boss
+        if self.boss_group.sprite == None:
+            # Run the player methods
+            self.player.run(delta_time = delta_time)
 
+        # If the current boss is alive
+        if self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
+            # Run the player methods
+            self.player.run(delta_time = delta_time)
+            # Update and run the boss
+            self.update_and_run_boss(delta_time = delta_time)
+        
+        # If the current boss is not alive
+        elif self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
+            # Update and run the boss
+            self.update_and_run_boss(delta_time = delta_time)
+            # Run the player methods
+            self.player.run(delta_time = delta_time)
+        # ---------------------------------------------------------
+        
         # Update the game UI
         self.update_game_ui(delta_time = delta_time)
         
