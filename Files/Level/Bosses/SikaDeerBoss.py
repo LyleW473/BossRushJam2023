@@ -37,6 +37,7 @@ class SikaDeerBoss(Generic, AI):
         self.delta_time
         self.camera_position
         self.players_position
+        self.neighbouring_tiles_dict
         """
         # The current action that the boss is performing
         self.current_action = "Chase"
@@ -367,7 +368,7 @@ class SikaDeerBoss(Generic, AI):
                 print("SET TO", self.current_action, self.animation_index)
 
                 # Reset the movement acceleration
-                self.reset_movement_acceleration()
+                self.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
 
             # If there are no possible actions that the boss can perform
             elif len(action_list) == 0: 
@@ -404,6 +405,8 @@ class SikaDeerBoss(Generic, AI):
         # Create / update a mask for pixel - perfect collisions
         self.mask = pygame_mask_from_surface(self.image)
 
-                
+        # TEMPORARY
+        for tile in self.neighbouring_tiles_dict.keys():
+            pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
 

@@ -265,7 +265,7 @@ class Game:
     # --------------------------------------------------------------------------------------
     # Gameplay methods
 
-    def find_neighbouring_tiles_to_player(self):
+    def find_neighbouring_tiles(self):
 
         # Used to find the closest tiles to the player to check for collisions (Used for greater performance, as we are only checking for collisions with tiles near the player)
 
@@ -282,18 +282,41 @@ class Game:
         # For each tile in the world tiles dictionary (Can be a building tile or a world tile)
         for tile in self.world_tiles_dict.keys():
 
-            # If the tile is within 1 tiles of the player (horizontally and vertically)
+
+            # ------------------------------------------------------------------------
+            # Player
+
+            # If the tile is within 2 tiles of the player (horizontally and vertically)
             if (self.player.rect.left  - (TILE_SIZE * 2) <= tile.rect.centerx <= self.player.rect.right + (TILE_SIZE * 2)) and (self.player.rect.top - (TILE_SIZE * 2) <= tile.rect.centery <= (self.player.rect.bottom + TILE_SIZE * 2)):
                 # Add it to the player's neighbouring tiles dictionary
                 self.player.neighbouring_tiles_dict[tile] = 0 
 
-            # If the tile is not within 1 tiles of the player (horizontally and vertically)
+            # If the tile is not within 2 tiles of the player (horizontally and vertically)
             else:
-                # If the tile is inside the neighbouring tiles dict's keys
+                # If the tile is inside the player's neighbouring tiles dict's keys
                 if tile in self.player.neighbouring_tiles_dict.keys():
-                    # Remove the world/ building tile from the neighbouring tiles dictionary
+                    # Remove the world/ building tile from the player's neighbouring tiles dictionary
                     self.player.neighbouring_tiles_dict.pop(tile)
                     
+            # ------------------------------------------------------------------------
+            # Bosses
+
+            # If there is a current boss that has been spawned
+            if self.boss_group.sprite != None:
+
+                # If the tile is within 2 tiles of the current boss (horizontally and vertically)
+                if (self.boss_group.sprite.rect.left  - (TILE_SIZE * 3) <= tile.rect.centerx <= self.boss_group.sprite.rect.right + (TILE_SIZE * 3)) and (self.boss_group.sprite.rect.top - (TILE_SIZE * 3) <= tile.rect.centery <= (self.boss_group.sprite.rect.bottom + TILE_SIZE * 3)):
+                    
+                    if self.world_tiles_dict[tile] != "BuildingTile":
+                        # Add it to the current boss' neighbouring tiles dictionary
+                        self.boss_group.sprite.neighbouring_tiles_dict[tile] = 0 
+                # If the tile is not within 2 tiles of the current boss (horizontally and vertically)
+                else:
+                    # If the tile is inside the current boss' neighbouring tiles dict's keys
+                    if tile in self.boss_group.sprite.neighbouring_tiles_dict.keys():
+                        # Remove the world/ building tile from the current boss' neighbouring tiles dictionary
+                        self.boss_group.sprite.neighbouring_tiles_dict.pop(tile)
+                        
     def handle_collisions(self):
 
         # Handles collisions between objects (including the player). Collisions between the world tiles and the player are within the Player class.
@@ -566,8 +589,8 @@ class Game:
                         # If the boss is currently chasing the player
                         if self.boss_group.sprite.current_action == "Chase":
                             # Reset the boss' movement acceleration, so that they slow down
-                            self.boss_group.sprite.reset_movement_acceleration()
-
+                            self.boss_group.sprite.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
+                            
             # If there is pixel-perfect collision and the boss is not currently idling after the knockback 
             # Note: Second check is so that the player doesn't keep setting off the idle timer in quick succession
             if pygame.sprite.collide_mask(self.boss_group.sprite, self.player) and \
@@ -586,7 +609,7 @@ class Game:
                 self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] = self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTime"]
 
                 # Reset the boss' movement acceleration
-                self.boss_group.sprite.reset_movement_acceleration()
+                self.boss_group.sprite.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
 
                 # Damage the player by the amount of knockback damage the current boss deals
                 self.player.player_gameplay_info_dict["CurrentHealth"] = max(self.player.player_gameplay_info_dict["CurrentHealth"] - self.boss_group.sprite.extra_information_dict["KnockbackDamage"], 0)
@@ -853,7 +876,7 @@ class Game:
 
         # Set the bamboo piles to start spawning
         BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] = BambooPile.bamboo_pile_info_dict["SpawningCooldown"]
-
+        
         # Check which boss should be spawned
         match boss_to_spawn:
             
@@ -881,6 +904,9 @@ class Game:
 
                 # Add the boss into the boss group
                 self.boss_group.add(self.bosses_dict["SikaDeer"])
+
+                # Set the current boss' last tile position to be the last tile position found (for collisions)
+                self.boss_group.sprite.last_tile_position = self.last_tile_position
 
             case "GoldenMonkey":
                 pass
@@ -969,8 +995,8 @@ class Game:
         # Handle collisions between all objects in the level
         self.handle_collisions()
 
-        # Find the player's neighbouring tiles
-        self.find_neighbouring_tiles_to_player()
+        # Find the neighbouring tiles for the player and the current boss
+        self.find_neighbouring_tiles()
 
         # Run the player methods
         self.player.run(delta_time = delta_time)

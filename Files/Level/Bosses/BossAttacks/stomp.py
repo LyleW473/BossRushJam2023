@@ -70,7 +70,7 @@ class StompNode(pygame_sprite_Sprite):
         desired_distance_travelled = 4 * TILE_SIZE
 
         # The time for the projectile to cover the desired distance travelled
-        time_to_travel_distance_at_final_velocity = 0.6 # t
+        time_to_travel_distance_at_final_velocity = 0.35 # t
 
         # Calculate the horizontal and vertical distance the projectile must travel based on the desired distance travelled
         horizontal_distance = desired_distance_travelled * cos(angle)

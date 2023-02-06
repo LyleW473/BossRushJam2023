@@ -14,8 +14,8 @@ class BambooPile(Generic):
                             "SpawningCooldown": 5000, 
                             "SpawningCooldownTimer": 5000, # Starts counting down when the current boss is spawned
                             "MinimumSpawningDistanceFromPlayer": 10 * TILE_SIZE,
-                            "MaximumSpawningDistanceFromPlayer": 18 * TILE_SIZE,
-                            "MaximumNumberOfPilesAtOneTime": 5
+                            "MaximumSpawningDistanceFromPlayer": 25 * TILE_SIZE,
+                            "MaximumNumberOfPilesAtOneTime": 8
                             }
 
     def __init__(self, x, y):

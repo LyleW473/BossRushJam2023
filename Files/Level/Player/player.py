@@ -40,7 +40,7 @@ class Player(Generic):
         self.camera_position = None # Position of the camera. This is updated inside "Game" class
         self.last_tile_position = None # Position of the last tile that the player can be on. This will be updated by "Game" when the level is created
         """
-        self.neighbouring_tiles_dict = {} # Used to hold the neighbouring tiles near the player (i.e. within 1 tile of the player, movemently and vertically)
+        self.neighbouring_tiles_dict = {} # Used to hold the neighbouring tiles near the player (i.e. within 1 tile of the player, horizontally and vertically)
         self.dx = 0 # The distance the player can move based on if there were any collisions
         self.dy = 0 # The distance the player can move based on if there were any collisions
 
@@ -68,8 +68,8 @@ class Player(Generic):
                                         "CurrentToolEquipped": "BambooAssaultRifle",
 
                                         # Bamboo resource
-                                        "AmountOfBambooResource": 60,
-                                        "MaximumAmountOfBambooResource": 60,
+                                        "AmountOfBambooResource": 150,
+                                        "MaximumAmountOfBambooResource": 150,
 
                                         # Health
                                         "CurrentHealth": 100,
@@ -131,12 +131,12 @@ class Player(Generic):
                                             "TileImage": pygame.image.load("graphics/Weapons/BuildingTool/BuildingTile.png").convert()
                                                   },
                                         "MaximumBuildingTileHP": 100,
-                                        "MaximumPlacingDistance": 5 * TILE_SIZE,
+                                        "MaximumPlacingDistance": 6 * TILE_SIZE,
                                         "MinimumPlacingDistance": 2 * TILE_SIZE,
                                         "ExistingBuildingTilesList": [],
                                         "RemovalCooldown": 150,
                                         "LastTileRemovedTimer": None,
-                                        "BambooResourceDepletionAmount": 5
+                                        "BambooResourceDepletionAmount": 2.5
                                         },
 
                         "BambooAssaultRifle": { 
@@ -491,7 +491,7 @@ class Player(Generic):
         - The camera position must be subtracted so that the image is drawn within the limits of the screen.
         - Half of the image width and height is subtracted so that the rotation of the player image is centered within the player rect.
         """
-        pygame.draw.rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
+        # pygame.draw.rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
         
         # If the current animation state is "Run"
         if self.current_animation_state == "Run":
