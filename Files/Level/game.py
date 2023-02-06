@@ -715,9 +715,35 @@ class Game:
                         "AsiaticBlackBear": None,
                         
                         # Dictionary to hold all the images of the bosses
-                        "ImagesDict":{ folder: {action : [pygame.image.load(f'graphics/Bosses/{folder}/{action}/{i}.png') for i in range (0, len(os_listdir(f'graphics/Bosses/{folder}/{action}')))] for action in os_listdir(f'graphics/Bosses/{folder}')} for folder in os_listdir("graphics/Bosses")}
 
-                            }
+                        # """ Steps:
+                        # - For each boss create a dictionary of:
+                        #     - For each action create a dictionary of:
+                        #         - For each direction create a list of images
+                        
+                        # """
+                        "ImagesDict": { boss : 
+
+                                    {action : {
+                                            
+                            direction : [pygame.image.load(f'graphics/Bosses/{boss}/{action}/{direction}/{i}.png') for i in range (0, len(os_listdir(f'graphics/Bosses/{boss}/{action}/{direction}')))] for direction in os_listdir(f'graphics/Bosses/{boss}/{action}')
+                                                
+                                            }
+
+
+                                    for action in os_listdir(f'graphics/Bosses/{boss}')
+                                    }
+
+
+                                    for boss in os_listdir("graphics/Bosses")}
+
+
+
+
+
+                                }
+                                
+            print(self.bosses_dict["ImagesDict"]["SikaDeer"]["Stomp"]["Down"])
 
         # If a valid spawning position has not been found
         if self.bosses_dict["ValidSpawningPosition"] == None:

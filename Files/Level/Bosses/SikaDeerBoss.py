@@ -12,7 +12,7 @@ from Level.Bosses.AI import AI
 class SikaDeerBoss(Generic, AI):
 
     # ImagesDict = ?? (This is set when the boss is instantiated)
-    # Example: Stomp : [Image list]dddd
+    # Example: Stomp : [Image list]
 
 
     def __init__(self, x, y, surface, scale_multiplier):
@@ -21,7 +21,7 @@ class SikaDeerBoss(Generic, AI):
         self.surface = surface 
         
         # The starting image when spawned
-        starting_image = SikaDeerBoss.ImagesDict["Stomp"][0]
+        starting_image = SikaDeerBoss.ImagesDict["Stomp"]["Down"][0]
 
         # Inherit from the Generic class, which has basic attributes and methods.
         Generic.__init__(self, x = x , y = y, image = starting_image)
@@ -49,21 +49,20 @@ class SikaDeerBoss(Generic, AI):
                                     # Additional actions that the boss can perform, other than chase
 
                                     "Stomp": {
-                                            "Damage": 20,
-                                            "Speed": 150, # Speed that the stomp wave travels in milliseconds 
-                                            "Duration": 6000, # How long the attack will be performed
+                                            # Note: Changing the number of stomps and the duration will affect how fast each wave of stomps is spawned
+                                            "NumberOfStomps": 12,
+                                            "Duration": 3000, 
                                             "DurationTimer": None, # Timer used to check if the attack is over
 
-                                            "Cooldown": 6000, 
-                                            "CooldownTimer": 6000,
+                                            "Cooldown": 10000, 
+                                            "CooldownTimer": 200, # Delayed cooldown to when the boss can first use the stomp attackddd
 
                                             # The variation of the stomp for one entire stomp attack
                                             "StompAttackVariation": 0
                                              },
 
                                     "Chase": { 
-                                            "Duration": 1000
-                                              
+                                            "FullAnimationDuration": 700
                                               
                                     
                                               }
@@ -91,14 +90,13 @@ class SikaDeerBoss(Generic, AI):
 
         # --------------------------
         # Stomping 
-        number_of_stomps = 20 
 
         # Each full cycle of the stomp animation has 2 stomps 
         # Note: (number_of_stomps + 1) because the first animation frame does not count as a stomp, so add another one
-        number_of_animation_cycles = (number_of_stomps + 1) / 2
+        number_of_animation_cycles = (self.behaviour_patterns_dict["Stomp"]["NumberOfStomps"] + 1) / 2
 
         # The time between each frame should be how long the stomp attakc lasts, divided by the total number of animation frames, depending on how many cycles there are 
-        self.behaviour_patterns_dict["Stomp"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["Stomp"]["Duration"] / (len(SikaDeerBoss.ImagesDict["Stomp"]) * number_of_animation_cycles)
+        self.behaviour_patterns_dict["Stomp"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["Stomp"]["Duration"] / (len(SikaDeerBoss.ImagesDict["Stomp"]["Down"]) * number_of_animation_cycles)
 
         # Set the animation frame timer to start at 0, this is so that the first animation frame does not count as a stomp
         self.behaviour_patterns_dict["Stomp"]["AnimationFrameTimer"] = 0
@@ -111,12 +109,12 @@ class SikaDeerBoss(Generic, AI):
 
         # Chasing
         # The time between each frame should be how long each chase animation should last, divided by the total number of animation frames
-        self.behaviour_patterns_dict["Chase"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["Chase"]["Duration"] / (len(SikaDeerBoss.ImagesDict["Stomp"]) * number_of_animation_cycles)
+        self.behaviour_patterns_dict["Chase"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["Chase"]["FullAnimationDuration"] / (len(SikaDeerBoss.ImagesDict["Chase"]["Down"]))
 
         # Set the animation frame timer to start at 0, this is so that the first animation frame does not count as a stomp
         self.behaviour_patterns_dict["Chase"]["AnimationFrameTimer"] = 0
 
-        print(self.behaviour_patterns_dict)
+        # print(self.behaviour_patterns_dict)
     
     # ----------------------------------------------------------------------------------
     # Animations
@@ -126,8 +124,12 @@ class SikaDeerBoss(Generic, AI):
         # -----------------------------------
         # Set image
 
+        # The current direction the boss is looking towards (add direction changing method depending on self.movement_information_dict["Angle"])
+        current_look_direction = "Down"
+
         # The current animation list
-        current_animation_list = SikaDeerBoss.ImagesDict[self.current_action]
+        current_animation_list = SikaDeerBoss.ImagesDict[self.current_action][current_look_direction]
+
         # The current animation image
         current_animation_image = current_animation_list[self.animation_index]
 
@@ -143,9 +145,6 @@ class SikaDeerBoss(Generic, AI):
         # Updating animation
 
         # Find which action is being performed and update the animation index based on that
-        # match self.current_action:
-
-        #     case "Stomp":
 
         # If the current action is to "Stomp"
         if self.current_action == "Stomp":
@@ -154,7 +153,7 @@ class SikaDeerBoss(Generic, AI):
                 if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] > 0:
                     
                     # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-                    if self.animation_index < (len(SikaDeerBoss.ImagesDict[self.current_action]) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
+                    if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
                         
                         # If this animation is one of the keyframes where the boss has stomped
                         if (self.animation_index == 0 and self.behaviour_patterns_dict[self.current_action]["DurationTimer"] != self.behaviour_patterns_dict[self.current_action]["Duration"]) \
@@ -172,12 +171,12 @@ class SikaDeerBoss(Generic, AI):
                         self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"] 
 
                     # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
-                    if self.animation_index == (len(SikaDeerBoss.ImagesDict[self.current_action]) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
+                    if self.animation_index == (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
                         # Go the the first animation frame (reset the animation)
                         self.animation_index = 0
 
                         # Reset the timer (adding will help with accuracy)
-                        self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] = self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+                        self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
 
                 # If the stomp attack has been completed
                 elif self.behaviour_patterns_dict[self.current_action]["DurationTimer"] <= 0:
@@ -186,6 +185,25 @@ class SikaDeerBoss(Generic, AI):
 
                     # Reset the animation index
                     self.animation_index = 0
+
+        # If the current action is to "Chase"
+        elif self.current_action == "Chase":
+            
+            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
+            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
+                # Go the next animation frame
+                self.animation_index += 1
+
+                # Reset the timer (adding will help with accuracy)
+                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+
+            # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
+            if self.animation_index == (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
+                # Go the the first animation frame (reset the animation)
+                self.animation_index = 0
+
+                # Reset the timer (adding will help with accuracy)
+                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
 
         # -----------------------------------
         # Updating timers relating to abilities
