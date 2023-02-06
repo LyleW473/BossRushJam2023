@@ -54,8 +54,11 @@ class SikaDeerBoss(Generic, AI):
                                             "Duration": 6000, # How long the attack will be performed
                                             "DurationTimer": None, # Timer used to check if the attack is over
 
-                                            "Cooldown": 15000, 
-                                            "CooldownTimer": 15000
+                                            "Cooldown": 6000, 
+                                            "CooldownTimer": 6000,
+
+                                            # The variation of the stomp for one entire stomp attack
+                                            "StompAttackVariation": 0
                                              },
 
                                     "Chase": { 
@@ -69,8 +72,8 @@ class SikaDeerBoss(Generic, AI):
         # A dictionary containing extra information about the Sika deer boss
         self.extra_information_dict = {    
                                         # Health
-                                        "CurrentHealth": 25000,
-                                        "MaximumHealth": 25000,
+                                        "CurrentHealth": 5000,
+                                        "MaximumHealth": 5000,
 
                                         # Damage flash effect
                                         "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
@@ -328,9 +331,14 @@ class SikaDeerBoss(Generic, AI):
     def stomp_attack(self):
 
         # Performs the stomp attack
+
+        # If there are no stomp attack nodes (i.e. the start of the stomp attack)
+        if len(StompController.nodes_group) == 0:
+            # Choose a random variation of the stomp attack
+            self.extra_information_dict["StompAttackVariation"] = random_choice( (0, 1, 1, 2))
     
         # Create stomp attack nodes
-        self.stomp_controller.create_stomp_nodes(center_of_boss_position = (self.rect.centerx, self.rect.centery), desired_number_of_nodes = 12)
+        self.stomp_controller.create_stomp_nodes(center_of_boss_position = (self.rect.centerx, self.rect.centery), desired_number_of_nodes = 12, attack_variation=  self.extra_information_dict["StompAttackVariation"])
 
     def chase_player(self):
 
@@ -374,7 +382,7 @@ class SikaDeerBoss(Generic, AI):
             elif len(action_list) == 0: 
                 # Continue chasing the player
                 self.chase_player()
-
+    
     def run(self):
         
         # Decide the action that the boss should perform
@@ -405,8 +413,8 @@ class SikaDeerBoss(Generic, AI):
         # Create / update a mask for pixel - perfect collisions
         self.mask = pygame_mask_from_surface(self.image)
 
-        # TEMPORARY
-        for tile in self.neighbouring_tiles_dict.keys():
-            pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
+        # # TEMPORARY
+        # for tile in self.neighbouring_tiles_dict.keys():
+        #     pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
 

@@ -1,10 +1,12 @@
 from Global.generic import Generic
 from pygame.sprite import Sprite as pygame_sprite_Sprite
 from pygame import Rect as pygame_Rect
-from math import pi, cos, sin, radians
+from math import pi, cos, sin, radians, degrees
 from Global.settings import TILE_SIZE
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
+from random import choice as random_choice
+from random import randrange as random_randrange
 
 class StompController(Generic):
 
@@ -18,8 +20,13 @@ class StompController(Generic):
         # Maximum radius of each node
         self.maximum_node_radius = 40 / scale_multiplier
 
-    def create_stomp_nodes(self, center_of_boss_position, desired_number_of_nodes):
+        self.starting_angle = 0
 
+    def create_stomp_nodes(self, center_of_boss_position, desired_number_of_nodes, attack_variation):
+
+        # -----------------------------------------------------------------------
+        # Calculations for the radius of each stomp node and the angle change
+        
         # Given a desired number of "nodes" and the radius of each node, calculate the circumference and diameter
         radius_of_each_node = self.minimum_node_radius 
 
@@ -35,16 +42,43 @@ class StompController(Generic):
         # The angle change between each node should be 2pi / the number of nodes
         angle_change = (2 * pi / desired_number_of_nodes)
 
-        # Create more stomp nodes:
+        # -----------------------------------------------------------------------
+        # Setting the attack variation
+
+        # If this is the first variation
+        # No angle change
+        if attack_variation == 0:
+            if self.starting_angle != 0:
+                self.starting_angle = 0
+
+        # If this is the second variation
+        # Changes angle every stomp
+        elif attack_variation == 1:
+            # Increase the starting angle by half the angle change
+            self.starting_angle += (angle_change / 2)
+
+            # If the starting angle is around 360 degrees, reset the starting angle
+            if round(degrees(self.starting_angle)) == 360:
+                self.starting_angle = 0
+
+        # If this is the third variation
+        # Random angle change every stomp
+        elif attack_variation == 2:
+            # Choose a random starting angle from 0 to 360 degrees
+            self.starting_angle = radians(random_randrange(0, 360))
+
+        # -----------------------------------------------------------------------
+        # Creating the stomp nodes
+
         for i in range(0, desired_number_of_nodes):
 
             # Create a stomp node (automatically added to the stomp nodes group when instantiated)
             StompNode(
-                    x = center_of_boss_position[0] + (calculated_radius * cos(i * angle_change)), 
-                    y = center_of_boss_position[1] + (calculated_radius * sin(i * angle_change)) + 20, # + 20 so that the stomp nodes are positioned below the boss
+                    x = center_of_boss_position[0] + (calculated_radius * cos(self.starting_angle + (i * angle_change))), 
+                    y = center_of_boss_position[1] + (calculated_radius * sin(self.starting_angle + (i * angle_change))) + 20, # + 20 so that the stomp nodes are displaced to be positioned below the boss
                     radius = self.minimum_node_radius,
                     maximum_radius = self.maximum_node_radius,
-                    angle = i * angle_change # Angle that the node will travel towards
+                    angle = self.starting_angle + (i * angle_change) # Angle that the node will travel towards
                      ),
 
 class StompNode(pygame_sprite_Sprite):
