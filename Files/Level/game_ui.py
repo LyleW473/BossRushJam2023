@@ -364,7 +364,7 @@ class GameUI:
             # Set the frenzy mode bar colour (A tuple because the bar is made up of two rectangles)
             frenzy_mode_bar_colour = (
                                     self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"], 
-                                    tuple(darker_colour(self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"][i]) for i in range(0, len(self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])))
+                                    tuple(min(max(darker_colour(self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"][i]), 0), 255) for i in range(0, len(self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])))
                                     
                                     )
         
@@ -405,7 +405,7 @@ class GameUI:
             elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
                 # Set the bar edge as the current frenzy mode visual effect colour 
                 # Note: Call the darker colour lambda function again for a colour that will always be darker than the bar
-                bar_edge_colour = tuple(darker_colour(frenzy_mode_bar_colour[1][i]) for i in range(0, len(self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])))
+                bar_edge_colour = tuple(min(max(darker_colour(frenzy_mode_bar_colour[1][i]), 0), 255) for i in range(0, len(self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])))
 
             # Edge at the end of the changing part of the boss' health
             pygame_draw_line(
