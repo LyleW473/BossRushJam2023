@@ -11,8 +11,8 @@ class BambooPile(Generic):
     bamboo_pile_info_dict = {
                             "BambooResourceReplenishAmount": 25,
                             "HealthReplenishmentAmount": 30,
-                            "SpawningCooldown": 5000, 
-                            "SpawningCooldownTimer": 5000, # Starts counting down when the current boss is spawned
+                            "SpawningCooldown": 4000, 
+                            "SpawningCooldownTimer": 4000, # Starts counting down when the current boss is spawned
                             "MinimumSpawningDistanceFromPlayer": 10 * TILE_SIZE,
                             "MaximumSpawningDistanceFromPlayer": 25 * TILE_SIZE,
                             "MaximumNumberOfPilesAtOneTime": 8

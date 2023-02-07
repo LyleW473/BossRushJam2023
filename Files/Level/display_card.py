@@ -169,6 +169,8 @@ class DisplayCard:
 
         # The text that displays how much bamboo resource the player has
         amount_of_bamboo_resource_text = f'Bamboo: {player_gameplay_info_dict["AmountOfBambooResource"]} / {player_gameplay_info_dict["MaximumAmountOfBambooResource"]}'
+        # Save the text inside the dictionary so that the effect text can be positioned randomly across the text 
+        self.extra_information_dict["bamboo_resource_text"] = amount_of_bamboo_resource_text
 
         # Draw the text displaying the amount of bamboo resource
         draw_text(
@@ -235,6 +237,9 @@ class DisplayCard:
 
         # Calculate the font size, used to position the text at the center of the health bar
         players_health_text_font_size = self.text_font.size(players_health_text)
+
+        # Save the health bar positioning information to grant access to the game UI to create effect text for the player
+        self.health_bar_positioning_information = (health_bar_measurements, green_health_bar_width)
 
         # First half of the current health bar
         pygame_draw_rect(

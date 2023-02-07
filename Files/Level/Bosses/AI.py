@@ -8,8 +8,8 @@ class AI:
     # The default distance travelled
     default_distance_travelled = 4 * TILE_SIZE
     # Time to travel the horizontal/vertical distance at the final veloctiy
-    default_horizontal_time_to_travel_distance_at_final_velocity = 0.45
-    default_vertical_time_to_travel_distance_at_final_velocity = 0.45
+    default_horizontal_time_to_travel_distance_at_final_velocity = 0.42
+    default_vertical_time_to_travel_distance_at_final_velocity = 0.42
     
     # Time to reach / accelerate to the final horizontal/vertical velocity
     default_horizontal_time_to_reach_final_velocity = 0.3

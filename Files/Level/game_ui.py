@@ -8,6 +8,8 @@ from Level.display_card import DisplayCard
 from Global.settings import TILE_SIZE, BAR_ALPHA_LEVEL
 from Global.functions import draw_text, sin_change_object_colour
 from pygame import Surface as pygame_Surface
+from Level.effect_text import EffectText
+from random import randrange as random_randrange
 
 class GameUI:
 
@@ -99,6 +101,37 @@ class GameUI:
                         "BuildingTiles": self.player_tools["BuildingTool"]["Images"]["TileImage"]
                                  }
 
+        # A dictionary containing information about the effect text
+        self.effect_text_info_dict = { 
+
+                                        "FloatUpTimeGradient": 12 / 0.2, # The vertical distance travelled over time in seconds (Should be the same as the display time)
+                                        "AlphaLevelTimeGradient": (125 - 255) / 0.6,
+                                        "DefaultAlphaLevel": 255,
+
+                                        "Damage": {
+                                                        "Font": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 16),
+                                                        "DisplayTime": 2000,
+                                                        "Colour": (170, 4, 4)
+
+                                                        },
+                                        "Heal": {
+                                                        "Font": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 24),
+                                                        "DisplayTime": 3000,
+                                                        "Colour": (4, 225, 4)
+
+                                                        },
+                                        
+                                        "BambooResourceReplenishment": {
+                                                        "Font": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 16),
+                                                        "DisplayTime": 2500,
+                                                        "Colour": (247, 127, 0)
+
+                                                        },
+                        }
+        
+        # Create a list for all the effect text
+        EffectText.effect_text_list = []
+
         # Create display cards
         self.create_player_tools_display_cards()
         self.create_player_stats_display_cards()
@@ -119,6 +152,12 @@ class GameUI:
         # ------------------------------------------------------------
         # Cursor image
         self.default_cursor_image = load_image("graphics/Cursors/Default.png").convert_alpha()
+
+        """ 'Hidden' attributes:
+
+        self.camera_position
+    
+        """
 
 
     def create_player_tools_display_cards(self):
@@ -503,7 +542,108 @@ class GameUI:
         # Draw the guidelines surface onto the main surface
         main_surface.blit(guidelines_surface, (0, 0))
 
-    def run(self):
+    def create_effect_text(self, type_of_effect_text, target, text):
+
+        # Find the font size for positioning the text properly
+        font_size = self.effect_text_info_dict[type_of_effect_text]["Font"].size(text)
+
+        # If the target is the boss
+        if target == "Boss":
+            # Calculate the width of the boss health bar
+            boss_health_bar_width = max((self.current_boss.extra_information_dict["CurrentHealth"] / self.current_boss.extra_information_dict["MaximumHealth"] ) * self.dimensions["boss_bar"]["width"], 0)
+
+            # Calculate the text position so that the text is centered
+            text_position_x = (self.dimensions["boss_bar"]["x"] + boss_health_bar_width) - (font_size[0] / 2)
+            text_position_y = (self.dimensions["boss_bar"]["y"] + (self.dimensions["boss_bar"]["height"] / 2)) - (font_size[1] / 2)
+
+        # If the target is the player
+        elif target == "Player":
+
+            # Temporary variables for positioning the text
+            # Note: self.health_bar_positioning_information = (health_bar_measurements, green_health_bar_width)
+            player_stats_display_card = self.display_cards_dict["player_stats"][0]
+
+            # If this is a heal or damage effect text
+            if type_of_effect_text == "Heal" or type_of_effect_text == "Damage":
+
+                # Calculate the text position so that the text is centered
+                text_position_x = (player_stats_display_card.health_bar_positioning_information[0][0] + player_stats_display_card.health_bar_positioning_information[1]) - (font_size[0] / 2)
+                text_position_y = (player_stats_display_card.health_bar_positioning_information[0][1]) - (font_size[1] / 2)
+
+            # If this is a bamboo resource replenishment effect text
+            elif type_of_effect_text == "BambooResourceReplenishment":
+
+                # Calculate the bamboo resource text size, so that the effect text can be placed anywhere along that text (y-pos will start at the top of the text)
+                bamboo_resource_text_size = player_stats_display_card.text_font.size(player_stats_display_card.extra_information_dict["bamboo_resource_text"])
+
+                # Set the text position
+                text_position_x = ((player_stats_display_card.rect.x + (DisplayCard.border_thickness / 2) + player_stats_display_card.extra_information_dict["starting_position_from_inner_rect"][0] + player_stats_display_card.images_size[1][0] + player_stats_display_card.extra_information_dict["spacing_x_between_image_and_text"]) - (font_size[0] / 2)) + (
+                    random_randrange(0, (bamboo_resource_text_size[0] / self.scale_multiplier)))
+                text_position_y = ((player_stats_display_card.rect.y + (DisplayCard.border_thickness  / 2) + player_stats_display_card.extra_information_dict["starting_position_from_inner_rect"][1] + player_stats_display_card.images_size[1][1] + player_stats_display_card.extra_information_dict["spacing_y_between_stats"]) - (font_size[1] / 2))
+
+        # Alpha surface
+        new_alpha_surface = pygame_Surface(font_size)
+        new_alpha_surface.set_colorkey("black")
+        new_alpha_surface.set_alpha(self.effect_text_info_dict["DefaultAlphaLevel"])
+
+
+        # Create the effect text (Automatically added to the effect text group)
+        EffectText(
+                    x = text_position_x,
+                    y = text_position_y,
+                    colour = self.effect_text_info_dict[type_of_effect_text]["Colour"],
+                    display_time = self.effect_text_info_dict[type_of_effect_text]["DisplayTime"], 
+                    text = text,
+                    font = self.effect_text_info_dict[type_of_effect_text]["Font"],
+                    alpha_surface = new_alpha_surface,
+                    alpha_level = self.effect_text_info_dict["DefaultAlphaLevel"]
+                    )
+
+    def draw_and_update_effect_text(self, camera_position):
+        
+        # Draws and updates the effect text
+        
+        # If there is any effect text to be drawn / updated
+        if len(EffectText.effect_text_list) > 0:
+            
+            # For each effect text
+            for index, effect_text in enumerate(EffectText.effect_text_list):
+
+                # If their display time is less than 0 or equal to 0
+                if effect_text.display_time <= 0:
+                    # Remove it from the effect text list
+                    EffectText.effect_text_list.pop(index)
+
+                # If their display time is greater than 0
+                if effect_text.display_time > 0:
+                    
+                    # Fill the effect text's alpha surface with black
+                    effect_text.alpha_surface.fill("black")
+
+                    # Draw the text
+                    draw_text(
+                        text = effect_text.text,
+                        text_colour = effect_text.colour,
+                        font = effect_text.font,
+                        x = 0,
+                        y = 0,
+                        surface = effect_text.alpha_surface,
+                        )
+
+                    # Draw the alpha surface onto the main surface
+                    self.surface.blit(effect_text.alpha_surface, (effect_text.x, effect_text.y))
+                    
+                    # Decrease the y-pos of the effect text over time
+                    effect_text.y -= self.effect_text_info_dict["FloatUpTimeGradient"] * self.delta_time
+
+                    # Adjust the alpha level of the effect text's alpha surface over time
+                    effect_text.alpha_level += self.effect_text_info_dict["AlphaLevelTimeGradient"] * self.delta_time
+                    effect_text.alpha_surface.set_alpha(round(effect_text.alpha_level))
+        
+                    # Decrease the display time
+                    effect_text.display_time -= 1000 * self.delta_time
+
+    def run(self, camera_position):
 
         # Draw the display cards onto the screen
         self.draw_display_cards()
@@ -514,7 +654,11 @@ class GameUI:
         # Draw the player's frenzy mode bar
         self.draw_player_frenzy_mode_bar()
 
+        # Draw and update any effect text
+        self.draw_and_update_effect_text(camera_position = camera_position)
+
         # Draw the mouse cursor
         self.draw_mouse_cursor()
+
 
 

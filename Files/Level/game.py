@@ -341,7 +341,7 @@ class Game:
                 # Bosses
 
                 # If a boss has been spawned
-                if hasattr(self, "bosses_dict") and self.bosses_dict[self.bosses_dict["CurrentBoss"]] != None:
+                if self.boss_group.sprite != None: # hasattr(self, "bosses_dict") and self.bosses_dict[self.bosses_dict["CurrentBoss"]] != None:
 
                     # If the bamboo projectile's rect has collided with the current boss' rect
                     if bamboo_projectile.rect.colliderect(self.bosses_dict[self.bosses_dict["CurrentBoss"]].rect) == True:
@@ -350,11 +350,8 @@ class Game:
                         if pygame.sprite.collide_mask(bamboo_projectile, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
                             # If there is a pixel-perfect collision:
 
-                            # Remove the bamboo projectile
-                            self.bamboo_projectiles_group.remove(bamboo_projectile)
-
                             # Damage the current boss by the amount of damage that was passed into the bamboo projectile
-                            # Note: This allows for different damage values for e.g. different weapons
+                            # Note: This allows for different damage values for e.g. different weaponssa
                             self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= bamboo_projectile.damage_amount
 
                             # Play the boss' damaged flash effect
@@ -367,6 +364,18 @@ class Game:
                                                                                                     self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["DealDamageFrenzyModeIncrement"],
                                                                                                     self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                     )
+                            # If the current boss is alive
+                            if self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
+
+                                # Create damage effect text
+                                self.game_ui.create_effect_text(
+                                                                type_of_effect_text = "Damage",
+                                                                target = "Boss",
+                                                                text = "-" + str(bamboo_projectile.damage_amount),
+                                                                )
+
+                            # Remove the bamboo projectile
+                            self.bamboo_projectiles_group.remove(bamboo_projectile)
 
         # --------------------------------------------------------------------------------------
         # Bamboo piles
@@ -382,18 +391,53 @@ class Game:
             # Add the empty tile back to the empty tiles dictionary so other items can spawn in the tile
             self.empty_tiles_dict[(player_and_bamboo_piles_collision_list[0].rect.x, player_and_bamboo_piles_collision_list[0].rect.y, player_and_bamboo_piles_collision_list[0].rect.width, player_and_bamboo_piles_collision_list[0].rect.height)] = 0
 
+            # If adding the bamboo pile's replenishment amount exceeds the player's maximum amount of bamboo resource
+            if self.player.player_gameplay_info_dict["AmountOfBambooResource"] + BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"] > self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]:
+                # Find the amount that we can replenish the player's amount of bamboo resource to the maximum amount
+                bamboo_resource_replenishment_amount = BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"] - (
+                    (self.player.player_gameplay_info_dict["AmountOfBambooResource"] + BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"]) % self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"])
+            
+            # If adding the bamboo pile's replenishment amount is less than or equal to the player's maximum amount of bamboo resource
+            elif self.player.player_gameplay_info_dict["AmountOfBambooResource"] + BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"] <= self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]:
+                # Set the health replenishment amount as the bamboo pile's full resource replenishment amount
+                bamboo_resource_replenishment_amount = BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"]
+            
+            # Create bamboo resource replenishment effect text
+            self.game_ui.create_effect_text(
+                                            type_of_effect_text = "BambooResourceReplenishment",
+                                            target = "Player",
+                                            text = "+" + str(bamboo_resource_replenishment_amount),
+                                        )
+
             # Increase the amount of bamboo resource that the player has, limiting it to the maximum amount the player can hold at one time
-            self.player.player_gameplay_info_dict["AmountOfBambooResource"] = min(
-                                                                                self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"], 
-                                                                                self.player.player_gameplay_info_dict["AmountOfBambooResource"] + BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"]
-                                                                                )
-            # 60% chance of increasing the player's current health
-            if random_randrange(0, 100) <= 60:
+            self.player.player_gameplay_info_dict["AmountOfBambooResource"] += bamboo_resource_replenishment_amount
+
+            # 75% chance of increasing the player's current health
+            if random_randrange(0, 100) <= 75:
+
+                # If adding the bamboo pile's health replenishment amount exceeds the player's health
+                if self.player.player_gameplay_info_dict["CurrentHealth"] + BambooPile.bamboo_pile_info_dict["HealthReplenishmentAmount"] > self.player.player_gameplay_info_dict["MaximumHealth"]:
+                    # Find the amount that we can heal the player up to their maximum health
+                    health_replenishment_amount = BambooPile.bamboo_pile_info_dict["HealthReplenishmentAmount"] - (
+                        (self.player.player_gameplay_info_dict["CurrentHealth"] + BambooPile.bamboo_pile_info_dict["HealthReplenishmentAmount"]) % self.player.player_gameplay_info_dict["MaximumHealth"])
+                
+                # If adding the bamboo pile's health replenishment amount is less than or equal to the player's health 
+                elif self.player.player_gameplay_info_dict["CurrentHealth"] + BambooPile.bamboo_pile_info_dict["HealthReplenishmentAmount"] <= self.player.player_gameplay_info_dict["MaximumHealth"]:
+                    # Set the health replenishment amount as the bamboo pile's full health replenishment amount
+                    health_replenishment_amount = BambooPile.bamboo_pile_info_dict["HealthReplenishmentAmount"]
+
+                # If the player is alive / has more than 0 health
+                if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
+                    # Create heal effect text
+                    self.game_ui.create_effect_text(
+                                                    type_of_effect_text = "Heal",
+                                                    target = "Player",
+                                                    text = "+" + str(health_replenishment_amount),
+                                                )
+
+
                 # Increase the player's current health, limiting it to the maximum health the player can have
-                self.player.player_gameplay_info_dict["CurrentHealth"] = min(
-                                                                            self.player.player_gameplay_info_dict["MaximumHealth"], 
-                                                                            self.player.player_gameplay_info_dict["CurrentHealth"] + BambooPile.bamboo_pile_info_dict["HealthReplenishmentAmount"]
-                                                                            )
+                self.player.player_gameplay_info_dict["CurrentHealth"] += health_replenishment_amount
 
         # --------------------------------------------------------------------------------------
         # Stomp attack nodes
@@ -499,6 +543,15 @@ class Game:
                         # Damage the player by the stomp attack node damage
                         self.player.player_gameplay_info_dict["CurrentHealth"] -= stomp_attack_node.damage_amount
 
+                        # If the player is alive / has more than 0 health
+                        if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
+                            # Create damage effect text
+                            self.game_ui.create_effect_text(
+                                                            type_of_effect_text = "Damage",
+                                                            target = "Player",
+                                                            text = "-" + str(stomp_attack_node.damage_amount),
+                                                        )
+                                                        
                         # Set the damaged flash effect timer to the damage flash effect time set (damaged flashing effect)
                         self.player.player_gameplay_info_dict["DamagedFlashEffectTimer"] = self.player.player_gameplay_info_dict["DamagedFlashEffectTime"]
 
@@ -532,7 +585,16 @@ class Game:
                         self.stomp_attack_nodes_group.remove(stomp_attack_node)
                         
                         # Damage the boss by 5 times the stomp attack node damage
-                        self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= (stomp_attack_node.damage_amount * 5)
+                        self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= (stomp_attack_node.damage_amount * self.player.tools["BuildingTool"]["ReflectionDamageMultiplier"])
+
+                        # If the boss is alive / has more than 0 health
+                        if self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
+                            # Create damage effect text
+                            self.game_ui.create_effect_text(
+                                                            type_of_effect_text = "Damage",
+                                                            target = "Boss",
+                                                            text = "-" + str(stomp_attack_node.damage_amount * self.player.tools["BuildingTool"]["ReflectionDamageMultiplier"]),
+                                                        )
 
                         # Set the damaged flash effect timer to the damage flash effect time set (damaged flashing effect)
                         self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTimer"] = self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTime"]
@@ -604,6 +666,15 @@ class Game:
                 # Note: Divided by 1000 because the knockback time is in milliseconds
                 self.player.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * cos(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
                 self.player.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * sin(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
+
+                # If the player is alive / has more than 0 health
+                if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
+                    # Create damage effect text
+                    self.game_ui.create_effect_text(
+                                                    type_of_effect_text = "Damage",
+                                                    target = "Player",
+                                                    text = "-" + str(self.boss_group.sprite.extra_information_dict["KnockbackDamage"]),
+                                                )
 
                 # Set the boss to stop moving momentarily
                 self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] = self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTime"]
@@ -742,8 +813,6 @@ class Game:
 
 
                                 }
-                                
-            print(self.bosses_dict["ImagesDict"]["SikaDeer"]["Stomp"]["Down"])
 
         # If a valid spawning position has not been found
         if self.bosses_dict["ValidSpawningPosition"] == None:
@@ -931,6 +1000,9 @@ class Game:
                 # Add the boss into the boss group
                 self.boss_group.add(self.bosses_dict["SikaDeer"])
 
+                # Update the game UI with this information
+                self.game_ui.current_boss = self.boss_group.sprite
+
                 # Set the current boss' last tile position to be the last tile position found (for collisions)
                 self.boss_group.sprite.last_tile_position = self.last_tile_position
 
@@ -972,18 +1044,6 @@ class Game:
             # Run the boss
             current_boss.run()
 
-        # If the current boss is spawning
-        elif current_boss == None and hasattr(self, "bosses_dict") and self.bosses_dict["ValidSpawningPosition"] != None:
-            # Draw guidelines between the player and the boss' spawning location
-            self.game_ui.draw_guidelines_between_a_and_b(
-                                                        a = (self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)), 
-                                                        b = self.player.rect.center,
-                                                        camera_position = self.camera_position,
-                                                        guidelines_segments_thickness = self.guidelines_segments_thickness,
-                                                        guidelines_surface = self.guidelines_surface,
-                                                        main_surface = self.scaled_surface
-                                                        )
-
     # --------------------------------------------------------------------------------------
     # Game UI methods
 
@@ -993,12 +1053,11 @@ class Game:
     
         # Delta time
         self.game_ui.delta_time = delta_time
-        
+
         # Current boss
         self.game_ui.current_boss = self.boss_group.sprite
             
         # Mouse position 
-        # Note: Take away the camera position so that we do not need to create a camera position attribute for the game UI
         self.game_ui.mouse_position = (self.player.mouse_position[0] - self.camera_position[0], self.player.mouse_position[1] - self.camera_position[1])
 
     def run(self, delta_time):
@@ -1009,8 +1068,6 @@ class Game:
         # Update the camera position 
         self.update_camera_position()
 
-        # Draw all objects inside the tile map / level
-        self.draw_tile_map_objects()
 
         # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
         self.spawn_bamboo_pile(delta_time = delta_time)
@@ -1025,15 +1082,33 @@ class Game:
         self.find_neighbouring_tiles()
 
         # ---------------------------------------------------------
-        # Hierarchy of drawing with the player and the current boss:
+        # Hierarchy of drawing 
 
         # If there is no boss
         if self.boss_group.sprite == None:
+
+            # Draw all objects inside the tile map / level
+            self.draw_tile_map_objects()
+
             # Run the player methods
             self.player.run(delta_time = delta_time)
 
+            # If the current boss is spawning
+            if self.boss_group.sprite == None and hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] != None:
+                # Draw guidelines between the player and the boss' spawning location
+                self.game_ui.draw_guidelines_between_a_and_b(
+                                                            a = (self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)), 
+                                                            b = self.player.rect.center,
+                                                            camera_position = self.camera_position,
+                                                            guidelines_segments_thickness = self.guidelines_segments_thickness,
+                                                            guidelines_surface = self.guidelines_surface,
+                                                            main_surface = self.scaled_surface
+                                                            )
         # If the current boss is alive
         if self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
+
+            # Draw all objects inside the tile map / level
+            self.draw_tile_map_objects()
             # Run the player methods
             self.player.run(delta_time = delta_time)
             # Update and run the boss
@@ -1043,15 +1118,17 @@ class Game:
         elif self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
             # Update and run the boss
             self.update_and_run_boss(delta_time = delta_time)
+            # Draw all objects inside the tile map / level
+            self.draw_tile_map_objects()
             # Run the player methods
             self.player.run(delta_time = delta_time)
         # ---------------------------------------------------------
-        
+
         # Update the game UI
         self.update_game_ui(delta_time = delta_time)
-        
+
         # Run the game UI 
-        self.game_ui.run()
+        self.game_ui.run(camera_position = self.camera_position)
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame.transform.scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))

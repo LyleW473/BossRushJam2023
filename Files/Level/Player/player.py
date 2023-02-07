@@ -136,7 +136,8 @@ class Player(Generic):
                                         "ExistingBuildingTilesList": [],
                                         "RemovalCooldown": 150,
                                         "LastTileRemovedTimer": None,
-                                        "BambooResourceDepletionAmount": 2.5
+                                        "BambooResourceDepletionAmount": 2.5,
+                                        "ReflectionDamageMultiplier": 5
                                         },
 
                         "BambooAssaultRifle": { 
@@ -1447,9 +1448,6 @@ class Player(Generic):
                     if building_tile_to_remove in self.neighbouring_tiles_dict.keys():
                         # Remove the building tile
                         self.neighbouring_tiles_dict.pop(building_tile_to_remove)
-
-                    # Refund half of the bamboo resource depletion amount set
-                    self.player_gameplay_info_dict["AmountOfBambooResource"] += (self.tools["BuildingTool"]["BambooResourceDepletionAmount"] * 0.5)
             
             # --------------------------------------
             # Checking for placement of building tiles

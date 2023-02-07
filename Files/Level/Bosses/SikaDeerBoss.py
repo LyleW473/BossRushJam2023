@@ -12,6 +12,7 @@ from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from Global.functions import play_death_animation
 from os import listdir as os_listdir
+from pygame.draw import ellipse as pygame_draw_ellipse
 
 class SikaDeerBoss(Generic, AI):
 
@@ -59,7 +60,7 @@ class SikaDeerBoss(Generic, AI):
                                             "DurationTimer": None, # Timer used to check if the attack is over
 
                                             "Cooldown": 10000, 
-                                            "CooldownTimer": 1000, # Delayed cooldown to when the boss can first use the stomp attackddd
+                                            "CooldownTimer": 10000, # Delayed cooldown to when the boss can first use the stomp attackddd
 
                                             # The variation of the stomp for one entire stomp attack
                                             "StompAttackVariation": 0
@@ -80,11 +81,11 @@ class SikaDeerBoss(Generic, AI):
         # A dictionary containing extra information about the Sika deer boss
         self.extra_information_dict = {    
                                         # Health
-                                        "CurrentHealth": 20,
-                                        "MaximumHealth": 5000,
+                                        "CurrentHealth": 20000,
+                                        "MaximumHealth": 20000,
 
                                         # Damage flash effect
-                                        "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
+                                        "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the boss is damaged
                                         "DamagedFlashEffectTimer": None,
 
                                         # Knockback damage
@@ -412,6 +413,9 @@ class SikaDeerBoss(Generic, AI):
     
     def run(self):
         
+        # Update and draw the stomp attacks (always do this so that even when the boss is dead, these are still updated)
+        self.update_and_draw_stomp_attacks()
+
         # If the boss' health is greater than 0
         if self.extra_information_dict["CurrentHealth"] > 0:
         
@@ -421,9 +425,6 @@ class SikaDeerBoss(Generic, AI):
             pygame_draw_rect(self.surface, "green", pygame_Rect(self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 1)
             pygame_draw_line(self.surface, "white", (0 - self.camera_position[0], self.rect.centery - self.camera_position[1]), (self.surface.get_width() - self.camera_position[0], self.rect.centery - self.camera_position[1]))
             pygame_draw_line(self.surface, "white", (self.rect.centerx - self.camera_position[0], 0 - self.camera_position[1]), (self.rect.centerx - self.camera_position[0], self.surface.get_height() - self.camera_position[1]))
-
-            # Update and draw the stomp attacks
-            self.update_and_draw_stomp_attacks()
 
             # Draw the boss
             self.draw(surface = self.surface, x = self.rect.x - self.camera_position[0], y = self.rect.y - self.camera_position[1])
@@ -440,21 +441,18 @@ class SikaDeerBoss(Generic, AI):
             # Update the knockback collision idle timer
             self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
 
-            # Create / update a mask for pixel - perfect collisions
-            self.mask = pygame_mask_from_surface(self.image)
-
             # # TEMPORARY
             # for tile in self.neighbouring_tiles_dict.keys():
             #     pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
+            # Create / update a mask for pixel - perfect collisions
+            self.mask = pygame_mask_from_surface(self.image)
+
         # If the boss' health is less than 0
-        if self.extra_information_dict["CurrentHealth"] < 0:
+        if self.extra_information_dict["CurrentHealth"] <= 0:
             
             # If the boss does not have a death animation images list yet
             if self.behaviour_patterns_dict["Death"]["Images"]  == None:
-                
-                # Empty the stomp nodes group 
-                self.stomp_controller.nodes_group.empty()
                 
                 # Reset the animation index
                 self.animation_index = 0
@@ -468,27 +466,49 @@ class SikaDeerBoss(Generic, AI):
                     for i in range(0, len(os_listdir("graphics/Misc/DeathAnimation")))]
 
                 # Set up the animation speed and timer
-                self.behaviour_patterns_dict["Death"]["FullAnimationDuration"] = 1500
+                self.behaviour_patterns_dict["Death"]["FullAnimationDuration"] = 800
                 self.behaviour_patterns_dict["Death"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["Death"]["FullAnimationDuration"] / len(self.behaviour_patterns_dict["Death"]["Images"])
                 self.behaviour_patterns_dict["Death"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["Death"]["TimeBetweenAnimFrames"]
             
-
-            # Play the death animation
-            self.animation_index, self.behaviour_patterns_dict["AnimationFrameTimer"], self.behaviour_patterns_dict["TimeBetweenAnimFrames"] = play_death_animation(
-                                                                                                                                                                    current_animation_index = self.animation_index, 
-                                                                                                                                                                    current_animation_list = self.behaviour_patterns_dict["Death"]["Images"],
-                                                                                                                                                                    animation_frame_timer = self.behaviour_patterns_dict["Death"]["AnimationFrameTimer"],
-                                                                                                                                                                    time_between_animation_frames = self.behaviour_patterns_dict["Death"]["TimeBetweenAnimFrames"]
-                                                                                                                                                                    )
-
+            # Set the current animation image and blit position
             current_animation_image = self.behaviour_patterns_dict["Death"]["Images"][self.animation_index]
-            # Set the curren 
             blit_position = ((self.rect.midbottom[0] - self.camera_position[0]) - (current_animation_image.get_width() / 2), (self.rect.midbottom[1] - self.camera_position[1]) - (current_animation_image.get_height())) 
 
-            # Draw the boss
+            # Only when the death animation is complete
+            if self.animation_index == (len(self.behaviour_patterns_dict["Death"]["Images"]) - 1):
+                # Update damage flash effect timer
+                self.update_damage_flash_effect_timer()
+                # If the player shoots the skull
+                if self.extra_information_dict["DamagedFlashEffectTimer"] != None:
+                    # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
+                    current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour =  (255, 255, 255))
+
+            # Create / update a mask for pixel - perfect collisions
+            self.mask = pygame_mask_from_surface(current_animation_image)
+
+            # Draw a shadow ellipse underneath the boss
+            pygame_draw_ellipse(
+                surface = self.surface, 
+                color = (35, 35, 35), 
+                rect = ((self.rect.centerx - self.camera_position[0]) - 20, 
+                ((self.rect.centery + 20) - self.camera_position[1]) - 20, 40, 40), 
+                width = 0)
+
+            # Draw the death animation
             self.surface.blit(current_animation_image, blit_position)
 
-            # Decrease the death animation frame timer
-            self.behaviour_patterns_dict["Death"]["AnimationFrameTimer"] -= 1000 * self.delta_time
+            # If the end of the animation has not been reached yet
+            if self.animation_index < (len(self.behaviour_patterns_dict["Death"]["Images"]) - 1):
+                # Play the death animation
+                self.animation_index, self.behaviour_patterns_dict["Death"]["AnimationFrameTimer"] = play_death_animation(
+                                                                                                                current_animation_index = self.animation_index, 
+                                                                                                                current_animation_list = self.behaviour_patterns_dict["Death"]["Images"],
+                                                                                                                animation_frame_timer = self.behaviour_patterns_dict["Death"]["AnimationFrameTimer"],
+                                                                                                                time_between_animation_frames = self.behaviour_patterns_dict["Death"]["TimeBetweenAnimFrames"]
+                                                                                                                )
+
+
+                # Decrease the death animation frame timer
+                self.behaviour_patterns_dict["Death"]["AnimationFrameTimer"] -= 1000 * self.delta_time
 
 

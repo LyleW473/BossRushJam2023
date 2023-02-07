@@ -78,6 +78,8 @@ def sin_change_object_colour(current_sin_angle, angle_time_gradient, colour_to_c
 
 def play_death_animation(current_animation_index, current_animation_list, animation_frame_timer, time_between_animation_frames):
 
+    # Plays the death animation
+
     # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
     if current_animation_index < (len(current_animation_list) - 1) and animation_frame_timer <= 0:
         # Go the next animation frame 
@@ -86,4 +88,4 @@ def play_death_animation(current_animation_index, current_animation_list, animat
         animation_frame_timer += time_between_animation_frames
 
     # Return the current animation index, animation frame timer and the time between each animation frame
-    return current_animation_index, animation_frame_timer, time_between_animation_frames
+    return current_animation_index, animation_frame_timer
