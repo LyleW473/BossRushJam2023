@@ -793,25 +793,6 @@ class Game:
                         #         - For each direction create a list of images
                         
                         # """
-                        "ImagesDict": { boss : 
-
-                                    {action : {
-                                            
-                            direction : [pygame.image.load(f'graphics/Bosses/{boss}/{action}/{direction}/{i}.png') for i in range (0, len(os_listdir(f'graphics/Bosses/{boss}/{action}/{direction}')))] for direction in os_listdir(f'graphics/Bosses/{boss}/{action}')
-                                                
-                                            }
-
-
-                                    for action in os_listdir(f'graphics/Bosses/{boss}')
-                                    }
-
-
-                                    for boss in os_listdir("graphics/Bosses")}
-
-
-
-
-
                                 }
 
         # If a valid spawning position has not been found
@@ -980,7 +961,41 @@ class Game:
                 from Level.Bosses.SikaDeerBoss import SikaDeerBoss
 
                 # Create a class attribute for the SikaDeerBoss, which is an image dictionary holding all the images for each action that the boss has
-                SikaDeerBoss.ImagesDict = self.bosses_dict["ImagesDict"]["SikaDeer"]
+                SikaDeerBoss.ImagesDict = {
+
+                    "Chase": [pygame.image.load(f"graphics/Bosses/SikaDeer/Chase/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Chase")))],
+                    "Stomp": [pygame.image.load(f"graphics/Bosses/SikaDeer/Stomp/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Stomp")))],
+
+                    "Target": { 
+                            "Up": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/Up/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Up")))],
+                            "Up Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Target/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/UpRight")))],
+                            "Up Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/UpRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/UpRight")))],
+
+                            "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Target/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Right")))],
+                            "Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/Right/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Right")))],
+
+                            "Down": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/Down/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Down")))],
+                            "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Target/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/DownRight")))],
+                            "Down Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/DownRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/DownRight")))],
+                            },
+                    "Charge": {
+                            "Up": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/Up/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Up")))],
+                            "Up Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/UpRight")))],
+                            "Up Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/UpRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/UpRight")))],
+
+                            "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Right")))],
+                            "Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/Right/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Right")))],
+
+                            "Down": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/Down/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Down")))],
+                            "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/DownRight")))],
+                            "Down Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/DownRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/DownRight")))],
+                                
+                                }
+                                        }
+
+
+
+
 
                 # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
                 self.bosses_dict["SikaDeer"] = SikaDeerBoss(
