@@ -77,7 +77,7 @@ class Player(Generic):
 
                                         # ------------------------------------------------
                                         # Frenzy mode
-                                        "CurrentFrenzyModeValue": 100,
+                                        "CurrentFrenzyModeValue": 50,
                                         "MaximumFrenzyModeValue": 100,
                                         
                                         # Values for increasing the current frenzy mode value depending on what the player did
@@ -85,6 +85,7 @@ class Player(Generic):
                                         "TakeDamageFrenzyModeIncrement": 0.5,
                                         "BlockDamageFrenzyModeIncrement": 0.25,
                                         "ReflectDamageFrenzyModeIncrement": 0.75, 
+                                        "StunEnemyFrenzyModeIncrement": 1.5,
                                         
                                         # Time 
                                         "FrenzyModeTime": 6000, # Duration of the frenzy mode in milliseconds

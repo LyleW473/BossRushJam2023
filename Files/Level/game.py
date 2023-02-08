@@ -612,7 +612,10 @@ class Game:
 
         # If there is a current boss and they are alive
         if self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
-            
+
+            # --------------------------------------
+            # Building tiles
+
             # If there is at least one existing building tile
             if (len(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0):
             
@@ -652,38 +655,93 @@ class Game:
                         if self.boss_group.sprite.current_action == "Chase":
                             # Reset the boss' movement acceleration, so that they slow down
                             self.boss_group.sprite.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
-                            
-            # If there is pixel-perfect collision and the boss is not currently idling after the knockback 
+
+                        # If the boss is the "SikaDeer" and collided with the player whilst charge attacking
+                        elif self.bosses_dict["CurrentBoss"] == "SikaDeer" and self.boss_group.sprite.current_action == "Charge":
+
+                            # Reset the boss' movement acceleration, so that they slow down
+                            self.boss_group.sprite.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
+
+                            # Set the player to change into the "Stunned" state (this will be done inside the SikaDeer class)
+                            self.boss_group.sprite.behaviour_patterns_dict["Charge"]["EnterStunnedStateBoolean"] = True
+
+                            # Set the "Charge" duration timer to 0, to end the charge attack
+                            self.boss_group.sprite.behaviour_patterns_dict["Charge"]["DurationTimer"] = 0
+
+                            # Set the "Stunned" duration timer to start counting down
+                            self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["DurationTimer"] = self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["Duration"]
+
+                            # Damage the current boss by the amount of damage dealt from being stunned
+                            self.boss_group.sprite.extra_information_dict["CurrentHealth"] -= self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["StunnedDamageAmount"]
+
+                            # If the current boss is alive
+                            if self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
+
+                                # Create damage effect text
+                                self.game_ui.create_effect_text(
+                                                                type_of_effect_text = "Damage",
+                                                                target = "Boss",
+                                                                text = "-" + str(self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["StunnedDamageAmount"]),
+                                                                )
+                                
+                            # If the player's frenzy mode is not activated
+                            if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                                # Increase the player's frenzy mode meter by the stun enemy increment amount, limiting it to the maximum frenzy mode value
+                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
+                                                                                                    self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["StunEnemyFrenzyModeIncrement"],
+                                                                                                    self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
+                                                                                                    )
+            # --------------------------------------
+            # World tiles while charging
+
+            # Only if the boss is the "SikaDeer"
+            if self.bosses_dict["CurrentBoss"] == "SikaDeer" and self.boss_group.sprite.current_action == "Charge":
+                    # If there is an x or y world tile collision
+                    if self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsX"] == True or self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsY"] == True:
+                        # Set the "Charge" duration timer to 0 (to end the charge attack)
+                        self.boss_group.sprite.behaviour_patterns_dict["Charge"]["DurationTimer"] = 0
+            
+            # --------------------------------------
+            # Player
+
+            # If there is a rect collision between the player and the boss is not currently idling after the knockback 
             # Note: Second check is so that the player doesn't keep setting off the idle timer in quick succession
-            if pygame.sprite.collide_mask(self.boss_group.sprite, self.player) and \
-                (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None):
+            if self.boss_group.sprite.rect.colliderect(self.player.rect) == True and (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None):
 
-                # Knockback the player
-                self.player.player_gameplay_info_dict["KnockbackAttackDirection"] = [self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"]]
-                self.player.player_gameplay_info_dict["KnockbackTimer"] = self.player.player_gameplay_info_dict["KnockbackTime"]
+                # If there is pixel-perfect collision 
+                if pygame.sprite.collide_mask(self.boss_group.sprite, self.player):
 
-                # Set the horizontal and vertical distance the player should travel based on the angle the boss hit it
-                # Note: Divided by 1000 because the knockback time is in milliseconds
-                self.player.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * cos(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
-                self.player.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * sin(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
+                    # Knockback the player
+                    self.player.player_gameplay_info_dict["KnockbackAttackDirection"] = [self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"]]
+                    self.player.player_gameplay_info_dict["KnockbackTimer"] = self.player.player_gameplay_info_dict["KnockbackTime"]
 
-                # If the player is alive / has more than 0 health
-                if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
-                    # Create damage effect text
-                    self.game_ui.create_effect_text(
-                                                    type_of_effect_text = "Damage",
-                                                    target = "Player",
-                                                    text = "-" + str(self.boss_group.sprite.extra_information_dict["KnockbackDamage"]),
-                                                )
+                    # Set the horizontal and vertical distance the player should travel based on the angle the boss hit it
+                    # Note: Divided by 1000 because the knockback time is in milliseconds
+                    self.player.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * cos(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
+                    self.player.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * sin(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
 
-                # Set the boss to stop moving momentarily
-                self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] = self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTime"]
+                    # If the player is alive / has more than 0 health
+                    if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
+                        # Create damage effect text
+                        self.game_ui.create_effect_text(
+                                                        type_of_effect_text = "Damage",
+                                                        target = "Player",
+                                                        text = "-" + str(self.boss_group.sprite.extra_information_dict["KnockbackDamage"]),
+                                                    )
+                    
+                    # If the boss is the "SikaDeer" and collided with the player whilst charge attacking
+                    if self.bosses_dict["CurrentBoss"] == "SikaDeer" and self.boss_group.sprite.current_action == "Charge":
+                        # Set the "Charge" duration timer to 0 (to end the charge attack)
+                        self.boss_group.sprite.behaviour_patterns_dict["Charge"]["DurationTimer"] = 0
 
-                # Reset the boss' movement acceleration
-                self.boss_group.sprite.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
+                    # Set the boss to stop moving momentarily
+                    self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] = self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTime"]
 
-                # Damage the player by the amount of knockback damage the current boss deals
-                self.player.player_gameplay_info_dict["CurrentHealth"] = max(self.player.player_gameplay_info_dict["CurrentHealth"] - self.boss_group.sprite.extra_information_dict["KnockbackDamage"], 0)
+                    # Reset the boss' movement acceleration
+                    self.boss_group.sprite.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
+
+                    # Damage the player by the amount of knockback damage the current boss deals
+                    self.player.player_gameplay_info_dict["CurrentHealth"] = max(self.player.player_gameplay_info_dict["CurrentHealth"] - self.boss_group.sprite.extra_information_dict["KnockbackDamage"], 0)
                 
     def look_for_world_tile_collisions(self, item, other_group):
         
@@ -990,13 +1048,12 @@ class Game:
                             "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/DownRight")))],
                             "Down Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/DownRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/DownRight")))],
                                 
-                                }
+                                },
+                    "Stunned": [pygame.image.load(f"graphics/Bosses/SikaDeer/Stunned/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Stunned")))],
+
+
                                         }
-
-
-
-
-
+                
                 # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
                 self.bosses_dict["SikaDeer"] = SikaDeerBoss(
                                                             x = self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), 

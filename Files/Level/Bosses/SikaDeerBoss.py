@@ -13,7 +13,8 @@ from pygame.transform import scale as scale_image
 from Global.functions import play_death_animation
 from os import listdir as os_listdir
 from pygame.draw import ellipse as pygame_draw_ellipse
-from math import degrees
+from math import degrees, cos, sin
+from Global.settings import TILE_SIZE
 
 class SikaDeerBoss(Generic, AI):
 
@@ -45,6 +46,10 @@ class SikaDeerBoss(Generic, AI):
         self.players_position
         self.neighbouring_tiles_dict
         """
+
+        # Stomp controller used to create stomp nodes and update each individual stomp node
+        self.stomp_controller = StompController(scale_multiplier = scale_multiplier)
+
         # The current action that the boss is performing
         self.current_action = "Chase"
 
@@ -90,24 +95,42 @@ class SikaDeerBoss(Generic, AI):
 
                                     "Charge": {
 
-                                            "Duration": 1000,
+                                            "Duration": 2000, # The maximum duration that the boss will charge for
                                             "DurationTimer": None,
-                                            "Cooldown": 3000,
+                                            "Cooldown": 12000,
                                             "CooldownTimer": None,
-                                            "FullAnimationDuration": 1000,
-                                            "ChargeDirection": None
+                                            "FullAnimationDuration": 150,
+                                            
+                                            "ChargeDirection": None,
+                                            "ChargeAngle": None,
+                                            "EnterStunnedStateBoolean": False, # A boolean value that represents whether the boss has collided with the player during the charge attack"
 
+                                            # Movement (Keep the time values to be less than the full charge duration)
+                                            "ChargeDistanceTravelled": 5 * TILE_SIZE,
+                                            "HorizontalTimeToTravelDistanceAtFinalVelocity": 0.2, # Keep these values the same as the Charge duration
+                                            "VerticalTimeToTravelDistanceAtFinalVelocity": 0.2, # Keep these values the same as the Charge duration
+                                            "HorizontalTimeToReachFinalVelocity": 0.1,
+                                            "VerticalTimeToReachFinalVelocity": 0.1,
 
 
                                                 },
+                                    # Stunned
+                                    "Stunned": {
+                                            "Duration": 4000,
+                                            "DurationTimer": None,
+                                            "FullAnimationDuration": 1000,
+                                            "StunnedDamageAmount": 100
 
-
+                                            },
 
                                     "Death": {
                                             "Images": None
 
                                             }
                                     }
+        
+        # Declare the animation attributes
+        self.declare_animation_attributes()
 
         # A dictionary containing extra information about the Sika deer boss
         self.extra_information_dict = {    
@@ -124,9 +147,15 @@ class SikaDeerBoss(Generic, AI):
                                         
                                       }
         
-        # ---------------------------------------------------
-        # Animations
 
+    # ----------------------------------------------------------------------------------
+    # Animations
+
+    def declare_animation_attributes(self):
+
+        # Declares the animation attributes
+
+        # Set the animation index as 0
         self.animation_index = 0         
 
         # --------------------------
@@ -142,10 +171,6 @@ class SikaDeerBoss(Generic, AI):
         # Set the animation frame timer to start at 0, this is so that the first animation frame does not count as a stomp
         self.behaviour_patterns_dict["Stomp"]["AnimationFrameTimer"] = 0
 
-        # Stomp controller used to create stomp nodes and update each individual stomp node
-        self.stomp_controller = StompController(scale_multiplier = scale_multiplier)
-
-        
         # --------------------------
         # Chasing
 
@@ -176,8 +201,14 @@ class SikaDeerBoss(Generic, AI):
         # Set the animation frame timer to start as the time between animation frames
         self.behaviour_patterns_dict["Charge"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["Charge"]["TimeBetweenAnimFrames"]
 
-    # ----------------------------------------------------------------------------------
-    # Animations
+        # --------------------------
+        # Stunned
+
+        # The time between each frame should be how long the stunned animation lasts, divided by the total number of animation frames
+        self.behaviour_patterns_dict["Stunned"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["Stunned"]["FullAnimationDuration"] / (len(SikaDeerBoss.ImagesDict["Stunned"]))
+
+        # Set the animation frame timer to start as the time between animation frames
+        self.behaviour_patterns_dict["Stunned"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["Stunned"]["TimeBetweenAnimFrames"]
 
     def find_look_direction(self):
 
@@ -346,6 +377,25 @@ class SikaDeerBoss(Generic, AI):
                 # Reset the timer (adding will help with accuracy)
                 self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
 
+        # If the current action is to "Stunned"
+        elif self.current_action == "Stunned":
+
+            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
+            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
+                # Go the next animation frame
+                self.animation_index += 1
+
+                # Reset the timer (adding will help with accuracy)
+                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+
+            # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
+            if self.animation_index == (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
+                # Go the the first animation frame (reset the animation)
+                self.animation_index = 0
+
+                # Reset the timer (adding will help with accuracy)
+                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+
         # -----------------------------------
         # Updating timers relating to abilities
         
@@ -354,6 +404,9 @@ class SikaDeerBoss(Generic, AI):
 
         # Update damage flash effect timer
         self.update_damage_flash_effect_timer()
+
+    # ----------------------------------------------------------------------------------
+    # Timer updating
 
     def update_damage_flash_effect_timer(self):
         
@@ -390,14 +443,16 @@ class SikaDeerBoss(Generic, AI):
                 # Reset the duration timer back to None
                 self.behaviour_patterns_dict[self.current_action]["DurationTimer"] = None
 
-                # Add the current action to the previous actions dict so that its cooldown timer can count down
-                self.previous_actions_dict[self.current_action] = None
-
-                # Set the cooldown timer of the previous action to start counting down
-                self.behaviour_patterns_dict[self.current_action]["CooldownTimer"] = self.behaviour_patterns_dict[self.current_action]["Cooldown"]
-
                 # Reset the animation index
                 self.animation_index = 0
+
+                # If the current action is not "Stunned"
+                if self.current_action != "Stunned":
+                    # Set the cooldown timer of the previous action to start counting down
+                    self.behaviour_patterns_dict[self.current_action]["CooldownTimer"] = self.behaviour_patterns_dict[self.current_action]["Cooldown"]
+
+                    # Add the current action to the previous actions dict so that its cooldown timer can count down
+                    self.previous_actions_dict[self.current_action] = None
 
                 # If the current action is "Target"
                 if self.current_action == "Target":
@@ -407,11 +462,18 @@ class SikaDeerBoss(Generic, AI):
 
                     # Set the current charge direction (so that the boss cannot change direction whilst charging)
                     self.behaviour_patterns_dict["Charge"]["ChargeDirection"] = self.find_look_direction()
-                    
+
+                    # Store the current charge angle (for calculations for movement)
+                    self.behaviour_patterns_dict["Charge"]["ChargeAngle"] = self.movement_information_dict["Angle"]
+
+                    # Reset the horizontal and vertical velocity (V, A and S are updated during the charge attack)
+                    self.movement_information_dict["HorizontalSuvatU"] = 0
+                    self.movement_information_dict["VerticalSuvatU"] = 0
+                            
                     # Set the current action to Charge
                     self.current_action = "Charge"
 
-                # If the current action isn't "Charge" # ADD A CHECK HERE WHERE IF THE BOSS HAS COLLIDED WITH: A WALL, BUILDING TILE OR PLAYER DO THE REST:
+                # If the current action is "Charge
                 elif self.current_action == "Charge":
 
                     # Set the "Target" cooldown timer to be the same as the "Charge" cooldown timer (This is because the attack sequence starts with "Target" and then "Charge")
@@ -420,8 +482,20 @@ class SikaDeerBoss(Generic, AI):
                     # Reset the current charge direction back to None
                     self.behaviour_patterns_dict["Charge"]["ChargeDirection"] = None
 
-                    # Set the current action back to Chase
-                    self.current_action = "Chase"
+                    # If "EnterStunnedStateBoolean" was set to True, i.e. the boss collided a building tile
+                    if self.behaviour_patterns_dict["Charge"]["EnterStunnedStateBoolean"] == True:
+                        
+                        # Set the current action to "Stunned"
+                        self.current_action = "Stunned"
+
+                        # Set "EnterStunnedStateBoolean" back to False
+                        self.behaviour_patterns_dict["Charge"]["EnterStunnedStateBoolean"] = False
+                    
+                    # If "EnterStunnedStateBoolean" is set to False, i.e. the boss did not collide with a building tile
+                    elif self.behaviour_patterns_dict["Charge"]["EnterStunnedStateBoolean"] == False:
+                        print("SET BACK TO CHASE")
+                        # Set the current action back to Chase
+                        self.current_action = "Chase"
 
                 # If the current action isn't "Target" or "Charge"
                 elif self.current_action != "Target" or self.current_action != "Charge":
@@ -430,8 +504,6 @@ class SikaDeerBoss(Generic, AI):
                     # Note: When changed back to Chase, the "decide_action" method will be able to change to any other action
                     #### Could call decide_action here to switch between actions without going back to Chase
                     self.current_action = "Chase"
-
-
 
     def update_cooldown_timers(self):
         
@@ -579,16 +651,50 @@ class SikaDeerBoss(Generic, AI):
         # If the current action is to charge
         elif self.current_action == "Charge":
 
-            # ADD MOVEMENT HERE
-            pass 
+            # Charge attack the player
+            self.charge_attack()
 
+    def charge_attack(self):
+
+        # Responsible for changing the movement speed of the boss so that the charge attack is faster than the default movement speed
+        # Note: These will be reset back to the default values when the current action is set back to "Chase"
+
+
+        # ------------------------------------------------------------------------------
+        # Movement  
+
+        # ----------------------------------------
+        # Horizontal
+
+        # Set the horizontal distance travelled based on the current angle that the player is to the AI
+        # print(self.behaviour_patterns_dict["Charge"]["ChargeDirection"], self.movement_information_dict["HorizontalSuvatU"])
+        horizontal_distance_travelled_at_final_velocity = (self.behaviour_patterns_dict["Charge"]["ChargeDistanceTravelled"] * cos(self.behaviour_patterns_dict["Charge"]["ChargeAngle"]))
+
+        # Equation = (2s - at^2) / 2t
+        self.movement_information_dict["HorizontalSuvatV"] = (2 * horizontal_distance_travelled_at_final_velocity) / (2 * self.behaviour_patterns_dict["Charge"]["HorizontalTimeToTravelDistanceAtFinalVelocity"])
+        # Set the current acceleration of the AI depending on the current velocity of the player
+        self.movement_information_dict["HorizontalSuvatA"] = (self.movement_information_dict["HorizontalSuvatV"] - self.movement_information_dict["HorizontalSuvatU"]) / self.behaviour_patterns_dict["Charge"]["HorizontalTimeToReachFinalVelocity"]
+        
+
+        # ----------------------------------------
+        # Vertical
+
+        # Set the vertical distance travelled based on the current angle that the player is to the AI
+        vertical_distance_travelled_at_final_velocity = (self.behaviour_patterns_dict["Charge"]["ChargeDistanceTravelled"] * sin(self.behaviour_patterns_dict["Charge"]["ChargeAngle"]))
+
+        # Equation = (2s - at^2) / 2t
+        self.movement_information_dict["VerticalSuvatV"] = (2 * vertical_distance_travelled_at_final_velocity) / (2 * self.behaviour_patterns_dict["Charge"]["VerticalTimeToTravelDistanceAtFinalVelocity"])
+
+        # Set the current acceleration of the AI depending on the current velocity of the player
+        self.movement_information_dict["VerticalSuvatA"] = (self.movement_information_dict["VerticalSuvatV"] - self.movement_information_dict["VerticalSuvatU"]) / self.behaviour_patterns_dict["Charge"]["VerticalTimeToReachFinalVelocity"]
+
+        # Move the boss
+        self.move()
 
     def run(self):
         
         # Update and draw the stomp attacks (always do this so that even when the boss is dead, these are still updated)
         self.update_and_draw_stomp_attacks()
-
-        print(self.behaviour_patterns_dict["Charge"]["DurationTimer"], self.behaviour_patterns_dict["Target"]["CooldownTimer"], self.behaviour_patterns_dict["Charge"]["ChargeDirection"])
 
         # If the boss' health is greater than 0
         if self.extra_information_dict["CurrentHealth"] > 0:
@@ -600,11 +706,19 @@ class SikaDeerBoss(Generic, AI):
             pygame_draw_line(self.surface, "white", (0 - self.camera_position[0], self.rect.centery - self.camera_position[1]), (self.surface.get_width() - self.camera_position[0], self.rect.centery - self.camera_position[1]))
             pygame_draw_line(self.surface, "white", (self.rect.centerx - self.camera_position[0], 0 - self.camera_position[1]), (self.rect.centerx - self.camera_position[0], self.surface.get_height() - self.camera_position[1]))
 
-            # Draw the boss
-            self.draw(surface = self.surface, x = self.rect.x - self.camera_position[0], y = self.rect.y - self.camera_position[1])
-            
+            # Draw the boss 
+            # Note: Additional positions to center the image (this is because the animation images can vary in size)
+            self.draw(
+                surface = self.surface, 
+                x = (self.rect.x - ((self.image.get_width() / 2)  - (self.rect.width / 2))) - self.camera_position[0], 
+                y = (self.rect.y - ((self.image.get_height() / 2) - (self.rect.height / 2))) - self.camera_position[1]
+                    )
+
             # Play animations
             self.play_animations()
+
+            # Create / update a mask for pixel - perfect collisions
+            self.mask = pygame_mask_from_surface(self.image)
 
             # Update the duration timers
             self.update_duration_timers()
@@ -615,12 +729,9 @@ class SikaDeerBoss(Generic, AI):
             # Update the knockback collision idle timer
             self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
 
-            # # TEMPORARY
-            # for tile in self.neighbouring_tiles_dict.keys():
-            #     pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
-
-            # Create / update a mask for pixel - perfect collisions
-            self.mask = pygame_mask_from_surface(self.image)
+            # TEMPORARY
+            for tile in self.neighbouring_tiles_dict.keys():
+                pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
         # If the boss' health is less than 0
         if self.extra_information_dict["CurrentHealth"] <= 0:
