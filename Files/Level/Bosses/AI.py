@@ -19,7 +19,7 @@ class AI:
     # Reminder: If adding more bosses, you can have these class attributes set as instance attributes
 
 
-    def __init__(self):
+    def __init__(self, max_health, knockback_damage ):
         
         # Dictionary containing information involving the movement of the AI
         self.movement_information_dict = {
@@ -59,6 +59,26 @@ class AI:
                                         "WorldTileCollisionResultsY": False        
                                         }
         
+        # A dictionary containing extra information about the Sika deer boss
+        self.extra_information_dict = {    
+                                        # Health
+                                        "CurrentHealth": max_health,
+                                        "MaximumHealth": max_health,
+
+                                        # Knockback damage
+                                        "KnockbackDamage": knockback_damage,
+
+                                        # Damage flash effect
+                                        "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the boss is damaged
+                                        "DamagedFlashEffectTimer": None,
+
+                                        # No-action timer
+                                        # Note: Used so that the boss does not use actions (other than "Chase", in quick succession):
+                                        "NoActionTime": 8500,
+                                        "NoActionTimer": None
+                                      }
+
+
         # Dictionary used to hold the neighbouring tiles near the AI(i.e. within 1 tile of the AI, movemently and vertically)
         self.neighbouring_tiles_dict = {}
 
@@ -280,23 +300,6 @@ class AI:
             # Set the vertical distance travelled based on the current velocity of the boss
             self.movement_information_dict["VerticalSuvatS"] = ((self.movement_information_dict["VerticalSuvatU"] * self.movement_information_dict["DeltaTime"]) + (0.5 * self.movement_information_dict["VerticalSuvatA"] * (self.movement_information_dict["DeltaTime"] ** 2)))
 
-    def update_knockback_collision_idle_timer(self, delta_time):
-        
-        # Updates the knockback collision idle timer (The period of time the AI will idle after knocking back the player)
-        
-        # If there has been a timer set to count down
-        if self.movement_information_dict["KnockbackCollisionIdleTimer"] != None:
-            
-            # If the timer has not finished counting
-            if self.movement_information_dict["KnockbackCollisionIdleTimer"] > 0:
-                # Decrease the timer
-                self.movement_information_dict["KnockbackCollisionIdleTimer"] -= 1000  * delta_time
-
-            # If the timer has finished counting
-            if self.movement_information_dict["KnockbackCollisionIdleTimer"] <= 0:
-                # Reset the timer back to None
-                self.movement_information_dict["KnockbackCollisionIdleTimer"] = None
-
     def handle_tile_collisions(self, distance_to_travel, check_x, check_y):
         
         # Handles collisions between tiles and the AI
@@ -460,3 +463,39 @@ class AI:
 
                 # Set dy as 0 (i.e. don't move)
                 self.movement_information_dict["Dy"] = 0
+
+    # ---------------------------------------------------------
+    # Timers
+
+    def update_knockback_collision_idle_timer(self, delta_time):
+        
+        # Updates the knockback collision idle timer (The period of time the AI will idle after knocking back the player)
+        
+        # If there has been a timer set to count down
+        if self.movement_information_dict["KnockbackCollisionIdleTimer"] != None:
+            
+            # If the timer has not finished counting
+            if self.movement_information_dict["KnockbackCollisionIdleTimer"] > 0:
+                # Decrease the timer
+                self.movement_information_dict["KnockbackCollisionIdleTimer"] -= 1000  * delta_time
+
+            # If the timer has finished counting
+            if self.movement_information_dict["KnockbackCollisionIdleTimer"] <= 0:
+                # Reset the timer back to None
+                self.movement_information_dict["KnockbackCollisionIdleTimer"] = None
+
+    def update_no_action_timer(self, delta_time):
+        # Updates the no action timer (The period of time the AI cannot do an action (other than "Chase") after performing a different action)
+
+        # If there has been a timer set for no action
+        if self.extra_information_dict["NoActionTimer"] != None:
+
+            # If the timer has not finished counting
+            if self.extra_information_dict["NoActionTimer"] > 0:
+                # Decrease the timer
+                self.extra_information_dict["NoActionTimer"] -= 1000 * delta_time
+            
+            # If the timer has finished counting
+            if self.extra_information_dict["NoActionTimer"] <= 0:
+                # Set the no action timer back to None
+                self.extra_information_dict["NoActionTimer"] = None

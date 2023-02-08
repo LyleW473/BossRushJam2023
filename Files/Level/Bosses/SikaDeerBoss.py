@@ -21,6 +21,9 @@ class SikaDeerBoss(Generic, AI):
     # ImagesDict = ?? (This is set when the boss is instantiated)
     # Example: Stomp : [Image list]
 
+    knockback_damage = 20
+    maximum_health = 20000
+
 
     def __init__(self, x, y, surface, scale_multiplier):
 
@@ -38,7 +41,7 @@ class SikaDeerBoss(Generic, AI):
         self.rect.midbottom = (x, y)
 
         # Inherit from the AI class
-        AI.__init__(self)
+        AI.__init__(self, max_health = SikaDeerBoss.maximum_health, knockback_damage = SikaDeerBoss.knockback_damage)
 
         """ List of "hidden" added attributes
         self.delta_time
@@ -71,8 +74,8 @@ class SikaDeerBoss(Generic, AI):
                                             "Duration": 3000, 
                                             "DurationTimer": None, # Timer used to check if the attack is over
 
-                                            "Cooldown": 10000, 
-                                            "CooldownTimer": 10000, # Delayed cooldown to when the boss can first use the stomp attackddd
+                                            "Cooldown": 13000, 
+                                            "CooldownTimer": 10000, # Delayed cooldown to when the boss can first use the stomp attack
 
                                             # The variation of the stomp for one entire stomp attack
                                             "StompAttackVariation": 0
@@ -88,7 +91,7 @@ class SikaDeerBoss(Generic, AI):
                                     "Target": { 
                                             "Duration": 1000,
                                             "DurationTimer": None,
-                                            "CooldownTimer": 1000,  # This will be set to be the charge cooldown after the attack has completed (Change this number if you want to delay when the boss can first charge attack)
+                                            "CooldownTimer": 8000,  # This will be set to be the charge cooldown after the attack has completed (Change this number if you want to delay when the boss can first charge attack)
                                             "Cooldown": 50000, # Set to random number, this will be changed once the charge attack has finished
                                             "FullAnimationDuration": 150,
                                             },
@@ -97,7 +100,7 @@ class SikaDeerBoss(Generic, AI):
 
                                             "Duration": 2000, # The maximum duration that the boss will charge for
                                             "DurationTimer": None,
-                                            "Cooldown": 12000,
+                                            "Cooldown": 10000,
                                             "CooldownTimer": None,
                                             "FullAnimationDuration": 150,
                                             
@@ -131,22 +134,6 @@ class SikaDeerBoss(Generic, AI):
         
         # Declare the animation attributes
         self.declare_animation_attributes()
-
-        # A dictionary containing extra information about the Sika deer boss
-        self.extra_information_dict = {    
-                                        # Health
-                                        "CurrentHealth": 20000,
-                                        "MaximumHealth": 20000,
-
-                                        # Damage flash effect
-                                        "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the boss is damaged
-                                        "DamagedFlashEffectTimer": None,
-
-                                        # Knockback damage
-                                        "KnockbackDamage": 20,
-                                        
-                                      }
-        
 
     # ----------------------------------------------------------------------------------
     # Animations
@@ -429,9 +416,10 @@ class SikaDeerBoss(Generic, AI):
 
         # Updates the duration timer of the current action 
         # If the duration timer is over, the action is added to the previous actions list so that their cooldown timer can be updated
-
+        
         # If the current action is not "Chase" (Chase does not have a duration timer)
         if self.current_action != "Chase":
+            
             
             # If the current action's duration timer has not finished counting down
             if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] > 0:
@@ -446,7 +434,7 @@ class SikaDeerBoss(Generic, AI):
                 # Reset the animation index
                 self.animation_index = 0
 
-                # If the current action is not "Stunned"
+                # If the current action is not "Stunned" ("Stunned" does not have a cooldown timer)
                 if self.current_action != "Stunned":
                     # Set the cooldown timer of the previous action to start counting down
                     self.behaviour_patterns_dict[self.current_action]["CooldownTimer"] = self.behaviour_patterns_dict[self.current_action]["Cooldown"]
@@ -476,6 +464,9 @@ class SikaDeerBoss(Generic, AI):
                 # If the current action is "Charge
                 elif self.current_action == "Charge":
 
+                    # Set the no action timer to start counting down
+                    self.extra_information_dict["NoActionTimer"] = self.extra_information_dict["NoActionTime"]
+
                     # Set the "Target" cooldown timer to be the same as the "Charge" cooldown timer (This is because the attack sequence starts with "Target" and then "Charge")
                     self.behaviour_patterns_dict["Target"]["CooldownTimer"] = self.behaviour_patterns_dict["Charge"]["CooldownTimer"]
 
@@ -484,25 +475,28 @@ class SikaDeerBoss(Generic, AI):
 
                     # If "EnterStunnedStateBoolean" was set to True, i.e. the boss collided a building tile
                     if self.behaviour_patterns_dict["Charge"]["EnterStunnedStateBoolean"] == True:
-                        
                         # Set the current action to "Stunned"
                         self.current_action = "Stunned"
-
                         # Set "EnterStunnedStateBoolean" back to False
                         self.behaviour_patterns_dict["Charge"]["EnterStunnedStateBoolean"] = False
                     
                     # If "EnterStunnedStateBoolean" is set to False, i.e. the boss did not collide with a building tile
                     elif self.behaviour_patterns_dict["Charge"]["EnterStunnedStateBoolean"] == False:
-                        print("SET BACK TO CHASE")
                         # Set the current action back to Chase
                         self.current_action = "Chase"
 
-                # If the current action isn't "Target" or "Charge"
-                elif self.current_action != "Target" or self.current_action != "Charge":
-                        
+                # If the current action is to "Stomp"
+                elif self.current_action == "Stomp":
+
+                    # Set the no action timer to start counting down
+                    self.extra_information_dict["NoActionTimer"] = self.extra_information_dict["NoActionTime"]
+
                     # Set the current action back to Chase
-                    # Note: When changed back to Chase, the "decide_action" method will be able to change to any other action
-                    #### Could call decide_action here to switch between actions without going back to Chase
+                    self.current_action = "Chase"
+                
+                # If the current action is "Stunned"
+                elif self.current_action == "Stunned":
+                    # Set the current action back to Chase
                     self.current_action = "Chase"
 
     def update_cooldown_timers(self):
@@ -612,15 +606,15 @@ class SikaDeerBoss(Generic, AI):
     def decide_action(self):
 
         # The main "brain" of the deer boss, which will decide on what action to perform
-        
-        # If the current action is chasing
+
+        # If the current action is "Chase"
         if self.current_action == "Chase":
             
             # Create a list of all the actions that the AI can currently perform, if the action's cooldown timer is None
             action_list = [action for action in self.behaviour_patterns_dict.keys() if (action == "Stomp" or action == "Target") and self.behaviour_patterns_dict[action]["CooldownTimer"] == None]
 
-            # If there are any possible actions that the boss can perform
-            if len(action_list) > 0:
+            # If there are any possible actions that the boss can perform (other than "Chase") and the boss has not performed an action recently
+            if len(action_list) > 0 and self.extra_information_dict["NoActionTimer"] == None:
 
                 # Reset the animation index whenever we change the action
                 self.animation_index = 0
@@ -628,7 +622,7 @@ class SikaDeerBoss(Generic, AI):
                 # Choose a random action from the possible actions the boss can perform and set it as the current action
                 self.current_action = random_choice(action_list)
 
-                print("SET TO", self.current_action, self.animation_index)
+                # print("SET TO", self.current_action, self.animation_index)
 
                 # If the current action that was chosen was "Target", and target duration timer has not been set to start counting down yet
                 if self.current_action == "Target" and self.behaviour_patterns_dict["Target"]["DurationTimer"] == None:
@@ -643,15 +637,14 @@ class SikaDeerBoss(Generic, AI):
                     # Reset the movement acceleration
                     self.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
 
-            # If there are no possible actions that the boss can perform
-            elif len(action_list) == 0: 
+            # If there are no possible actions that the boss can perform or the boss has performed an action recently
+            elif len(action_list) == 0 or self.extra_information_dict["NoActionTimer"] != None: 
                 # Continue chasing the player
                 self.chase_player()
         
         # If the current action is to charge
         elif self.current_action == "Charge":
-
-            # Charge attack the player
+            # Perform the charge attack 
             self.charge_attack()
 
     def charge_attack(self):
@@ -728,6 +721,9 @@ class SikaDeerBoss(Generic, AI):
 
             # Update the knockback collision idle timer
             self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
+
+            # Update the no action timer
+            self.update_no_action_timer(delta_time = self.delta_time)
 
             # TEMPORARY
             for tile in self.neighbouring_tiles_dict.keys():
