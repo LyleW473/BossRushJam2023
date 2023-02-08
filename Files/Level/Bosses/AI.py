@@ -1,4 +1,4 @@
-from math import atan2, pi, cos, dist, sin
+from math import atan2, pi, cos, dist, sin, copysign
 from Global.settings import TILE_SIZE
 from pygame import Rect as pygame_Rect
 
@@ -38,6 +38,12 @@ class AI:
                                         "Dy": 0,
                                         "CollisionTolerance": 12,
 
+                                        # Small floating point numbers storage    
+                                        # Note: This is used for values that are less than 1, so the boss will actually continue to move 
+                                        "FloatingPointCorrectionX": 0,
+                                        "FloatingPointCorrectionY": 0,
+                                             
+                                        # The distance the AI has to be away from the player to stop chasing them
                                         "DistanceThreshold": 0,
 
                                         # Starting velocity for accelerated movement, these will be changed over time     
@@ -48,11 +54,9 @@ class AI:
                                         "KnockbackCollisionIdleTime": 400,
                                         "KnockbackCollisionIdleTimer": None,
                                         
-
+                                        # World tile collision results (For cancelling the charge state for the Sika Deer.)
                                         "WorldTileCollisionResultsX": False, 
-                                        "WorldTileCollisionResultsY": False                          
-
-                                        
+                                        "WorldTileCollisionResultsY": False        
                                         }
         
         # Dictionary used to hold the neighbouring tiles near the AI(i.e. within 1 tile of the AI, movemently and vertically)
@@ -92,8 +96,12 @@ class AI:
             # -----------------
             # Handling collisions and setting the AI's position
 
-            # Handle tile collisions using the horizontal distance to travel
-            self.handle_tile_collisions(distance_to_travel = self.movement_information_dict["HorizontalSuvatS"], check_x = True, check_y = False)
+            # Handle tile collisions using the horizontal distance to travel (and any additional floating point numbers that were not counted previously)
+            self.handle_tile_collisions(
+                                        distance_to_travel = self.movement_information_dict["HorizontalSuvatS"] + self.movement_information_dict["FloatingPointCorrectionX"], 
+                                        check_x = True, 
+                                        check_y = False
+                                        )
 
             # If int(dx) != 0
             if int(self.movement_information_dict["Dx"]) != 0:
@@ -147,8 +155,12 @@ class AI:
             # -----------------
             # Handling collisions and setting the AI's position
 
-            # Handle tile collisions using the vertical distance to travel
-            self.handle_tile_collisions(distance_to_travel = self.movement_information_dict["VerticalSuvatS"], check_x = False, check_y = True)
+            # Handle tile collisions using the vertical distance to travel (and any additional floating point numbers that were not counted previously)
+            self.handle_tile_collisions(
+                                        distance_to_travel = self.movement_information_dict["VerticalSuvatS"] + self.movement_information_dict["FloatingPointCorrectionY"], 
+                                        check_x = False, 
+                                        check_y = True
+                                        )
 
             # If int(dy) != 0
             if int(self.movement_information_dict["Dy"]) != 0:
@@ -298,117 +310,153 @@ class AI:
         the collision results (i.e. self.movement_information_dict["WorldTileCollisionResultsX"] and self.movement_information_dict["WorldTileCollisionResultsY"])
         """
 
-        # ---------------------------------------------------------------------------------
-        # Horizontal collisions
-        
-        if check_x == True:
-
-            # Find the x collisions to the left and right of the AI
-            x_collisions_left = pygame_Rect(self.rect.x - abs(round(distance_to_travel)) , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
-            x_collisions_right = pygame_Rect(self.rect.x + abs(round(distance_to_travel)) , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
-
-
-            # If there is an x collision to the right of the AI
-            if x_collisions_right != None:
-
-                # Set the world tiles collision results x to True
-                self.movement_information_dict["WorldTileCollisionResultsX"] = True
-
-                # If the difference between the AI's right and the tile's left is less than the collision tolerance (there is a collision) and the AI is trying to move right
-                if abs(self.rect.right - x_collisions_right[0].rect.left) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["HorizontalSuvatU"] > 0:
-                    # Set the AI's right to the tile's left
-                    self.rect.right = x_collisions_right[0].rect.left
-                    # Don't allow the AI to move
-                    self.movement_information_dict["Dx"] = 0
-                    # Reset the horizontal acceleration only
-                    self.reset_movement_acceleration(vertical_reset = False, horizontal_reset = True)
-
-                # If the difference between the AI's right and the tile's left is less than the collision tolerance (there is a collision) and the AI is trying to move in any direction but right
-                elif abs(self.rect.right - x_collisions_right[0].rect.left) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["HorizontalSuvatU"] < 0:
-                    # Allow the AI to move
-                    self.movement_information_dict["Dx"] = distance_to_travel
-
-            # If there is an x collision to the left of the AI
-            if x_collisions_left != None:
-
-                # Set the world tiles collision results x to True
-                self.movement_information_dict["WorldTileCollisionResultsX"] = True
-
-                # If the difference between the AI's left and the tile's right is less than the collision tolerance (there is a collision) and the AI is trying to move left
-                if abs(self.rect.left - x_collisions_left[0].rect.right) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["HorizontalSuvatU"] < 0:
-                    # Set the AI's left to the tile's right
-                    self.rect.left = x_collisions_left[0].rect.right
-                    # Don't allow the AI to move
-                    self.movement_information_dict["Dx"] = 0
-                    # Reset the horizontal acceleration only
-                    self.reset_movement_acceleration(vertical_reset = False, horizontal_reset = True)
-                    
-                # If the difference between the AI's left and the tile's right is less than the collision tolerance (there is a collision) and the AI is trying to move in any direction but left
-                elif abs(self.rect.left - x_collisions_left[0].rect.right) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["HorizontalSuvatU"] > 0:
-                    # Allow the AI to move
-                    self.movement_information_dict["Dx"] = distance_to_travel
-
-            # If there is no x collision to the left of the AI and there is no x collision to the right of the AI
-            elif x_collisions_left == None and x_collisions_right == None:
-                # Allow the AI to move
-                self.movement_information_dict["Dx"] = distance_to_travel
-
-                # Set the world tiles collision results x to False
-                self.movement_information_dict["WorldTileCollisionResultsX"] = False
-
-        # ---------------------------------------------------------------------------------
-        # Vertical collisions      
-
-        elif check_y == True:
-
-            # Find the collisions above and below the AI
-            y_collisions_up = pygame_Rect(self.rect.x, self.rect.y - abs(round(distance_to_travel)), self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
-            y_collisions_down = pygame_Rect(self.rect.x, self.rect.y + abs(round(distance_to_travel)), self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)  
-
-            # If there is an y collision above the AI
-            if y_collisions_up != None:
-
-                # Set the world tiles collision results y to True
-                self.movement_information_dict["WorldTileCollisionResultsY"] = True
+        # If the distance to travel is greater or equal to 1
+        if abs(distance_to_travel) >= 1:
+            # ---------------------------------------------------------------------------------
+            # Horizontal collisions
             
-                # If the difference between the AI's top and the tile's bottom is less than the collision tolerance (there is a collision) and the AI is trying to move up
-                if abs(self.rect.top - y_collisions_up[0].rect.bottom) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["VerticalSuvatU"] > 0:
-                    # Set the AI's top to the tile's bottom
-                    self.rect.top = y_collisions_up[0].rect.bottom
-                    # Don't allow the AI to move
-                    self.movement_information_dict["Dy"] = 0
-                    # Reset the vertical acceleration only
-                    self.reset_movement_acceleration(vertical_reset = True, horizontal_reset = False)
+            if check_x == True:
 
-                # If the difference between the AI's top and the tile's bottom is less than the collision tolerance (there is a collision) and the AI is trying to move in any direction but up
-                elif abs(self.rect.top - y_collisions_up[0].rect.bottom) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["VerticalSuvatU"] < 0:
+                # Find the x collisions to the left and right of the AI
+                x_collisions_left = pygame_Rect(self.rect.x - abs(distance_to_travel) , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
+                x_collisions_right = pygame_Rect(self.rect.x + abs(distance_to_travel) , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
+
+
+                # If there is an x collision to the right of the AI
+                if x_collisions_right != None:
+
+                    # Set the world tiles collision results x to True
+                    self.movement_information_dict["WorldTileCollisionResultsX"] = True
+
+                    # If the difference between the AI's right and the tile's left is less than the collision tolerance (there is a collision) and the AI is trying to move right
+                    if abs(self.rect.right - x_collisions_right[0].rect.left) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["HorizontalSuvatU"] > 0:
+                        # Set the AI's right to the tile's left
+                        self.rect.right = x_collisions_right[0].rect.left
+                        # Don't allow the AI to move
+                        self.movement_information_dict["Dx"] = 0
+                        # Reset the horizontal acceleration only
+                        self.reset_movement_acceleration(vertical_reset = False, horizontal_reset = True)
+
+                    # If the difference between the AI's right and the tile's left is less than the collision tolerance (there is a collision) and the AI is trying to move in any direction but right
+                    elif abs(self.rect.right - x_collisions_right[0].rect.left) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["HorizontalSuvatU"] < 0:
+                        # Allow the AI to move
+                        self.movement_information_dict["Dx"] = distance_to_travel
+                        # Reset floating point correction X
+                        self.movement_information_dict["FloatingPointCorrectionX"] = 0
+
+                # If there is an x collision to the left of the AI
+                if x_collisions_left != None:
+
+                    # Set the world tiles collision results x to True
+                    self.movement_information_dict["WorldTileCollisionResultsX"] = True
+
+                    # If the difference between the AI's left and the tile's right is less than the collision tolerance (there is a collision) and the AI is trying to move left
+                    if abs(self.rect.left - x_collisions_left[0].rect.right) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["HorizontalSuvatU"] < 0:
+                        # Set the AI's left to the tile's right
+                        self.rect.left = x_collisions_left[0].rect.right
+                        # Don't allow the AI to move
+                        self.movement_information_dict["Dx"] = 0
+                        # Reset the horizontal acceleration only
+                        self.reset_movement_acceleration(vertical_reset = False, horizontal_reset = True)
+                        
+                    # If the difference between the AI's left and the tile's right is less than the collision tolerance (there is a collision) and the AI is trying to move in any direction but left
+                    elif abs(self.rect.left - x_collisions_left[0].rect.right) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["HorizontalSuvatU"] > 0:
+                        # Allow the AI to move
+                        self.movement_information_dict["Dx"] = distance_to_travel
+                        # Reset floating point correction X
+                        self.movement_information_dict["FloatingPointCorrectionX"] = 0
+                    
+                # If there is no x collision to the left of the AI and there is no x collision to the right of the AI
+                elif x_collisions_left == None and x_collisions_right == None:
                     # Allow the AI to move
-                    self.movement_information_dict["Dy"] = distance_to_travel
+                    self.movement_information_dict["Dx"] = distance_to_travel
 
-            # If there is an y collision below the AI
-            if y_collisions_down != None:
+                    # Set the world tiles collision results x to False
+                    self.movement_information_dict["WorldTileCollisionResultsX"] = False
 
-                # Set the world tiles collision results y to True
-                self.movement_information_dict["WorldTileCollisionResultsY"] = True
+                    # Reset floating point correction X
+                    self.movement_information_dict["FloatingPointCorrectionX"] = 0
+
+            # ---------------------------------------------------------------------------------
+            # Vertical collisions      
+
+            elif check_y == True:
+
+                # Find the collisions above and below the AI
+                y_collisions_up = pygame_Rect(self.rect.x, self.rect.y - abs(distance_to_travel), self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
+                y_collisions_down = pygame_Rect(self.rect.x, self.rect.y + abs(distance_to_travel), self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)  
+
+                # If there is an y collision above the AI
+                if y_collisions_up != None:
+
+                    # Set the world tiles collision results y to True
+                    self.movement_information_dict["WorldTileCollisionResultsY"] = True
                 
-                # If the difference between the AI's bottom and the tile's top is less than the collision tolerance (there is a collision) and the AI is trying to move down
-                if abs(self.rect.bottom - y_collisions_down[0].rect.top) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["VerticalSuvatU"] < 0:
-                    # Set the AI's bottom to the tile's top
-                    self.rect.bottom = y_collisions_down[0].rect.top
-                    # Don't allow the AI to move
-                    self.movement_information_dict["Dy"] = 0
-                    # Reset the vertical acceleration only
-                    self.reset_movement_acceleration(vertical_reset = True, horizontal_reset = False)
+                    # If the difference between the AI's top and the tile's bottom is less than the collision tolerance (there is a collision) and the AI is trying to move up
+                    if abs(self.rect.top - y_collisions_up[0].rect.bottom) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["VerticalSuvatU"] > 0:
+                        # Set the AI's top to the tile's bottom
+                        self.rect.top = y_collisions_up[0].rect.bottom
+                        # Don't allow the AI to move
+                        self.movement_information_dict["Dy"] = 0
+                        # Reset the vertical acceleration only
+                        self.reset_movement_acceleration(vertical_reset = True, horizontal_reset = False)
 
-                # If the difference between the AI's bottom and the tile's top is less than the collision tolerance (there is a collision) and the AI is trying to move in any direction but down
-                elif abs(self.rect.bottom - y_collisions_down[0].rect.top) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["VerticalSuvatU"] > 0:
+                    # If the difference between the AI's top and the tile's bottom is less than the collision tolerance (there is a collision) and the AI is trying to move in any direction but up
+                    elif abs(self.rect.top - y_collisions_up[0].rect.bottom) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["VerticalSuvatU"] < 0:
+                        # Allow the AI to move
+                        self.movement_information_dict["Dy"] = distance_to_travel
+                        # Reset floating point correction Y
+                        self.movement_information_dict["FloatingPointCorrectionY"] = 0
+
+                # If there is an y collision below the AI
+                if y_collisions_down != None:
+
+                    # Set the world tiles collision results y to True
+                    self.movement_information_dict["WorldTileCollisionResultsY"] = True
+                    
+                    # If the difference between the AI's bottom and the tile's top is less than the collision tolerance (there is a collision) and the AI is trying to move down
+                    if abs(self.rect.bottom - y_collisions_down[0].rect.top) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["VerticalSuvatU"] < 0:
+                        # Set the AI's bottom to the tile's top
+                        self.rect.bottom = y_collisions_down[0].rect.top
+                        # Don't allow the AI to move
+                        self.movement_information_dict["Dy"] = 0
+                        # Reset the vertical acceleration only
+                        self.reset_movement_acceleration(vertical_reset = True, horizontal_reset = False)
+
+                    # If the difference between the AI's bottom and the tile's top is less than the collision tolerance (there is a collision) and the AI is trying to move in any direction but down
+                    elif abs(self.rect.bottom - y_collisions_down[0].rect.top) < self.movement_information_dict["CollisionTolerance"] and self.movement_information_dict["VerticalSuvatU"] > 0:
+                        # Allow the AI to move
+                        self.movement_information_dict["Dy"] = distance_to_travel
+                        # Reset floating point correction Y
+                        self.movement_information_dict["FloatingPointCorrectionY"] = 0
+
+                # If there is no y collision above the AI and there is no y collision below the AI
+                elif y_collisions_up == None and y_collisions_down == None:
                     # Allow the AI to move
                     self.movement_information_dict["Dy"] = distance_to_travel
 
-            # If there is no y collision above the AI and there is no y collision below the AI
-            elif y_collisions_up == None and y_collisions_down == None:
-                # Allow the AI to move
-                self.movement_information_dict["Dy"] = distance_to_travel
+                    # Set the world tiles collision results y to False
+                    self.movement_information_dict["WorldTileCollisionResultsY"] = False
 
-                # Set the world tiles collision results y to False
-                self.movement_information_dict["WorldTileCollisionResultsY"] = False
+                    # Reset floating point correction Y
+                    self.movement_information_dict["FloatingPointCorrectionY"] = 0
+
+        # If the distance to travel is less than 1 (i.e a small floating point number, where collisions are inaccurate)
+        # Note: (This is because pygame Rect's truncate floating point values so e.g. 250 + 0.25 = 250, so the collision checking would not work)
+        elif abs(distance_to_travel) < 1:
+
+            # If this distance to travel is horizontal movement
+            if check_x == True:
+                # Add the floating point number to the sum of floating points collected so far
+                self.movement_information_dict["FloatingPointCorrectionX"] += distance_to_travel
+
+                # Set dx as 0 (i.e. don't move)
+                self.movement_information_dict["Dx"] = 0
+
+            # If this distance to travel is vertical
+            elif check_y == True:
+                # Add the floating point number to the sum of floating points collected so far
+                self.movement_information_dict["FloatingPointCorrectionY"] += distance_to_travel
+
+                # Set dy as 0 (i.e. don't move)
+                self.movement_information_dict["Dy"] = 0

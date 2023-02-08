@@ -88,7 +88,7 @@ class SikaDeerBoss(Generic, AI):
                                     "Target": { 
                                             "Duration": 1000,
                                             "DurationTimer": None,
-                                            "CooldownTimer": 1000,  # This will be set to be the charge cooldown after the attack has completed
+                                            "CooldownTimer": 1000,  # This will be set to be the charge cooldown after the attack has completed (Change this number if you want to delay when the boss can first charge attack)
                                             "Cooldown": 50000, # Set to random number, this will be changed once the charge attack has finished
                                             "FullAnimationDuration": 150,
                                             },
@@ -106,11 +106,11 @@ class SikaDeerBoss(Generic, AI):
                                             "EnterStunnedStateBoolean": False, # A boolean value that represents whether the boss has collided with the player during the charge attack"
 
                                             # Movement (Keep the time values to be less than the full charge duration)
-                                            "ChargeDistanceTravelled": 5 * TILE_SIZE,
-                                            "HorizontalTimeToTravelDistanceAtFinalVelocity": 0.2, # Keep these values the same as the Charge duration
-                                            "VerticalTimeToTravelDistanceAtFinalVelocity": 0.2, # Keep these values the same as the Charge duration
-                                            "HorizontalTimeToReachFinalVelocity": 0.1,
-                                            "VerticalTimeToReachFinalVelocity": 0.1,
+                                            "ChargeDistanceTravelled": 10 * TILE_SIZE,
+                                            "HorizontalTimeToTravelDistanceAtFinalVelocity": 0.15, 
+                                            "VerticalTimeToTravelDistanceAtFinalVelocity": 0.15, 
+                                            "HorizontalTimeToReachFinalVelocity": 0.25,
+                                            "VerticalTimeToReachFinalVelocity": 0.25,
 
 
                                                 },
