@@ -794,7 +794,7 @@ class GameUI:
         # If there are any angled polygons to draw
         if hasattr(self, "angled_polygons_controller") and len(self.angled_polygons_controller.polygons_dict) > 0:
             # Draw the angled polygons
-            self.angled_polygons_controller.draw(camera_position = camera_position, delta_time = delta_time)
+            self.angled_polygons_controller.draw(delta_time = delta_time, camera_position = camera_position)
 
         # Blit the angled polygons surface onto the main surface
         self.surface.blit(self.angled_polygons_surface, (0, 0))

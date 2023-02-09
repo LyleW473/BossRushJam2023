@@ -26,7 +26,7 @@ class AngledPolygons:
         # Attribute set to True whenever the user wants to switch the colour palette
         self.switch_colour_palette = False
 
-    def create_polygons(self, origin_point = None, look_angle = None, hypot_length = 50, polygon_sides_angle_change = 15, distance_to_travel = 3, time_to_travel_distance = 0.5, colour_palette = None, blend_rgb_add_boolean = None):  
+    def create_polygons(self, origin_point = None, look_angle = None, hypot_length = 50, polygon_sides_angle_change = 15, distance_to_travel = 3, time_to_travel_distance = 0.5, colour_palette = None, blend_rgb_add_boolean = None):
 
         # ------------------------------------------------------------------
         # Creating the polygon
@@ -48,10 +48,10 @@ class AngledPolygons:
 
         # Creating the polygon points
         self.points_list = [                          
-                            [0, 0],
-                            [(polygon_hypot * math.cos(angle)), - (polygon_hypot * math.sin(angle))],
-                            [(left_point_length * math.cos(left_point_angle)), - (left_point_length * math.sin(left_point_angle))],
-                            [(right_point_length * math.cos(right_point_angle)), - (right_point_length * math.sin(right_point_angle))],
+                            [origin_point[0], origin_point[1]],
+                            [origin_point[0] + (polygon_hypot * math.cos(angle)), origin_point[1] - (polygon_hypot * math.sin(angle))],
+                            [origin_point[0] + (left_point_length * math.cos(left_point_angle)), origin_point[1] - (left_point_length * math.sin(left_point_angle))],
+                            [origin_point[0] + (right_point_length * math.cos(right_point_angle)), (origin_point[1] - (right_point_length * math.sin(right_point_angle)))],
                             
         ]
 
@@ -151,9 +151,7 @@ class AngledPolygons:
         - id = Used to remove the polygon from the list once it has travelled the full distance
         - distance_travelled = Holds the distance travelled on the x and y axis
         - gradients = The gradients / rate of change of the x and y co-ordinates based on the distance the polygon needs to travel and the time period given
-        - dimensions_list = The ordered list of all the points of the polygon. "Dimensions" because the polygon needs to be drawn at starting at (0, 0) of the polygon surface.
-        - drawing_position = The position (i.e. co-ordinate) that the polygon surface will be drawn at
-        - "
+        - ordered_points_list = The ordered list of all the points of the polygon.
         """ 
         self.polygons_dict[self.polygons_created] = {
             "id": self.polygons_created,
@@ -162,66 +160,38 @@ class AngledPolygons:
             "gradients": ((distance_polygon_must_travel_to_disappear * math.cos(angle))/ time_to_travel_distance, (distance_polygon_must_travel_to_disappear * math.sin(angle)) / time_to_travel_distance),
             "colour": self.polygons_colour_palettes[colour_palette][random.randint(0, len(self.polygons_colour_palettes[colour_palette]) - 1)],
             "polygon_surface": pygame.Surface((polygon_width, polygon_height)),
-            "dimensions_list": self.ordered_points_list,
-            "drawing_position" : origin_point,
+            "ordered_points_list": self.ordered_points_list,
             "blend_rgb_add_boolean": blend_rgb_add_boolean
             }
-
 
         # Increment the number of polygons created
         self.polygons_created += 1
 
-    def draw(self, camera_position, delta_time):     
+    def draw(self, delta_time, camera_position):     
         
         # Loop through the dictionary of each polygon
         for polygon_points_dict in self.polygons_dict.copy().values():
             
-
             # If the polygon has not travelled the complete distance
             if math.sqrt((polygon_points_dict["distance_travelled"][0] ** 2) + (polygon_points_dict["distance_travelled"][1] ** 2)) < polygon_points_dict["distance_polygon_must_travel_to_disappear"]:
 
-                # Increasing the x position of the polygon
-                polygon_points_dict["drawing_position"][0] += polygon_points_dict["gradients"][0] * delta_time
-                polygon_points_dict["distance_travelled"][0] += abs(polygon_points_dict["gradients"][0] * delta_time)
+                # For all points inside the ordered polygon points list
+                for i in range(0, len(polygon_points_dict["ordered_points_list"])):
+                    # Increasing the x position of the polygon
+                    polygon_points_dict["ordered_points_list"][i][0] += polygon_points_dict["gradients"][0] * delta_time
+                    # Increasing the y position of the polygon
+                    polygon_points_dict["ordered_points_list"][i][1] -= polygon_points_dict["gradients"][1] * delta_time
 
-                # Increasing the y position of the polygon
-                polygon_points_dict["drawing_position"][1] -= polygon_points_dict["gradients"][1] * delta_time
+                # Increase the distance travelled by the entire polygon
+                polygon_points_dict["distance_travelled"][0] += abs(polygon_points_dict["gradients"][0] * delta_time)
                 polygon_points_dict["distance_travelled"][1] += abs(polygon_points_dict["gradients"][1] * delta_time)
 
-                # Draw the polygon onto the polygon surface
-                polygon_points_dict["polygon_surface"].set_colorkey("black")
-                polygon_points_dict["polygon_surface"].fill("black")
-                pygame.draw.polygon(polygon_points_dict["polygon_surface"], polygon_points_dict["colour"], polygon_points_dict["dimensions_list"])
+                # Create a generator for the polygon points, minus the camera position (Where the polygon will be drawn) 
+                # Note: This is converted into a tuple to save memory
+                camera_polygon_points = ([polygon_points_dict["ordered_points_list"][i][0] - camera_position[0], polygon_points_dict["ordered_points_list"][i][1] - camera_position[1] ] for i in range(0, len(polygon_points_dict["ordered_points_list"])))
 
-                # Draw the polygon surface onto the main surface, with the special flag
-                """ The destination subtracts the dx and dy ,between the drawing position and the origin point, from the drawing position
-                This is so that the polygon surface is drawn at the correct position that clearly illustrates which direction the polygon is pointing towards"""
-
-
-                # Draw the polygon surface onto the main surface, with the special flag
-                """ The destination subtracts the dx and dy ,between the drawing position and the origin point, from the drawing position
-                This is so that the polygon surface is drawn at the correct position that clearly illustrates which direction the polygon is pointing towards"""
-
-                # If we should not blend the surfaces together
-                if polygon_points_dict["blend_rgb_add_boolean"] == False:
-                    self.surface.blit(
-                                    source = polygon_points_dict["polygon_surface"], 
-                                    dest = (
-                                            (polygon_points_dict["drawing_position"][0] - polygon_points_dict["dimensions_list"][0][0]) - camera_position[0],
-                                            (polygon_points_dict["drawing_position"][1] - polygon_points_dict["dimensions_list"][0][1]) - camera_position[1]
-                                            ),
-
-                                    )
-                # If we should blend the surfaces together
-                elif polygon_points_dict["blend_rgb_add_boolean"] == True:
-                    self.surface.blit(
-                                    source = polygon_points_dict["polygon_surface"], 
-                                    dest = (
-                                            (polygon_points_dict["drawing_position"][0] - polygon_points_dict["dimensions_list"][0][0]) - camera_position[0],
-                                            (polygon_points_dict["drawing_position"][1] - polygon_points_dict["dimensions_list"][0][1]) - camera_position[1]
-                                            ),
-                                    special_flags = pygame.BLEND_RGBA_ADD
-                                    )
+                # Draw the polygon onto the angled polygons surface
+                pygame.draw.polygon(surface = self.surface, color = polygon_points_dict["colour"], points = tuple(camera_polygon_points))
 
             # If the polygon has travelled the complete distance
             else:
