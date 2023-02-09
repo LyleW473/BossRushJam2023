@@ -5,16 +5,15 @@ from pygame.draw import line as pygame_draw_line
 from pygame import Rect as pygame_Rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.mask import from_surface as pygame_mask_from_surface
-from Global.functions import change_image_colour
+from Global.functions import change_image_colour, play_death_animation
 from random import choice as random_choice
 from Level.Bosses.AI import AI
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
-from Global.functions import play_death_animation
 from os import listdir as os_listdir
 from pygame.draw import ellipse as pygame_draw_ellipse
-from math import degrees, cos, sin
 from Global.settings import TILE_SIZE
+from math import degrees, cos, sin
 
 class SikaDeerBoss(Generic, AI):
 
@@ -22,7 +21,7 @@ class SikaDeerBoss(Generic, AI):
     # Example: Stomp : [Image list]
 
     knockback_damage = 20
-    maximum_health = 20000
+    maximum_health = 12500
 
 
     def __init__(self, x, y, surface, scale_multiplier):
@@ -89,11 +88,15 @@ class SikaDeerBoss(Generic, AI):
 
                                     # Target and charge
                                     "Target": { 
-                                            "Duration": 1000,
+                                            "Duration": 2200,
                                             "DurationTimer": None,
-                                            "CooldownTimer": 8000,  # This will be set to be the charge cooldown after the attack has completed (Change this number if you want to delay when the boss can first charge attack)
+                                            "CooldownTimer": 6500,  # This will be set to be the charge cooldown after the attack has completed (Change this number if you want to delay when the boss can first charge attack)
                                             "Cooldown": 50000, # Set to random number, this will be changed once the charge attack has finished
-                                            "FullAnimationDuration": 150,
+
+                                            # Animations
+                                            "FullAnimationDuration": 400,
+                                            "OriginalAnimationDuration": 400, # Used to reset the full animation duration back to the original amount
+                                            "AnimationListLength": len(SikaDeerBoss.ImagesDict["Target"]["Up"]) # Used to calculate the new time between animation frames 
                                             },
 
                                     "Charge": {
@@ -106,6 +109,7 @@ class SikaDeerBoss(Generic, AI):
                                             
                                             "ChargeDirection": None,
                                             "ChargeAngle": None,
+                                            "PlayerPosAtChargeTime": None,
                                             "EnterStunnedStateBoolean": False, # A boolean value that represents whether the boss has collided with the player during the charge attack"
 
                                             # Movement (Keep the time values to be less than the full charge duration)
@@ -115,7 +119,6 @@ class SikaDeerBoss(Generic, AI):
                                             "HorizontalTimeToReachFinalVelocity": 0.25,
                                             "VerticalTimeToReachFinalVelocity": 0.25,
 
-
                                                 },
                                     # Stunned
                                     "Stunned": {
@@ -123,7 +126,6 @@ class SikaDeerBoss(Generic, AI):
                                             "DurationTimer": None,
                                             "FullAnimationDuration": 1000,
                                             "StunnedDamageAmount": 100
-
                                             },
 
                                     "Death": {
@@ -131,7 +133,21 @@ class SikaDeerBoss(Generic, AI):
 
                                             }
                                     }
+        # ----------------------------------------------------------------------------------
+        # Blinking effect variables
+
+        # The angle change over time (Keep this value low in comparison to the duration time)
+        self.behaviour_patterns_dict["Target"]["BlinkingVisualEffectAngleChange"] = (self.behaviour_patterns_dict["Target"]["Duration"] / 100)
+
+        # The starting angle time gradient (this will continue changing inside the Game class as the time decreases)
+        self.behaviour_patterns_dict["Target"]["BlinkingVisualEffectAngleTimeGradient"] = (self.behaviour_patterns_dict["Target"]["BlinkingVisualEffectAngleChange"] - 0) / (self.behaviour_patterns_dict["Target"]["Duration"] / 1000)
         
+        # The initial sin angle should be 0
+        self.behaviour_patterns_dict["Target"]["BlinkingVisualEffectCurrentSinAngle"] = 0
+
+
+
+        # ----------------------------------------------------------------------------------
         # Declare the animation attributes
         self.declare_animation_attributes()
 
@@ -453,6 +469,9 @@ class SikaDeerBoss(Generic, AI):
 
                     # Store the current charge angle (for calculations for movement)
                     self.behaviour_patterns_dict["Charge"]["ChargeAngle"] = self.movement_information_dict["Angle"]
+
+                    # Store the position of the player at this point in time (used to draw red guidelines)
+                    self.behaviour_patterns_dict["Charge"]["PlayerPosAtChargeTime"] = self.players_position
 
                     # Reset the horizontal and vertical velocity (V, A and S are updated during the charge attack)
                     self.movement_information_dict["HorizontalSuvatU"] = 0

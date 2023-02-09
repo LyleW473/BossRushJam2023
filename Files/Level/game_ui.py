@@ -10,6 +10,7 @@ from Global.functions import draw_text, sin_change_object_colour
 from pygame import Surface as pygame_Surface
 from Level.effect_text import EffectText
 from random import randrange as random_randrange
+from math import cos,  sin
 
 class GameUI:
 
@@ -512,10 +513,9 @@ class GameUI:
         # Blit the cursor image at the mouse position, subtracting half of the cursor image's width and height
         self.surface.blit(self.default_cursor_image, (self.mouse_position[0] - (self.default_cursor_image.get_width()/ 2), self.mouse_position[1]- (self.default_cursor_image.get_height() / 2)))
 
-    def draw_guidelines_between_a_and_b(self, a, b, guidelines_surface, main_surface, camera_position, guidelines_segments_thickness):
+    def draw_guidelines_between_a_and_b(self, a, b, guidelines_surface, main_surface, camera_position, guidelines_segments_thickness, colour):
 
-        # Draws guidelines between the two subjects
-        """ Note: This is a method of the Game class because """
+        # Draws guidelines between the two subjects (dashed line)
     
         # The number of segments desired for the guidelines
         number_of_segments = 6
@@ -534,7 +534,7 @@ class GameUI:
         for i in range(1, (number_of_segments * 2) + 1, 2):     
             pygame_draw_line(
                 surface = guidelines_surface, 
-                color = "white",
+                color = colour,
                 start_pos = ((b[0] - camera_position[0]) + (segment_length_x * i), (b[1] - camera_position[1]) + (segment_length_y * i)),
                 end_pos = ((b[0] - camera_position[0]) + (segment_length_x * (i + 1)), (b[1] - camera_position[1]) + (segment_length_y * (i + 1))),
                 width = guidelines_segments_thickness)
@@ -543,6 +543,8 @@ class GameUI:
         main_surface.blit(guidelines_surface, (0, 0))
 
     def create_effect_text(self, type_of_effect_text, target, text):
+        
+        # Creates effect text
 
         # Find the font size for positioning the text properly
         font_size = self.effect_text_info_dict[type_of_effect_text]["Font"].size(text)

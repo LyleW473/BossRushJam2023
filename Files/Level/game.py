@@ -6,7 +6,7 @@ from Level.game_ui import GameUI
 from Level.bamboo_pile import BambooPile
 from random import choice as random_choice
 from random import randrange as random_randrange
-from math import sin, cos, dist
+from math import sin, cos, dist, copysign
 from os import listdir as os_listdir
 
 class Game:
@@ -57,7 +57,8 @@ class Game:
         # Surface
         self.guidelines_surface = pygame.Surface((self.scaled_surface.get_width(), self.scaled_surface.get_height()))
         self.guidelines_surface.set_colorkey("black")
-        self.guidelines_surface.set_alpha(90)
+        self.guidelines_surface_default_alpha_level = 105
+        self.guidelines_surface.set_alpha(self.guidelines_surface_default_alpha_level)
 
         # ---------------------------------------------------------------------------------
         # Cursor images
@@ -1086,35 +1087,103 @@ class Game:
 
     def update_and_run_boss(self, delta_time):
 
-        # Draws the current boss
+        # Updates and runs the boss
 
-        # Save a reference to the current boss in a temp variable
-        current_boss = self.boss_group.sprite
-        
         # If there is a current boss
-        if current_boss != None:
+        if self.boss_group.sprite != None:
 
             # Update the current boss' delta time
-            current_boss.delta_time = delta_time
+            self.boss_group.sprite.delta_time = delta_time
 
             # Update the current boss' camera position 
-            current_boss.camera_position = self.camera_position
+            self.boss_group.sprite.camera_position = self.camera_position
 
             # Update the current boss with the current position of the player
-            current_boss.players_position = self.player.rect.center
-
-            # Draw guidelines between the player and the boss
-            self.game_ui.draw_guidelines_between_a_and_b(
-                                                        a = current_boss.rect.center, 
-                                                        b = self.player.rect.center, 
-                                                        camera_position = self.camera_position, 
-                                                        guidelines_segments_thickness = self.guidelines_segments_thickness,
-                                                        guidelines_surface = self.guidelines_surface,
-                                                        main_surface = self.scaled_surface
-                                                        )
+            self.boss_group.sprite.players_position = self.player.rect.center
 
             # Run the boss
-            current_boss.run()
+            self.boss_group.sprite.run()
+    
+    def draw_boss_guidelines(self, delta_time):
+
+        # If the current boss is the "SikaDeer"
+        if self.bosses_dict["CurrentBoss"] == "SikaDeer":
+
+            # If the current action is neither "Target" or "Charge"
+            if self.boss_group.sprite.current_action != "Target" and self.boss_group.sprite.current_action != "Charge":
+                # Draw guidelines between the player and the boss
+                self.game_ui.draw_guidelines_between_a_and_b(
+                                                            a = self.boss_group.sprite.rect.center, 
+                                                            b = self.player.rect.center, 
+                                                            colour = "white",
+                                                            camera_position = self.camera_position, 
+                                                            guidelines_segments_thickness = self.guidelines_segments_thickness,
+                                                            guidelines_surface = self.guidelines_surface,
+                                                            main_surface = self.scaled_surface
+                                                            )
+            # If the current action is "Target"
+            elif self.boss_group.sprite.current_action == "Target":
+
+                # Draw red dashed guidelines between the player and the boss
+                self.game_ui.draw_guidelines_between_a_and_b(
+                                                            a = self.boss_group.sprite.rect.center, 
+                                                            b = self.player.rect.center, 
+                                                            colour = "red",
+                                                            camera_position = self.camera_position, 
+                                                            guidelines_segments_thickness = self.guidelines_segments_thickness,
+                                                            guidelines_surface = self.guidelines_surface,
+                                                            main_surface = self.scaled_surface
+                                                            )
+
+                # The new angle time gradient in relation to the current time left
+                self.boss_group.sprite.behaviour_patterns_dict["Target"]["BlinkingVisualEffectAngleTimeGradient"] = (self.boss_group.sprite.behaviour_patterns_dict["Target"]["BlinkingVisualEffectAngleChange"] - 0) / (self.boss_group.sprite.behaviour_patterns_dict["Target"]["DurationTimer"] / 1000)
+
+                # Increase the current sin angle
+                self.boss_group.sprite.behaviour_patterns_dict["Target"]["BlinkingVisualEffectCurrentSinAngle"] += self.boss_group.sprite.behaviour_patterns_dict["Target"]["BlinkingVisualEffectAngleTimeGradient"] * delta_time
+
+                # Set the new alpha level based on the current sin angle
+                # Note: Limit the alpha level to 185 so that it doesn't stand out too much
+                self.guidelines_surface.set_alpha (min(125 + (125 * sin(self.boss_group.sprite.behaviour_patterns_dict["Target"]["BlinkingVisualEffectCurrentSinAngle"])), 185))
+
+                # Adjust the current animation duration of the targeting animation according to how much time is left before the current action is set to "Charge"
+                # Note: Limit the time between frames to always be at least 20 (because very small times will result in buggy animations)
+                self.boss_group.sprite.behaviour_patterns_dict["Target"]["FullAnimationDuration"] = self.boss_group.sprite.behaviour_patterns_dict["Target"]["OriginalAnimationDuration"] * (self.boss_group.sprite.behaviour_patterns_dict["Target"]["DurationTimer"] / self.boss_group.sprite.behaviour_patterns_dict["Target"]["Duration"])
+                self.boss_group.sprite.behaviour_patterns_dict["Target"]["TimeBetweenAnimFrames"] = max(
+                                            self.boss_group.sprite.behaviour_patterns_dict["Target"]["FullAnimationDuration"] / self.boss_group.sprite.behaviour_patterns_dict["Target"]["AnimationListLength"],
+                                            20
+                                                                                                        )
+
+            # If the current action is "Charge"
+            elif self.boss_group.sprite.current_action == "Charge":
+                
+                # If the current alpha level of the guidelines surface is not the default alpha level
+                if self.guidelines_surface.get_alpha() != self.guidelines_surface_default_alpha_level:
+                    # Reset it back to the default alpha level
+                    self.guidelines_surface.set_alpha(self.guidelines_surface_default_alpha_level)
+
+                # If the current sin angle for the blinking visual effect is not 0
+                if self.boss_group.sprite.behaviour_patterns_dict["Target"]["BlinkingVisualEffectCurrentSinAngle"] != 0:
+                    # Reset the current sin angle for the blinking visual effect back to 0
+                    self.boss_group.sprite.behaviour_patterns_dict["Target"]["BlinkingVisualEffectCurrentSinAngle"]
+
+                # Calculate a new length and point depending on where the angle at which the boss is charging at 
+                # Note: (Extends the line from the current position of the boss and last locked in position of the player)
+                new_length = dist(self.boss_group.sprite.behaviour_patterns_dict["Charge"]["PlayerPosAtChargeTime"], self.boss_group.sprite.rect.center) + screen_width / 2
+                new_point = (
+                    self.boss_group.sprite.rect.centerx + (new_length * cos(self.boss_group.sprite.behaviour_patterns_dict["Charge"]["ChargeAngle"])), 
+                    self.boss_group.sprite.rect.centery - (new_length * sin(self.boss_group.sprite.behaviour_patterns_dict["Charge"]["ChargeAngle"]))
+                    )
+
+                # Draw red dashed guidelines between the player and the boss
+                self.game_ui.draw_guidelines_between_a_and_b(
+                                                            a = self.boss_group.sprite.rect.center, 
+                                                            b = new_point, 
+                                                            colour = "red",
+                                                            camera_position = self.camera_position, 
+                                                            guidelines_segments_thickness = self.guidelines_segments_thickness,
+                                                            guidelines_surface = self.guidelines_surface,
+                                                            main_surface = self.scaled_surface
+                                                            )
 
     # --------------------------------------------------------------------------------------
     # Game UI methods
@@ -1171,6 +1240,7 @@ class Game:
                 self.game_ui.draw_guidelines_between_a_and_b(
                                                             a = (self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)), 
                                                             b = self.player.rect.center,
+                                                            colour = "white",
                                                             camera_position = self.camera_position,
                                                             guidelines_segments_thickness = self.guidelines_segments_thickness,
                                                             guidelines_surface = self.guidelines_surface,
@@ -1181,8 +1251,13 @@ class Game:
 
             # Draw all objects inside the tile map / level
             self.draw_tile_map_objects()
+
+            # Draw the boss guidelines underneath the player and the boss
+            self.draw_boss_guidelines(delta_time = delta_time)
+
             # Run the player methods
             self.player.run(delta_time = delta_time)
+
             # Update and run the boss
             self.update_and_run_boss(delta_time = delta_time)
         
@@ -1190,8 +1265,10 @@ class Game:
         elif self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
             # Update and run the boss
             self.update_and_run_boss(delta_time = delta_time)
+
             # Draw all objects inside the tile map / level
             self.draw_tile_map_objects()
+
             # Run the player methods
             self.player.run(delta_time = delta_time)
         # ---------------------------------------------------------
