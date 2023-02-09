@@ -61,6 +61,9 @@ class BambooProjectile(Generic):
         # The attributes that will hold the new x and y positions of the projectile (for more accurate shooting as the floating point values are saved)
         self.new_position_x = self.rect.x
         self.new_position_y = self.rect.y
+    
+        # Used for VFX
+        self.angle = angle
         # --------------------------------------------------------------------------------
         # Damage
 

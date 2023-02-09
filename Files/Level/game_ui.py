@@ -10,7 +10,7 @@ from Global.functions import draw_text, sin_change_object_colour
 from pygame import Surface as pygame_Surface
 from Level.effect_text import EffectText
 from random import randrange as random_randrange
-from math import cos,  sin
+from math import degrees
 
 class GameUI:
 
@@ -153,13 +153,19 @@ class GameUI:
         # ------------------------------------------------------------
         # Cursor image
         self.default_cursor_image = load_image("graphics/Cursors/Default.png").convert_alpha()
-
+    
         """ 'Hidden' attributes:
 
         self.camera_position
+        self.angled_polygons_controller
     
         """
+        # ------------------------------------------------------------
+        # VFX
 
+        # Angled polygons
+        self.angled_polygons_surface = pygame_Surface((self.surface.get_width(), self.surface.get_height()))
+        self.angled_polygons_surface.set_colorkey("black")
 
     def create_player_tools_display_cards(self):
 
@@ -513,6 +519,9 @@ class GameUI:
         # Blit the cursor image at the mouse position, subtracting half of the cursor image's width and height
         self.surface.blit(self.default_cursor_image, (self.mouse_position[0] - (self.default_cursor_image.get_width()/ 2), self.mouse_position[1]- (self.default_cursor_image.get_height() / 2)))
 
+    # -----------------------------------------------------------------------------
+    # Visual effects
+
     def draw_guidelines_between_a_and_b(self, a, b, guidelines_surface, main_surface, camera_position, guidelines_segments_thickness, colour):
 
         # Draws guidelines between the two subjects (dashed line)
@@ -645,7 +654,155 @@ class GameUI:
                     # Decrease the display time
                     effect_text.display_time -= 1000 * self.delta_time
 
+    def create_angled_polygons_effects(self, purpose, position = None, angle = None, specified_number_of_pieces = None):
+        
+        # Identify what angled polygon effect this is
+        match purpose:
+
+            case "Shooting":
+                
+                # If the current tool equppied by the player is not the "BuildingTool"
+                if self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":
+                    
+                    # If the player has shot
+                    if self.player_tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]["ShootingCooldownTimer"] != None:
+                        
+                        # If an angled polygons controller has not been created yet
+                        if hasattr(self, "angled_polygons_controller") == False:
+                            # Import the angled polygons VFX
+                            from VFX.AngledPolygons import AngledPolygons
+                            # Create an angled polygons controller
+                            self.angled_polygons_controller = AngledPolygons(surface = self.angled_polygons_surface)
+                    
+                        # Create 3 polygons, angled slightly
+                        for i in range(-1, 2, 1):
+
+                            # Extends the polygon pointing towards the shooting direction
+                            polygon_extension = lambda x: x + 12 if x == 0 else 0
+
+                            # Create angled polygons at the tip of the gun
+                            self.angled_polygons_controller.create_polygons(
+
+                                                        # The spawning position of the angled polygons
+                                                        origin_point = [self.player_gameplay_info_dict["AngledPolygonsShootingSpawningPosition"][0], self.player_gameplay_info_dict["AngledPolygonsShootingSpawningPosition"][1]],
+                                                    
+                                                        # The angle that the main polygon will point towards, with the 2 pointing to the left / right
+                                                        look_angle = degrees(self.player_gameplay_info_dict["AngledPolygonsShootingAngle"]) + (i * 45),
+
+                                                        # The length of each polygon
+                                                        hypot_length = random_randrange(10, 14) + polygon_extension(i) ,
+
+                                                        # The angle change between each side of the polygon
+                                                        polygon_sides_angle_change = random_randrange(15, 40),
+                                                        
+                                                        # The distance to travel
+                                                        distance_to_travel = 1,
+
+                                                        # The time for the polygon to travel that distance
+                                                        time_to_travel_distance = 0.05,
+
+                                                        # The selected colour palette
+                                                        colour_palette = "Shooting",
+
+                                                        # Boolean to use BLEND_RGB_ADD
+                                                        blend_rgb_add_boolean = True
+
+                                                        )
+            
+            case "ShatteredBambooPieces":
+
+                # If an angled polygons controller has not been created yet
+                if hasattr(self, "angled_polygons_controller") == False:
+                    # Import the angled polygons VFX
+                    from VFX.AngledPolygons import AngledPolygons
+                    # Create an angled polygons controller
+                    self.angled_polygons_controller = AngledPolygons(surface = self.angled_polygons_surface)
+
+                # Choose a random type of shattered bamboo pieces effect
+                shattered_bamboo_pieces_effect_type = random_randrange(0, 2) 
+                
+                # If the type of shattered bamboo pieces effect is the 1st type and an angle has been provided (e.g. a bamboo projectile)
+                if shattered_bamboo_pieces_effect_type == 0 and angle != None:
+
+                    for i in range(0, specified_number_of_pieces):
+                        # Create angled polygons at the boss
+                        self.angled_polygons_controller.create_polygons(
+
+                                                    # The spawning position of the angled polygons
+                                                    origin_point = [position[0] + random_randrange(-20, 20), position[1] + random_randrange(-20, 20)],
+                                                    
+                                                    # The angle is the direction that the bamboo projectile was moving towards, with an offset
+                                                    look_angle = degrees(angle) + random_randrange(-50, 50),
+
+                                                    # The length of each polygon
+                                                    hypot_length = random_randrange(2, 10), 
+
+                                                    # The angle change between each side of the polygon
+                                                    polygon_sides_angle_change = 40,
+                                                    
+                                                    # The distance to travel
+                                                    distance_to_travel = random_randrange(50, 75),
+
+                                                    # The time for the polygon to travel that distance
+                                                    time_to_travel_distance = 0.5,
+
+                                                    # The selected colour palette
+                                                    colour_palette = "ShatteredBambooPieces",
+
+                                                    # Boolean to use BLEND_RGB_ADD
+                                                    blend_rgb_add_boolean = True
+
+                                                    )
+                
+                # If the type of shattered bamboo pieces effect is the 2nd type or an angle has not been provided (e.g. not a bamboo projectile)
+                elif shattered_bamboo_pieces_effect_type == 1 or angle == None:
+                    for i in range(0, specified_number_of_pieces):
+                        # Create angled polygons at the boss
+                        self.angled_polygons_controller.create_polygons(
+
+                                                    # The spawning position of the angled polygons
+                                                    origin_point = [position[0] + random_randrange(-20, 20), position[1] + random_randrange(-20, 20)],
+                                                    
+                                                    # Angle that increases as i increases
+                                                    look_angle = i * (360 / specified_number_of_pieces),
+
+                                                    # The length of each polygon
+                                                    hypot_length = random_randrange(2, 10), 
+
+                                                    # The angle change between each side of the polygon
+                                                    polygon_sides_angle_change = 40,
+                                                    
+                                                    # The distance to travel
+                                                    distance_to_travel = random_randrange(50, 75),
+
+                                                    # The time for the polygon to travel that distance
+                                                    time_to_travel_distance = 0.5,
+
+                                                    # The selected colour palette
+                                                    colour_palette = "ShatteredBambooPieces",
+
+                                                    # Boolean to use BLEND_RGB_ADD
+                                                    blend_rgb_add_boolean = True
+
+                                                    )
+            
+    def draw_angled_polygons_effects(self, camera_position, delta_time):
+        
+        # Fill the angled polygons surface as black
+        self.angled_polygons_surface.fill("black")
+
+        # If there are any angled polygons to draw
+        if hasattr(self, "angled_polygons_controller") and len(self.angled_polygons_controller.polygons_dict) > 0:
+            # Draw the angled polygons
+            self.angled_polygons_controller.draw(camera_position = camera_position, delta_time = delta_time)
+
+        # Blit the angled polygons surface onto the main surface
+        self.surface.blit(self.angled_polygons_surface, (0, 0))
+
     def run(self, camera_position):
+
+        # Create shooting angled polygons effects
+        self.create_angled_polygons_effects(purpose = "Shooting")
 
         # Draw the display cards onto the screen
         self.draw_display_cards()

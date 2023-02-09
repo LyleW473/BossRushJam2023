@@ -6,7 +6,7 @@ from Level.game_ui import GameUI
 from Level.bamboo_pile import BambooPile
 from random import choice as random_choice
 from random import randrange as random_randrange
-from math import sin, cos, dist, copysign
+from math import sin, cos, dist
 from os import listdir as os_listdir
 
 class Game:
@@ -375,6 +375,14 @@ class Game:
                                                                 text = "-" + str(bamboo_projectile.damage_amount),
                                                                 )
 
+                                # Create a few shattered bamboo pieces
+                                self.game_ui.create_angled_polygons_effects(
+                                                                            purpose = "ShatteredBambooPieces",
+                                                                            position = (self.boss_group.sprite.rect.centerx, self.boss_group.sprite.rect.centery),
+                                                                            angle = bamboo_projectile.angle,
+                                                                            specified_number_of_pieces = random_randrange(2, 6)
+                                                                            )
+
                             # Remove the bamboo projectile
                             self.bamboo_projectiles_group.remove(bamboo_projectile)
 
@@ -506,6 +514,13 @@ class Game:
                                     # Remove the building tile
                                     self.player.neighbouring_tiles_dict.pop(collision_result[0])
 
+                                # Create many shattered bamboo pieces
+                                self.game_ui.create_angled_polygons_effects(
+                                                                            purpose = "ShatteredBambooPieces",
+                                                                            position = (collision_result[0].rect.centerx, collision_result[0].rect.centery),
+                                                                            specified_number_of_pieces = random_randrange(10, 20)
+                                                                            )
+                                                                            
                             # If the player's frenzy mode is not activated
                             if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
                                 # Increase the player's frenzy mode meter by the block damage increment amount, limiting it to the maximum frenzy mode value
@@ -652,6 +667,13 @@ class Game:
                         # ------------------------------------------------------------------
                         # Additional effects
                         
+                        # Create many shattered bamboo pieces
+                        self.game_ui.create_angled_polygons_effects(
+                                                                    purpose = "ShatteredBambooPieces",
+                                                                    position = (building_tile_to_remove.rect.centerx, building_tile_to_remove.rect.centery),
+                                                                    specified_number_of_pieces = random_randrange(10, 20)
+                                                                    )
+
                         # If the boss is currently chasing the player
                         if self.boss_group.sprite.current_action == "Chase":
                             # Reset the boss' movement acceleration, so that they slow down
@@ -820,7 +842,7 @@ class Game:
             number_of_tiles_for_checking = 4
             spawning_effect_counter = 0
             number_of_cycles = 8 # If the NumOfTilesForChecking was 3 and SpawningEffectCounter started at 0, then each cycle would consist of 4 changes
-            time_to_spawn = 8000
+            time_to_spawn = 1000 #8000
             time_between_each_change = (time_to_spawn / number_of_cycles) / ((number_of_tiles_for_checking + 1) - spawning_effect_counter) # The time between each change
             
             # Create a dictionary to hold information regarding bosses
@@ -1226,6 +1248,9 @@ class Game:
 
             # Draw all objects inside the tile map / level
             self.draw_tile_map_objects()
+            
+            # Draw the angled polygon visual effects
+            self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
 
             # Run the player methods
             self.player.run(delta_time = delta_time)
@@ -1256,17 +1281,25 @@ class Game:
 
             # Update and run the boss
             self.update_and_run_boss(delta_time = delta_time)
-        
+            
+            # Draw the angled polygon visual effects
+            self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
+
         # If the current boss is not alive
         elif self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
+
             # Update and run the boss
             self.update_and_run_boss(delta_time = delta_time)
 
             # Draw all objects inside the tile map / level
             self.draw_tile_map_objects()
 
+            # Draw the angled polygon visual
+            self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
+
             # Run the player methods
             self.player.run(delta_time = delta_time)
+        
         # ---------------------------------------------------------
 
         # Update the game UI

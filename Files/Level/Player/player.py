@@ -120,6 +120,13 @@ class Player(Generic):
                                         # "KnockbackHorizontalDistanceTimeGradient": None,
                                         # "KnockbackVerticalDistanceTimeGradient": None,
 
+                                        # ------------------------------------------------
+                                        # Angled Polygons visual effect
+
+                                        "AngledPolygonsShootingSpawningPosition": 0,
+                                        "AngledPolygonsShootingAngle": 0
+
+
                                          }
 
 
@@ -154,7 +161,7 @@ class Player(Generic):
                                 "Down Right": pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
                                         },
                             "ShootingCooldown": 150,
-                            "ShootingCooldownTimer": 150, # 150 so that the player starts off being unable to shoot (after pressing the play button)
+                            "ShootingCooldownTimer": None, # 150 so that the player starts off being unable to shoot (after pressing the play button)
                             "BambooResourceDepletionAmount": 0.5,
                             "WeaponDamage": 25
                                         
@@ -1650,6 +1657,9 @@ class Player(Generic):
 
                     # If enough time has passed since the last time the player shot
                     if self.tools["BambooAssaultRifle"]["ShootingCooldownTimer"] == None:
+
+                        # --------------------------------------------------------------------------------------------------------------------
+                        # Spawning the projectile 
                         
                         # Distance to place the projectile at the tip of the gun 
                         hypot_distance = 45
@@ -1673,7 +1683,21 @@ class Player(Generic):
                         
                         # If there is nothing in between the center of the player and where the bamboo projectile will be spawned
                         if no_tile_in_between == True:
-                            
+
+                            # ----------------------------------------
+                            # Angled polygons effect
+
+                            # Distance away from the player for the shooting angled polygons
+                            angled_polygon_effect_hypot_distance = 32
+                            angled_polygon_effect_distance_x = angled_polygon_effect_hypot_distance * cos(self.look_angle)
+                            angled_polygon_effect_distance_y = -(angled_polygon_effect_hypot_distance * sin(self.look_angle))
+
+
+                            # Save the spawning point so that angled polygons can be greated at the tip of the gun
+                            # Note: A copy is made of this tuple
+                            self.player_gameplay_info_dict["AngledPolygonsShootingSpawningPosition"] = (self.rect.centerx + angled_polygon_effect_distance_x, self.rect.centery + angled_polygon_effect_distance_y)
+                            # Save the angle so that the polygons travel towards the correct direction
+                            self.player_gameplay_info_dict["AngledPolygonsShootingAngle"] = self.look_angle
 
                             # ----------------------------------------
                             # Create a bamboo projectile, spawning it at the tip of the gun (Starts at the center of the player but has an added distance which displaces it to right in front of the gun)
@@ -1788,5 +1812,6 @@ class Player(Generic):
 
         # Handle player shooting
         self.handle_shooting()
-
+        
+        # Perform knockback if the player gets knocked back
         self.perform_knockback()
