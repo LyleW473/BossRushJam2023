@@ -817,10 +817,10 @@ class Game:
         if hasattr(self, "bosses_dict") == False:
             
             # Temporary variables for the spawning effect
-            number_of_tiles_for_checking = 3
+            number_of_tiles_for_checking = 4
             spawning_effect_counter = 0
             number_of_cycles = 8 # If the NumOfTilesForChecking was 3 and SpawningEffectCounter started at 0, then each cycle would consist of 4 changes
-            time_to_spawn = 1000 # 7000
+            time_to_spawn = 8000
             time_between_each_change = (time_to_spawn / number_of_cycles) / ((number_of_tiles_for_checking + 1) - spawning_effect_counter) # The time between each change
             
             # Create a dictionary to hold information regarding bosses
@@ -834,7 +834,8 @@ class Game:
                         "TimeToSpawnTimer": None,
 
                         # Spawning effect keys and values
-                        "SpawningEffectIncrementTime": time_between_each_change,
+                        "SpawningEffectTimeBetweenEachChange": time_between_each_change,
+                        "SpawningEffectOriginalTimeBetweenEachChange": time_between_each_change,
                         "SpawningEffectTimer": None,
                         "OriginalSpawningEffectCounter": spawning_effect_counter,
                         "SpawningEffectCounter": spawning_effect_counter, # If the NumOfTilesForChecking was 3, then each cycle would consist of 4 changes
@@ -844,14 +845,6 @@ class Game:
                         "GoldenMonkey": None,
                         "AsiaticBlackBear": None,
                         
-                        # Dictionary to hold all the images of the bosses
-
-                        # """ Steps:
-                        # - For each boss create a dictionary of:
-                        #     - For each action create a dictionary of:
-                        #         - For each direction create a list of images
-                        
-                        # """
                                 }
 
         # If a valid spawning position has not been found
@@ -885,7 +878,7 @@ class Game:
                 # Set the boss spawn timer to start
                 self.bosses_dict["TimeToSpawnTimer"] = self.bosses_dict["TimeToSpawn"]
                 # Set the boss spawn effect timer to start
-                self.bosses_dict["SpawningEffectTimer"] = self.bosses_dict["SpawningEffectIncrementTime"]
+                self.bosses_dict["SpawningEffectTimer"] = self.bosses_dict["SpawningEffectTimeBetweenEachChange"]
 
             # If there is not "enough space" for the boss to spawn 
             elif len(self.bosses_dict["SpawningPositionTilesList"]) < (((self.bosses_dict["NumOfTilesForChecking"] * 2) + 1) ** 2) - 1:
@@ -962,7 +955,7 @@ class Game:
                                     )
                     # --------------------------------------------
                     # Spawning effect timer 
-                    
+
                     # If the timer has not finished counting down
                     if self.bosses_dict["SpawningEffectTimer"] > 0:
                         # Decrease the timer
@@ -982,8 +975,11 @@ class Game:
                             self.bosses_dict["SpawningEffectCounter"] = self.bosses_dict["OriginalSpawningEffectCounter"]
 
                         # Reset the timer (Adding it will help improve accuracy)
-                        self.bosses_dict["SpawningEffectTimer"] += self.bosses_dict["SpawningEffectIncrementTime"]
+                        self.bosses_dict["SpawningEffectTimer"] += self.bosses_dict["SpawningEffectTimeBetweenEachChange"]
 
+                    # Change the time between each change depending on how close the boss is to spawning
+                    self.bosses_dict["SpawningEffectTimeBetweenEachChange"] = self.bosses_dict["SpawningEffectOriginalTimeBetweenEachChange"] * self.bosses_dict["TimeToSpawnTimer"] / self.bosses_dict["TimeToSpawn"]
+                                                                                
                     # --------------------------------------------
                     # Spawning timer 
 
