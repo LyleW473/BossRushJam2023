@@ -367,9 +367,11 @@ class Game:
                         if pygame_sprite_collide_mask(bamboo_projectile, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
                             # If there is a pixel-perfect collision:
 
-                            # Damage the current boss by the amount of damage that was passed into the bamboo projectile
-                            # Note: This allows for different damage values for e.g. different weaponssa
-                            self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= bamboo_projectile.damage_amount
+                            # Damage the current boss by the amount of damage that was passed into the bamboo projectile and a random additive damage amount (e.g. 25 - 3)
+                            # Note: This allows for different damage values for e.g. different weapons
+                            
+                            randomised_damage_amount = bamboo_projectile.damage_amount + random_randrange(-3, 3)
+                            self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= randomised_damage_amount
 
                             # Play the boss' damaged flash effect
                             self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTimer"] = self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTime"]
@@ -388,7 +390,7 @@ class Game:
                                 self.game_ui.create_effect_text(
                                                                 type_of_effect_text = "Damage",
                                                                 target = "Boss",
-                                                                text = "-" + str(bamboo_projectile.damage_amount),
+                                                                text = "-" + str(randomised_damage_amount),
                                                                 )
 
                             # Create a few shattered bamboo pieces
