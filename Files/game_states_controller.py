@@ -1,4 +1,17 @@
-import pygame, sys, string
+from pygame.display import set_mode as pygame_display_set_mode
+from pygame import SCALED as pygame_SCALED
+from pygame import FULLSCREEN as pygame_FULLSCREEN
+from pygame.mouse import set_visible as pygame_mouse_set_visible
+from pygame.event import get as pygame_event_get
+from pygame import QUIT as pygame_QUIT
+from pygame import quit as pygame_quit
+from pygame import KEYDOWN as pygame_KEYDOWN
+from pygame import K_ESCAPE as pygame_K_ESCAPE
+from pygame import K_F11 as pygame_K_F11
+from pygame import K_1 as pygame_K_1
+from pygame import K_2 as pygame_K_2
+from pygame import K_3 as pygame_K_3
+from sys import exit as sys_exit
 from Global.settings import *
 from Menu.menu import Menu
 from Level.game import Game
@@ -8,7 +21,7 @@ class GameStatesController():
 
         # Screen
         # Set the screen to be full screen 
-        self.screen = pygame.display.set_mode((screen_width, screen_height), flags = pygame.SCALED + pygame.FULLSCREEN)
+        self.screen = pygame_display_set_mode((screen_width, screen_height), flags = pygame_SCALED + pygame_FULLSCREEN)
 
         self.full_screen = True
 
@@ -81,22 +94,20 @@ class GameStatesController():
     def event_loop(self):
 
         # Event handler
-        for event in pygame.event.get():
-
+        for event in pygame_event_get():
+                
             # Identify the type of event
             match event.type:
                 
                 # Exit button on the window clicked
-                case pygame.QUIT:
+                case _ if event.type == pygame_QUIT:
 
-                    # If the exit button was pressed
-                    if event.type == pygame.QUIT:
-                        # Close the program
-                        pygame.quit()
-                        sys.exit()
+                    # Close the program
+                    pygame_quit()
+                    sys_exit()
 
                 # Key presses
-                case pygame.KEYDOWN:
+                case _ if event.type == pygame_KEYDOWN:
 
                     # ------------------------------------------------------------
                     # Universal events
@@ -105,20 +116,20 @@ class GameStatesController():
                     match event.key:
                         
                         # "F11" key
-                        case pygame.K_F11:
+                        case _ if event.key == pygame_K_F11:
                             
                             # Changing from full screen to windowed mode
                             if self.full_screen == True:
                                 
                                 # Change to windowed mode
-                                self.screen = pygame.display.set_mode((screen_width, screen_height))
+                                self.screen = pygame_display_set_mode((screen_width, screen_height))
                                 self.full_screen = False
 
                             # Changing from windowed to full screen mode
                             elif self.full_screen == False:
                                 
                                 # Change to full screen mode
-                                self.screen = pygame.display.set_mode((screen_width, screen_height), pygame.SCALED + pygame.FULLSCREEN)
+                                self.screen = pygame_display_set_mode((screen_width, screen_height), pygame_SCALED + pygame_FULLSCREEN)
                                 self.full_screen = True
 
                     # ------------------------------------------------------------
@@ -130,25 +141,25 @@ class GameStatesController():
                         match event.key:
 
                             # "Esc" key
-                            case pygame.K_ESCAPE:
+                            case _ if event.key == pygame_K_ESCAPE:
 
                                 # Set the mouse cursor back to visible
-                                pygame.mouse.set_visible(True)
+                                pygame_mouse_set_visible(True)
                     
                                 # Show the paused menu
                                 self.game.running = False
                                 self.menu.current_menu = "paused_menu"
                             
                             # "1" key
-                            case pygame.K_1:
+                            case _ if event.key == pygame_K_1:
                                 # Switch the player's tool to the building tool
                                 self.game.player.switch_tool(tool = "BuildingTool")
                             # "2" key
-                            case pygame.K_2:
+                            case _ if event.key == pygame_K_2:
                                 # Switch the player's tool to the bamboo assault rifle
                                 self.game.player.switch_tool(tool = "BambooAssaultRifle")
                             # "3" key
-                            case pygame.K_3:
+                            case _ if event.key == pygame_K_3:
                                 # Switch the player's tool to the bamboo launcher
                                 self.game.player.switch_tool(tool = "BambooLauncher")
                                     
@@ -164,7 +175,7 @@ class GameStatesController():
             if self.game.running == False:
                 
                 # Hide the mouse cursor
-                pygame.mouse.set_visible(False)
+                pygame_mouse_set_visible(False)
                 
                 # Set the game's running attribute to True
                 self.game.running = True
@@ -180,5 +191,3 @@ class GameStatesController():
         else:
             # Run the menus
             self.menu.run(delta_time)
-
-

@@ -1,6 +1,11 @@
-import pygame, random
 from Global.settings import * 
 from Global.functions import draw_text
+from random import randrange as random_randrange
+from pygame import Rect as pygame_Rect
+from pygame import Surface as pygame_Surface
+from pygame.draw import circle as pygame_draw_circle
+from pygame.draw import rect as pygame_draw_rect
+from pygame.transform import scale as pygame_transform_scale
 
 class Button:
     def __init__(self, rect_info_dict, purpose, text_font, surface):
@@ -9,7 +14,7 @@ class Button:
         self.rect_info_dict = rect_info_dict
         
         # Create a rect at the positions passed into the class
-        self.rect = pygame.Rect(
+        self.rect = pygame_Rect(
                                 rect_info_dict["x"] - (rect_info_dict["button_measurements"][0] / 2), 
                                 rect_info_dict["y"] - (rect_info_dict["button_measurements"][1] / 2), 
                                 rect_info_dict["button_measurements"][0],
@@ -28,7 +33,7 @@ class Button:
         self.button_alpha_surface_maximum_alpha_level = 255
 
         # The button's alpha surface, with the colour-key set as black and the default alpha level set as the minimum alpha level
-        self.button_alpha_surface = pygame.Surface((self.rect.width, self.rect.height))
+        self.button_alpha_surface = pygame_Surface((self.rect.width, self.rect.height))
         self.button_alpha_surface.set_colorkey("black")
         self.button_alpha_surface.set_alpha(self.button_alpha_surface_minimum_alpha_level)
 
@@ -66,8 +71,8 @@ class Button:
         self.border_animation_radius = 7
 
         # Randomise the starting point of the animation, it can start from any of the four corners
-        self.border_animation_current_point = random.randrange(0, 3)
-        self.border_animation_rect = pygame.Rect(self.button_points[self.border_animation_current_point][0], self.button_points[self.border_animation_current_point][1], self.border_animation_radius, self.border_animation_radius)
+        self.border_animation_current_point = random_randrange(0, 3)
+        self.border_animation_rect = pygame_Rect(self.button_points[self.border_animation_current_point][0], self.button_points[self.border_animation_current_point][1], self.border_animation_radius, self.border_animation_radius)
 
         # ----------------------------------------------------------------------------------
         # Button highlighting
@@ -91,7 +96,7 @@ class Button:
         # ------------------------------------------------------------------------
         # Updating the border animation rect
 
-        pygame.draw.circle(surface = self.surface, color = self.colours["BorderAnimation"], center = (self.border_animation_rect.x, self.border_animation_rect.y), radius = self.border_animation_radius)
+        pygame_draw_circle(surface = self.surface, color = self.colours["BorderAnimation"], center = (self.border_animation_rect.x, self.border_animation_rect.y), radius = self.border_animation_radius)
 
         # Identify the current point on the button that the animation is on 
         match self.border_animation_current_point:
@@ -215,7 +220,7 @@ class Button:
                         self.border_animation_rect[0] += self.button_inflation_amount[0] / 2
         
         # Resize the alpha surface for the button regardless if we are inflating / deflating the button
-        self.button_alpha_surface = pygame.transform.scale(surface = self.button_alpha_surface, size = (self.rect.width, self.rect.height))
+        self.button_alpha_surface = pygame_transform_scale(surface = self.button_alpha_surface, size = (self.rect.width, self.rect.height))
 
     def change_alpha_level(self, increase):#
 
@@ -295,7 +300,7 @@ class Button:
                                                                         self.button_highlighting_info_dict["highlight_width"] * 2,
                                                                         self.button_highlighting_info_dict["highlight_width"] * 2)
             # Draw the highlight border "rect"
-            pygame.draw.rect(
+            pygame_draw_rect(
                             surface = self.surface, 
                             color = self.button_highlighting_info_dict["highlight_colour"], 
                             rect = inflated_button_to_highlight_rect, 
@@ -317,12 +322,12 @@ class Button:
         self.button_alpha_surface.fill("black")
 
         # Draw the button onto the alpha surface
-        pygame.draw.rect(surface = self.button_alpha_surface, color = self.colours["ButtonRect"], rect = (0, 0, self.rect.width, self.rect.height), width = 0)
+        pygame_draw_rect(surface = self.button_alpha_surface, color = self.colours["ButtonRect"], rect = (0, 0, self.rect.width, self.rect.height), width = 0)
 
         # Draw the alpha surface onto the main surface
         self.surface.blit(self.button_alpha_surface, (self.rect.x, self.rect.y))
 
-        pygame.draw.rect(surface = self.surface, color = self.colours["ButtonRectBorder"], rect = self.rect, width = 3)
+        pygame_draw_rect(surface = self.surface, color = self.colours["ButtonRectBorder"], rect = self.rect, width = 3)
 
         # Draw the button text onto the main surface
         draw_text(

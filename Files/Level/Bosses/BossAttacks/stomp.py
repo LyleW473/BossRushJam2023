@@ -5,7 +5,6 @@ from math import pi, cos, sin, radians, degrees
 from Global.settings import TILE_SIZE
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
-from random import choice as random_choice
 from random import randrange as random_randrange
 
 class StompController(Generic):

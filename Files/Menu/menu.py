@@ -1,12 +1,18 @@
-import pygame, sys
+from sys import exit as sys_exit
 from Menu.button import Button
 from Global.settings import * 
+from pygame.display import get_surface as pygame_display_get_surface
+from pygame.font import Font as pygame_font_Font
+from pygame.mouse import get_pos as pygame_mouse_get_pos
+from pygame.mouse import get_pressed as pygame_mouse_get_pressed
+from pygame import Rect as pygame_Rect
+from pygame import quit as pygame_quit
 
 class Menu:
     def __init__(self):
 
         # Screen
-        self.surface = pygame.display.get_surface()
+        self.surface = pygame_display_get_surface()
     
         # ------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -80,7 +86,7 @@ class Menu:
                                                                     "y" : self.menu_buttons_dict[menu]["StartingPositions"][1] + (self.menu_buttons_dict[menu]["ButtonSpacing"][1] * index) ,
                                                                     "button_measurements": default_button_measurements}, 
                                                 purpose = button_purpose,
-                                                text_font = pygame.font.Font("graphics/Fonts/menu_buttons_font.ttf", 50),
+                                                text_font = pygame_font_Font("graphics/Fonts/menu_buttons_font.ttf", 50),
                                                 surface = self.surface
                                                 )
                                             )
@@ -90,12 +96,12 @@ class Menu:
         # Creates a mouse rect and updates the mouse rect depending on the mouse position 
 
         # Retrieve the mouse position
-        self.mouse_position = pygame.mouse.get_pos()
+        self.mouse_position = pygame_mouse_get_pos()
 
         # If a mouse rect has not been created already
         if hasattr(self, "mouse_rect") == False:
             # Create the mouse rect
-            self.mouse_rect = pygame.Rect(self.mouse_position[0], self.mouse_position[1], 1, 1)
+            self.mouse_rect = pygame_Rect(self.mouse_position[0], self.mouse_position[1], 1, 1)
         # If a mouse rect already exists
         else:
             # Update the x and y positions of the mouse rect
@@ -175,7 +181,7 @@ class Menu:
         self.mouse_position_updating()
 
         # Check if the left mouse button has been released, and if it has, set the attribute to True
-        if pygame.mouse.get_pressed()[0] == 0:
+        if pygame_mouse_get_pressed()[0] == 0:
             self.left_mouse_button_released = True
 
         # Show the background animations for the menus
@@ -190,7 +196,7 @@ class Menu:
             self.update_buttons(menu_buttons_list = self.menu_buttons_dict["main_menu"]["ButtonsList"])
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
-            if pygame.mouse.get_pressed()[0] == True and self.left_mouse_button_released == True:
+            if pygame_mouse_get_pressed()[0] == True and self.left_mouse_button_released == True:
 
                     # Set the left mouse button as not released
                     self.left_mouse_button_released = False   
@@ -225,8 +231,8 @@ class Menu:
                             # If the mouse collided with the "Quit" button 
                             case "Quit":
                                 # Exit the program
-                                pygame.quit()
-                                sys.exit()
+                                pygame_quit()
+                                sys_exit()
 
         # ---------------------------------------------
         # Controls menu
@@ -237,7 +243,7 @@ class Menu:
             self.update_buttons(menu_buttons_list = self.menu_buttons_dict["controls_menu"]["ButtonsList"])
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
-            if pygame.mouse.get_pressed()[0] == 1 and self.left_mouse_button_released == True:
+            if pygame_mouse_get_pressed()[0] == 1 and self.left_mouse_button_released == True:
 
                 # Set the left mouse button as not released
                 self.left_mouse_button_released = False          
@@ -280,7 +286,7 @@ class Menu:
             self.update_buttons(menu_buttons_list = self.menu_buttons_dict["paused_menu"]["ButtonsList"])
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
-            if pygame.mouse.get_pressed()[0] == 1 and self.left_mouse_button_released == True:
+            if pygame_mouse_get_pressed()[0] == 1 and self.left_mouse_button_released == True:
 
                 # Set the left mouse button as not released
                 self.left_mouse_button_released = False          
@@ -314,5 +320,5 @@ class Menu:
                         # If the mouse collided with the "Quit" button 
                         case "Quit":
                             # Exit the program
-                            pygame.quit()
-                            sys.exit()
+                            pygame_quit()
+                            sys_exit()

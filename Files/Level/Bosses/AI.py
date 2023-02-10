@@ -1,4 +1,4 @@
-from math import atan2, pi, cos, dist, sin, copysign
+from math import atan2, pi, cos, dist, sin
 from Global.settings import TILE_SIZE
 from pygame import Rect as pygame_Rect
 

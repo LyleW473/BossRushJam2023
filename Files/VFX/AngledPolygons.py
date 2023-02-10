@@ -1,4 +1,7 @@
-import pygame, random, math
+from math import sqrt, radians, cos, sin
+from random import randint as random_randint
+from pygame import Surface as pygame_Surface
+from pygame.draw import polygon as pygame_draw_polygon
 
 class AngledPolygons:
 
@@ -35,12 +38,12 @@ class AngledPolygons:
         polygon_hypot = hypot_length
 
         # The angle that the polygon points towards from the x axis
-        angle = math.radians(look_angle)
+        angle = radians(look_angle)
 
 
         # The random angle change for each polygon point
-        left_point_angle = angle - math.radians(polygon_sides_angle_change)
-        right_point_angle = angle + math.radians(polygon_sides_angle_change)
+        left_point_angle = angle - radians(polygon_sides_angle_change)
+        right_point_angle = angle + radians(polygon_sides_angle_change)
 
         # The length from the polygon's origin point to the left and right point
         left_point_length = hypot_length / 3
@@ -49,9 +52,9 @@ class AngledPolygons:
         # Creating the polygon points
         self.points_list = [                          
                             [origin_point[0], origin_point[1]],
-                            [origin_point[0] + (polygon_hypot * math.cos(angle)), origin_point[1] - (polygon_hypot * math.sin(angle))],
-                            [origin_point[0] + (left_point_length * math.cos(left_point_angle)), origin_point[1] - (left_point_length * math.sin(left_point_angle))],
-                            [origin_point[0] + (right_point_length * math.cos(right_point_angle)), (origin_point[1] - (right_point_length * math.sin(right_point_angle)))],
+                            [origin_point[0] + (polygon_hypot * cos(angle)), origin_point[1] - (polygon_hypot * sin(angle))],
+                            [origin_point[0] + (left_point_length * cos(left_point_angle)), origin_point[1] - (left_point_length * sin(left_point_angle))],
+                            [origin_point[0] + (right_point_length * cos(right_point_angle)), (origin_point[1] - (right_point_length * sin(right_point_angle)))],
                             
         ]
 
@@ -157,9 +160,9 @@ class AngledPolygons:
             "id": self.polygons_created,
             "distance_travelled": [0, 0],
             "distance_polygon_must_travel_to_disappear": distance_polygon_must_travel_to_disappear,
-            "gradients": ((distance_polygon_must_travel_to_disappear * math.cos(angle))/ time_to_travel_distance, (distance_polygon_must_travel_to_disappear * math.sin(angle)) / time_to_travel_distance),
-            "colour": self.polygons_colour_palettes[colour_palette][random.randint(0, len(self.polygons_colour_palettes[colour_palette]) - 1)],
-            "polygon_surface": pygame.Surface((polygon_width, polygon_height)),
+            "gradients": ((distance_polygon_must_travel_to_disappear * cos(angle))/ time_to_travel_distance, (distance_polygon_must_travel_to_disappear * sin(angle)) / time_to_travel_distance),
+            "colour": self.polygons_colour_palettes[colour_palette][random_randint(0, len(self.polygons_colour_palettes[colour_palette]) - 1)],
+            "polygon_surface": pygame_Surface((polygon_width, polygon_height)),
             "ordered_points_list": self.ordered_points_list,
             "blend_rgb_add_boolean": blend_rgb_add_boolean
             }
@@ -173,7 +176,7 @@ class AngledPolygons:
         for polygon_points_dict in self.polygons_dict.copy().values():
             
             # If the polygon has not travelled the complete distance
-            if math.sqrt((polygon_points_dict["distance_travelled"][0] ** 2) + (polygon_points_dict["distance_travelled"][1] ** 2)) < polygon_points_dict["distance_polygon_must_travel_to_disappear"]:
+            if sqrt((polygon_points_dict["distance_travelled"][0] ** 2) + (polygon_points_dict["distance_travelled"][1] ** 2)) < polygon_points_dict["distance_polygon_must_travel_to_disappear"]:
 
                 # For all points inside the ordered polygon points list
                 for i in range(0, len(polygon_points_dict["ordered_points_list"])):
@@ -191,7 +194,7 @@ class AngledPolygons:
                 camera_polygon_points = ([polygon_points_dict["ordered_points_list"][i][0] - camera_position[0], polygon_points_dict["ordered_points_list"][i][1] - camera_position[1] ] for i in range(0, len(polygon_points_dict["ordered_points_list"])))
 
                 # Draw the polygon onto the angled polygons surface
-                pygame.draw.polygon(surface = self.surface, color = polygon_points_dict["colour"], points = tuple(camera_polygon_points))
+                pygame_draw_polygon(surface = self.surface, color = polygon_points_dict["colour"], points = tuple(camera_polygon_points))
 
             # If the polygon has travelled the complete distance
             else:

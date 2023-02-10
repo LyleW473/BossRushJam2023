@@ -1,5 +1,3 @@
-
-
 class EffectText:
 
     # effect_text_group = []

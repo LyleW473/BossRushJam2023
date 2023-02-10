@@ -1,4 +1,3 @@
-import pygame, os
 from Global.generic import Generic
 from Global.settings import *
 from Level.Player.building_tile import BuildingTile
@@ -6,6 +5,23 @@ from Level.Player.bamboo_projectiles import BambooProjectile
 from math import degrees, sin, cos, atan2, pi, dist
 from Global.functions import change_image_colour
 from Global.functions import sin_change_object_colour
+from os import listdir as os_list_dir
+from pygame.image import load as pygame_image_load
+from pygame.transform import flip as pygame_transform_flip
+from pygame.sprite import Sprite as pygame_sprite_Sprite
+from pygame.key import get_pressed as pygame_key_get_pressed
+from pygame import K_w as pygame_K_w
+from pygame import K_a as pygame_K_a
+from pygame import K_s as pygame_K_s
+from pygame import K_d as pygame_K_d
+from pygame import K_SPACE as pygame_K_SPACE
+from pygame import Rect as pygame_Rect
+from pygame.mouse import get_pressed as pygame_mouse_get_pressed
+from pygame.mouse import get_pos as pygame_mouse_get_pos
+from pygame.draw import rect as pygame_draw_rect
+from pygame.draw import circle as pygame_draw_circle
+from pygame.mask import from_surface as pygame_mask_from_surface
+
 
 class Player(Generic):
     
@@ -32,7 +48,7 @@ class Player(Generic):
         Generic.__init__(self, x = x, y = y, image = self.animations_dict[self.current_player_element]["Idle"]["Right"][self.animation_index])
 
         # Inherit from pygame's sprite class
-        pygame.sprite.Sprite.__init__(self) 
+        pygame_sprite_Sprite.__init__(self) 
 
         # ---------------------------------------------------------------------------------
         # Collisions
@@ -134,9 +150,9 @@ class Player(Generic):
         self.tools  =  {
                         "BuildingTool": {
                                         "Images": { 
-                                            "IconImage": pygame.image.load("graphics/Weapons/BuildingTool/IconImage.png").convert_alpha(),
-                                            "Up": pygame.image.load("graphics/Weapons/BuildingTool/Default.png").convert_alpha(),
-                                            "TileImage": pygame.image.load("graphics/Weapons/BuildingTool/BuildingTile.png").convert()
+                                            "IconImage": pygame_image_load("graphics/Weapons/BuildingTool/IconImage.png").convert_alpha(),
+                                            "Up": pygame_image_load("graphics/Weapons/BuildingTool/Default.png").convert_alpha(),
+                                            "TileImage": pygame_image_load("graphics/Weapons/BuildingTool/BuildingTile.png").convert()
                                                   },
                                         "MaximumBuildingTileHP": 100,
                                         "MaximumPlacingDistance": 6 * TILE_SIZE,
@@ -150,15 +166,15 @@ class Player(Generic):
 
                         "BambooAssaultRifle": { 
                             "Images" : {
-                                "IconImage": pygame.image.load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
-                                "Left": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/Right.png").convert_alpha(), flip_x = True, flip_y = False),
-                                "Right": pygame.image.load("graphics/Weapons/BambooAR/Right.png").convert_alpha(),
-                                "Up": pygame.image.load("graphics/Weapons/BambooAR/Up.png").convert_alpha(),
-                                "Up Left": pygame.transform.flip(surface = pygame.image.load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),"UpLeft": pygame.transform.flip(surface = pygame.image.load(f"graphics/Weapons/BambooAR/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),
-                                "Up Right": pygame.image.load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
-                                "Down": pygame.transform.flip(surface = pygame.image.load("graphics/Weapons/BambooAR/Up.png").convert_alpha(), flip_x = False, flip_y = True),
-                                "Down Left": pygame.transform.flip(surface = pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha(), flip_x = True, flip_y = False),
-                                "Down Right": pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
+                                "IconImage": pygame_image_load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
+                                "Left": pygame_transform_flip(surface = pygame_image_load(f"graphics/Weapons/BambooAR/Right.png").convert_alpha(), flip_x = True, flip_y = False),
+                                "Right": pygame_image_load("graphics/Weapons/BambooAR/Right.png").convert_alpha(),
+                                "Up": pygame_image_load("graphics/Weapons/BambooAR/Up.png").convert_alpha(),
+                                "Up Left": pygame_transform_flip(surface = pygame_image_load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),"UpLeft": pygame_transform_flip(surface = pygame_image_load(f"graphics/Weapons/BambooAR/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),
+                                "Up Right": pygame_image_load("graphics/Weapons/BambooAR/UpRight.png").convert_alpha(),
+                                "Down": pygame_transform_flip(surface = pygame_image_load("graphics/Weapons/BambooAR/Up.png").convert_alpha(), flip_x = False, flip_y = True),
+                                "Down Left": pygame_transform_flip(surface = pygame_image_load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha(), flip_x = True, flip_y = False),
+                                "Down Right": pygame_image_load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
                                         },
                             "ShootingCooldown": 150,
                             "ShootingCooldownTimer": None, # 150 so that the player starts off being unable to shoot (after pressing the play button)
@@ -171,7 +187,7 @@ class Player(Generic):
                                             "ShootingCooldown": 0, 
                                             "PreviouslyShotTime": 0,
                                             "Images": {
-                                                "IconImage": pygame.image.load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
+                                                "IconImage": pygame_image_load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
                                                       }
                                           },
                         }
@@ -192,34 +208,34 @@ class Player(Generic):
         # A dictionary that will hold all of the animations
         self.animations_dict = {"Normal": {
         "Idle": {
-            "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Idle/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Idle/Right")))],
-            "Right": [pygame.image.load(f"graphics/Player/Normal/Idle/Right/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Right")))],
-            "Up": [pygame.image.load(f"graphics/Player/Normal/Idle/Up/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Up")))],
-            "Up Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Idle/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Idle/UpRight")))],
-            "Up Right": [pygame.image.load(f"graphics/Player/Normal/Idle/UpRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/UpRight")))],
-            "Down": [pygame.image.load(f"graphics/Player/Normal/Idle/Down/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Down")))],
-            "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Idle/DownRight")))],
-            "Down Right": [pygame.image.load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Idle/Downright")))],
+            "Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Player/Normal/Idle/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_list_dir("graphics/Player/Normal/Idle/Right")))),
+            "Right": tuple(pygame_image_load(f"graphics/Player/Normal/Idle/Right/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Idle/Right")))),
+            "Up": tuple(pygame_image_load(f"graphics/Player/Normal/Idle/Up/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Idle/Up")))),
+            "Up Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Player/Normal/Idle/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_list_dir("graphics/Player/Normal/Idle/UpRight")))),
+            "Up Right": tuple(pygame_image_load(f"graphics/Player/Normal/Idle/UpRight/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Idle/UpRight")))),
+            "Down": tuple(pygame_image_load(f"graphics/Player/Normal/Idle/Down/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Idle/Down")))),
+            "Down Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_list_dir("graphics/Player/Normal/Idle/DownRight")))),
+            "Down Right": tuple(pygame_image_load(f"graphics/Player/Normal/Idle/DownRight/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Idle/Downright")))),
                 },
     
         "Run": {
-            "Left": [pygame.transform.flip(surface = pygame.image.load( f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Right")))],
-            "Right": [pygame.image.load(f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Right")))],
-            "Up": [pygame.image.load(f"graphics/Player/Normal/Run/Body/Up/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Up")))],
-            "Down": [pygame.image.load(f"graphics/Player/Normal/Run/Body/Down/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Body/Down")))],
+            "Left": tuple(pygame_transform_flip(surface = pygame_image_load( f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_list_dir("graphics/Player/Normal/Run/Body/Right")))),
+            "Right": tuple(pygame_image_load(f"graphics/Player/Normal/Run/Body/Right/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Run/Body/Right")))),
+            "Up": tuple(pygame_image_load(f"graphics/Player/Normal/Run/Body/Up/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Run/Body/Up")))),
+            "Down": tuple(pygame_image_load(f"graphics/Player/Normal/Run/Body/Down/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Run/Body/Down")))),
                }
                                          }
                                }
 
         self.head_dict = {"Normal": {
-            "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Head/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Right")))],
-            "Right": [pygame.image.load(f"graphics/Player/Normal/Run/Head/Right/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Right")))],   
-            "Up": [pygame.image.load(f"graphics/Player/Normal/Run/Head/Up/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Up")))],
-            "Up Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Head/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/UpRight")))],
-            "Up Right": [pygame.image.load(f"graphics/Player/Normal/Run/Head/UpRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/UpRight")))],
-            "Down": [pygame.image.load(f"graphics/Player/Normal/Run/Head/Down/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/Down")))],
-            "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Player/Normal/Run/Head/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/DownRight")))],
-            "Down Right": [pygame.image.load(f"graphics/Player/Normal/Run/Head/DownRight/{i}.png").convert_alpha() for i in range(len(os.listdir("graphics/Player/Normal/Run/Head/DownRight")))],   
+            "Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Player/Normal/Run/Head/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_list_dir("graphics/Player/Normal/Run/Head/Right")))),
+            "Right": tuple(pygame_image_load(f"graphics/Player/Normal/Run/Head/Right/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Run/Head/Right")))),   
+            "Up": tuple(pygame_image_load(f"graphics/Player/Normal/Run/Head/Up/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Run/Head/Up")))),
+            "Up Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Player/Normal/Run/Head/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_list_dir("graphics/Player/Normal/Run/Head/UpRight")))),
+            "Up Right": tuple(pygame_image_load(f"graphics/Player/Normal/Run/Head/UpRight/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Run/Head/UpRight")))),
+            "Down": tuple(pygame_image_load(f"graphics/Player/Normal/Run/Head/Down/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Run/Head/Down")))),
+            "Down Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Player/Normal/Run/Head/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_list_dir("graphics/Player/Normal/Run/Head/DownRight")))),
+            "Down Right": tuple(pygame_image_load(f"graphics/Player/Normal/Run/Head/DownRight/{i}.png").convert_alpha() for i in range(len(os_list_dir("graphics/Player/Normal/Run/Head/DownRight")))),   
                                     }
                         }
 
@@ -237,7 +253,7 @@ class Player(Generic):
         # Changes the player's animation state if the conditions are met
 
         # If the player is moving left, right, up or down
-        if pygame.key.get_pressed()[pygame.K_a] or pygame.key.get_pressed()[pygame.K_d] or pygame.key.get_pressed()[pygame.K_w] or pygame.key.get_pressed()[pygame.K_s]:
+        if pygame_key_get_pressed()[pygame_K_a] or pygame_key_get_pressed()[pygame_K_d] or pygame_key_get_pressed()[pygame_K_w] or pygame_key_get_pressed()[pygame_K_s]:
 
             """ 
             Play the idle animation:
@@ -251,18 +267,18 @@ class Player(Generic):
             if hasattr(self, "direction_collisions") == False:
                 # Create a dictionary that holds the collisions in the direction that the player is facing
                 self.direction_collisions = {
-                                            "Left": pygame.Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height),
-                                            "Right": pygame.Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height),
-                                            "Up": pygame.Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height),
-                                            "Down": pygame.Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
+                                            "Left": pygame_Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height),
+                                            "Right": pygame_Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height),
+                                            "Up": pygame_Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height),
+                                            "Down": pygame_Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
                                             }
             # If this dictionary already exists
             else:
                 # Update the dictionary's rect values
-                self.direction_collisions["Left"]  = pygame.Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height)
-                self.direction_collisions["Right"] = pygame.Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height)
-                self.direction_collisions["Up"] = pygame.Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height)
-                self.direction_collisions["Down"]  = pygame.Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
+                self.direction_collisions["Left"]  = pygame_Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height)
+                self.direction_collisions["Right"] = pygame_Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height)
+                self.direction_collisions["Up"] = pygame_Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height)
+                self.direction_collisions["Down"]  = pygame_Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
 
             # Create a tuple of the directions the player is currently moving in
             current_directions = [key for key in self.direction_variables_dict.keys() if self.direction_variables_dict[key] == True]
@@ -293,7 +309,7 @@ class Player(Generic):
                     self.animation_index = 0
 
         # If the player has stopped running left or right
-        elif pygame.key.get_pressed()[pygame.K_a] == False and pygame.key.get_pressed()[pygame.K_d] == False and pygame.key.get_pressed()[pygame.K_w] == False and pygame.key.get_pressed()[pygame.K_s] == False:
+        elif pygame_key_get_pressed()[pygame_K_a] == False and pygame_key_get_pressed()[pygame_K_d] == False and pygame_key_get_pressed()[pygame_K_w] == False and pygame_key_get_pressed()[pygame_K_s] == False:
 
             # If the current animation state has not been set to "Idle" yet
             if self.current_animation_state != "Idle":
@@ -500,7 +516,7 @@ class Player(Generic):
         - The camera position must be subtracted so that the image is drawn within the limits of the screen.
         - Half of the image width and height is subtracted so that the rotation of the player image is centered within the player rect.
         """
-        # pygame.draw.rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
+        # pygame_draw_rect(self.surface, "purple", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 0)
         
         # If the current animation state is "Run"
         if self.current_animation_state == "Run":
@@ -550,7 +566,7 @@ class Player(Generic):
         elif self.current_animation_state == "Idle":
 
             # If the player is pressing the left mouse button
-            if pygame.mouse.get_pressed()[0] == True:
+            if pygame_mouse_get_pressed()[0] == True:
                 """ There is an error where the animation index is not reset when switching to this "shooting idle" animation. 
                 Therefore, if the animation index + 1 is greater than the number of frames in the current animation list, the animation index should be reset.
                 """
@@ -653,25 +669,25 @@ class Player(Generic):
         # Updates the direction variables inside the dictionary direction variables dictionary. Creates a list of the direction the player is moving towards.
 
         # Left
-        if pygame.key.get_pressed()[pygame.K_a] == False:
+        if pygame_key_get_pressed()[pygame_K_a] == False:
             self.direction_variables_dict["Left"] = False
-        elif pygame.key.get_pressed()[pygame.K_a] == True:
+        elif pygame_key_get_pressed()[pygame_K_a] == True:
             self.direction_variables_dict["Left"] = True
         
         # Right
-        if pygame.key.get_pressed()[pygame.K_d] == False:
+        if pygame_key_get_pressed()[pygame_K_d] == False:
             self.direction_variables_dict["Right"] = False
-        elif pygame.key.get_pressed()[pygame.K_d] == True:
+        elif pygame_key_get_pressed()[pygame_K_d] == True:
             self.direction_variables_dict["Right"] = True
         # Up
-        if pygame.key.get_pressed()[pygame.K_w] == False:
+        if pygame_key_get_pressed()[pygame_K_w] == False:
             self.direction_variables_dict["Up"] = False
-        elif pygame.key.get_pressed()[pygame.K_w] == True:
+        elif pygame_key_get_pressed()[pygame_K_w] == True:
             self.direction_variables_dict["Up"] = True
         # Down
-        if pygame.key.get_pressed()[pygame.K_s] == False:
+        if pygame_key_get_pressed()[pygame_K_s] == False:
             self.direction_variables_dict["Down"] = False
-        elif pygame.key.get_pressed()[pygame.K_s] == True:
+        elif pygame_key_get_pressed()[pygame_K_s] == True:
             self.direction_variables_dict["Down"] = True
 
         # Create a list that stores the direction(s) that the player is moving towards
@@ -704,7 +720,7 @@ class Player(Generic):
             next_position_y = self.rect.y
 
             # If the "a" key is pressed
-            if pygame.key.get_pressed()[pygame.K_a] and pygame.key.get_pressed()[pygame.K_d] == False:
+            if pygame_key_get_pressed()[pygame_K_a] and pygame_key_get_pressed()[pygame_K_d] == False:
 
                 # If the player is decelerating currently
                 if self.decelerating == True:
@@ -751,7 +767,7 @@ class Player(Generic):
                             self.rect.x = round(next_position_x)
 
             # If the "d" key is pressed
-            elif pygame.key.get_pressed()[pygame.K_d] and pygame.key.get_pressed()[pygame.K_a] == False:
+            elif pygame_key_get_pressed()[pygame_K_d] and pygame_key_get_pressed()[pygame_K_a] == False:
 
                 # If the player is decelerating currently
                 if self.decelerating == True:
@@ -798,7 +814,7 @@ class Player(Generic):
                             self.rect.x = round(next_position_x)
 
             # If the "w" key is pressed
-            if pygame.key.get_pressed()[pygame.K_w] and pygame.key.get_pressed()[pygame.K_s] == False:
+            if pygame_key_get_pressed()[pygame_K_w] and pygame_key_get_pressed()[pygame_K_s] == False:
 
                 # If the player is decelerating currently
                 if self.decelerating == True:
@@ -844,7 +860,7 @@ class Player(Generic):
                             self.rect.y = round(next_position_y)
 
             # If the "s" key is pressed
-            elif pygame.key.get_pressed()[pygame.K_s] and pygame.key.get_pressed()[pygame.K_w] == False:
+            elif pygame_key_get_pressed()[pygame_K_s] and pygame_key_get_pressed()[pygame_K_w] == False:
 
                 # If the player is decelerating currently
                 if self.decelerating == True:
@@ -894,7 +910,7 @@ class Player(Generic):
             # Deceleration
 
             # If the player has let go of all movement input keys or if the deceleration has already started
-            if (pygame.key.get_pressed()[pygame.K_a] == False and pygame.key.get_pressed()[pygame.K_d] == False and pygame.key.get_pressed()[pygame.K_w] == False and pygame.key.get_pressed()[pygame.K_s] == False and self.movement_suvat_u > 0) or self.decelerating == True:
+            if (pygame_key_get_pressed()[pygame_K_a] == False and pygame_key_get_pressed()[pygame_K_d] == False and pygame_key_get_pressed()[pygame_K_w] == False and pygame_key_get_pressed()[pygame_K_s] == False and self.movement_suvat_u > 0) or self.decelerating == True:
 
                 # (For floating point accuracy)
                 # Note: This is declared here because self.rect.x or self.rect.y may have changed 
@@ -1033,8 +1049,8 @@ class Player(Generic):
                 # Horizontal collisions
 
                 # Find the x collisions to the left and right of the player
-                x_collisions_left = pygame.Rect(self.rect.x - distance_to_travel , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
-                x_collisions_right = pygame.Rect(self.rect.x + distance_to_travel , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
+                x_collisions_left = pygame_Rect(self.rect.x - distance_to_travel , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
+                x_collisions_right = pygame_Rect(self.rect.x + distance_to_travel , self.rect.y, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)
 
                 # If there is an x collision to the right of the player
                 if x_collisions_right != None:
@@ -1083,8 +1099,8 @@ class Player(Generic):
             if check_y == True:
 
                 # Find the collisions above and below the player
-                y_collisions_up = pygame.Rect(self.rect.x, self.rect.y - distance_to_travel, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
-                y_collisions_down = pygame.Rect(self.rect.x, self.rect.y + distance_to_travel, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
+                y_collisions_up = pygame_Rect(self.rect.x, self.rect.y - distance_to_travel, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
+                y_collisions_down = pygame_Rect(self.rect.x, self.rect.y + distance_to_travel, self.rect.width, self.rect.height).collidedict(self.neighbouring_tiles_dict)     
 
                 # If there is an y collision above the player
                 if y_collisions_up != None:
@@ -1155,10 +1171,10 @@ class Player(Generic):
         """
         - The scale multiplier refers to how much the surface that everything will be drawn onto has been scaled by 
         """
-        mouse_position = pygame.mouse.get_pos()  
+        mouse_position = pygame_mouse_get_pos()  
         scale_multiplier = (screen_width / self.surface.get_width(), screen_height / self.surface.get_height())
         self.mouse_position = ((mouse_position[0] / scale_multiplier[0]) + self.camera_position[0] , (mouse_position[1] / scale_multiplier[1]) + self.camera_position[1])
-        self.mouse_rect = pygame.Rect(self.mouse_position[0], self.mouse_position[1], 1, 1)
+        self.mouse_rect = pygame_Rect(self.mouse_position[0], self.mouse_position[1], 1, 1)
 
         # Find the distance between the mouse and the center of the player in their horizontal and vertical components
         dx, dy = self.mouse_position[0] - self.rect.centerx, self.mouse_position[1] - self.rect.centery
@@ -1187,7 +1203,7 @@ class Player(Generic):
         # Draws the weapon onto main surface
         
         # If the player is pressing the left mouse button
-        if pygame.mouse.get_pressed()[0]:
+        if pygame_mouse_get_pressed()[0]:
             
             # ---------------------------------------------------------------------------------------------------
             # Assigning tool image
@@ -1243,7 +1259,7 @@ class Player(Generic):
             # ---------------------------------------------------------------------------------------------------
             # Draw the weapon at the position
 
-            # pygame.draw.circle(self.scaled_surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), hypot_distance, 1)
+            # pygame_draw_circle(self.scaled_surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), hypot_distance, 1)
             self.surface.blit(tool_image, (self.weapon_position[0] - self.camera_position[0], self.weapon_position[1] - self.camera_position[1]))
 
     def activate_frenzy_mode(self):
@@ -1254,7 +1270,7 @@ class Player(Generic):
         if (self.player_gameplay_info_dict["CurrentFrenzyModeValue"] == self.player_gameplay_info_dict["MaximumFrenzyModeValue"]):
             
             # If the player presses the "space" key
-            if pygame.key.get_pressed()[pygame.K_SPACE]:
+            if pygame_key_get_pressed()[pygame_K_SPACE]:
 
                 # Set the frenzy mode fire rate boost to 2
                 self.player_gameplay_info_dict["FrenzyModeFireRateBoost"] = 2
@@ -1492,10 +1508,10 @@ class Player(Generic):
                 
                 # Highlight the building tile
                 building_tile_to_highlight = self.tools["BuildingTool"]["ExistingBuildingTilesList"][collision_result_index]
-                pygame.draw.rect(
+                pygame_draw_rect(
                                 surface = self.surface,
                                 color = "orange",
-                                rect = pygame.Rect(
+                                rect = pygame_Rect(
                                                     building_tile_to_highlight.rect.x - self.camera_position[0],
                                                     building_tile_to_highlight.rect.y  - self.camera_position[1],
                                                     building_tile_to_highlight.rect.width,
@@ -1508,7 +1524,7 @@ class Player(Generic):
             # Checking for input to remove building tiles
 
             # If the player pressed the right mouse button and there is an existing building tile
-            if pygame.mouse.get_pressed()[2] and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0:
+            if pygame_mouse_get_pressed()[2] and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0:
                 
                 # If enough time has passed since the player last removed a building tile
                 if self.tools["BuildingTool"]["LastTileRemovedTimer"] == None:
@@ -1541,11 +1557,11 @@ class Player(Generic):
             # Checking for placement of building tiles
 
             # Draw a guide circles to show the minimum and maximum distances the player can place building tiles (MAY REMOVE)
-            pygame.draw.circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MinimumPlacingDistance"], 1)
-            pygame.draw.circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MaximumPlacingDistance"], 2)
+            pygame_draw_circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MinimumPlacingDistance"], 1)
+            pygame_draw_circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MaximumPlacingDistance"], 2)
 
             # Find collisions between the mouse rect and empty tiles inside the tile map
-            empty_tile_collision = pygame.Rect(self.mouse_position[0] , self.mouse_position[1] , 1, 1).collidedict(self.empty_tiles_dict)
+            empty_tile_collision = pygame_Rect(self.mouse_position[0] , self.mouse_position[1] , 1, 1).collidedict(self.empty_tiles_dict)
 
             # If there is a collision between the mouse rect and an empty tile 
             if empty_tile_collision != None:
@@ -1562,10 +1578,10 @@ class Player(Generic):
                 # If the distance between the center of the player and the center of the empty tile at the mouse position less than the maximum distance
                 if self.tools["BuildingTool"]["MinimumPlacingDistance"] < dist(self.rect.center, empty_tile_center) < self.tools["BuildingTool"]["MaximumPlacingDistance"]:
                     # Highlight the empty tile as green
-                    pygame.draw.rect(
+                    pygame_draw_rect(
                                     surface = self.surface,
                                     color = "green", 
-                                    rect = pygame.Rect(
+                                    rect = pygame_Rect(
                                                         empty_tile_rect_info[0] - self.camera_position[0], 
                                                         empty_tile_rect_info[1] - self.camera_position[1],
                                                         empty_tile_rect_info[2],
@@ -1574,7 +1590,7 @@ class Player(Generic):
                                     )   
 
                     # If the left mouse button is pressed and there are less than 3 existing building tiles
-                    if pygame.mouse.get_pressed()[0] == True and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) < 3:
+                    if pygame_mouse_get_pressed()[0] == True and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) < 3:
                         
                         # If the player has enough bamboo resource to place down another building tile
                         if self.player_gameplay_info_dict["AmountOfBambooResource"] - self.tools["BuildingTool"]["BambooResourceDepletionAmount"] > 0:
@@ -1604,10 +1620,10 @@ class Player(Generic):
                      dist(self.rect.center, empty_tile_center) >= self.tools["BuildingTool"]["MaximumPlacingDistance"]:
 
                     # Highlight the empty tile as red
-                    pygame.draw.rect(
+                    pygame_draw_rect(
                                     surface = self.surface,
                                     color = "red", 
-                                    rect = pygame.Rect(
+                                    rect = pygame_Rect(
                                                         empty_tile_rect_info[0] - self.camera_position[0], 
                                                         empty_tile_rect_info[1] - self.camera_position[1],
                                                         empty_tile_rect_info[2],
@@ -1625,7 +1641,7 @@ class Player(Generic):
         # --------------------------------------------------------------------------------------
         # Handling shooting input
 
-        # pygame.draw.circle(self.scaled_surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), 50, 1)
+        # pygame_draw_circle(self.scaled_surface, "white", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), 50, 1)
 
         # If the current tool equipped by the player is not the building tool
         if self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":       
@@ -1649,7 +1665,7 @@ class Player(Generic):
                     current_weapon["ShootingCooldownTimer"] = None
 
             # If the left mouse button has been pressed and the player has enough resources to shoot
-            if pygame.mouse.get_pressed()[0] == True and \
+            if pygame_mouse_get_pressed()[0] == True and \
                 ((self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon["BambooResourceDepletionAmount"]) >= 0 or self.player_gameplay_info_dict["FrenzyModeTimer"] != None):
 
                 # If the player's current weapon is the "BambooAssaultRifle"
@@ -1784,13 +1800,13 @@ class Player(Generic):
 
         # # TEMPORARY
         # for tile in self.neighbouring_tiles_dict.keys():
-        #     pygame.draw.rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
+        #     pygame_draw_rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
         # Track player movement
         self.handle_player_movement()
         
         # Create / update a mask for pixel - perfect collisions
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = pygame_mask_from_surface(self.image)
 
         # ----------------------------------
         # Gameplay

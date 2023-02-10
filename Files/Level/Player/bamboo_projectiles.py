@@ -1,12 +1,13 @@
-import pygame
 from Global.generic import Generic
 from math import sin, cos, degrees
 from Global.settings import *
+from pygame.image import load as pygame_image_load
+from pygame.transform import rotozoom as pygame_transform_rotozoom
 
 class BambooProjectile(Generic):
     
     # Projectile image of all bamboo projectiles
-    projectile_image = pygame.image.load("graphics/Projectiles/BambooProjectile.png")
+    projectile_image = pygame_image_load("graphics/Projectiles/BambooProjectile.png")
 
     # Default time to cover the distance travelled
     default_time_to_travel_distance_at_final_velocity = 0.25
@@ -44,7 +45,7 @@ class BambooProjectile(Generic):
         - This is because the BLEND_RGB_ADD flag is used, so saving bamboo_projectile.image as the changed colour image will keep adding up the RGB values
         """
 
-        self.original_image = pygame.transform.rotozoom(surface = BambooProjectile.projectile_image.convert_alpha(), angle = degrees(angle), scale = 1)
+        self.original_image = pygame_transform_rotozoom(surface = BambooProjectile.projectile_image.convert_alpha(), angle = degrees(angle), scale = 1)
         # Inherit from the Generic class, which has basic attributes and methods.
         Generic.__init__(self, x = x, y = y, image = self.original_image)
 

@@ -1,4 +1,3 @@
-import pygame
 from Global.settings import *
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
@@ -9,15 +8,32 @@ from random import randrange as random_randrange
 from math import sin, cos, dist
 from os import listdir as os_listdir
 
+from pygame.display import get_surface as pygame_display_get_surface
+from pygame import Surface as pygame_Surface
+from pygame.sprite import Group as pygame_sprite_Group
+from pygame.sprite import GroupSingle as pygame_sprite_GroupSingle
+from pygame.sprite import collide_mask as pygame_sprite_collide_mask
+from pygame.image import load as pygame_image_load
+from pygame.transform import smoothscale as pygame_transform_smoothscale
+from pygame.transform import scale as pygame_transform_scale
+from pygame.transform import flip as pygame_transform_flip
+from pygame.sprite import spritecollide as pygame_sprite_spritecollide
+from pygame.sprite import collide_rect as pygame_sprite_collide_rect
+from pygame.key import get_pressed as pygame_key_get_pressed
+from pygame import K_f as pygame_K_f
+from pygame.draw import rect as pygame_draw_rect
+from pygame.draw import circle as pygame_draw_circle
+
+
 class Game:
     def __init__(self):
 
         # Screen
-        self.screen = pygame.display.get_surface()  
+        self.screen = pygame_display_get_surface()  
 
         # Create a surface for which all objects will be drawn onto. This surface is then scaled and drawn onto the main screen
         self.scale_multiplier = 2
-        self.scaled_surface = pygame.Surface((screen_width / self.scale_multiplier, screen_height / self.scale_multiplier))
+        self.scaled_surface = pygame_Surface((screen_width / self.scale_multiplier, screen_height / self.scale_multiplier))
 
         # Attribute which is monitored by the game states controller
         self.running = False
@@ -41,12 +57,12 @@ class Game:
         # --------------------------------------------------------------------------------------
         # Groups
         self.world_tiles_dict = {} # Dictionary used to hold all the world tiles 
-        self.world_tiles_group = pygame.sprite.Group()
-        # self.player_group = pygame.sprite.GroupSingle(self.player) This was created inside the create_objects_tile_map method
-        self.bamboo_projectiles_group = pygame.sprite.Group() # Group for all bamboo projectiles for the player
+        self.world_tiles_group = pygame_sprite_Group()
+        # self.player_group = pygame_sprite_GroupSingle(self.player) This was created inside the create_objects_tile_map method
+        self.bamboo_projectiles_group = pygame_sprite_Group() # Group for all bamboo projectiles for the player
         self.empty_tiles_dict = {} # Dictionary used to hold all of the empty tiles in the tile map
-        self.bamboo_piles_group = pygame.sprite.Group()
-        self.boss_group = pygame.sprite.GroupSingle()
+        self.bamboo_piles_group = pygame_sprite_Group()
+        self.boss_group = pygame_sprite_GroupSingle()
 
         # --------------------------------------------------------------------------------------
         # Boss and player guidelines
@@ -55,7 +71,7 @@ class Game:
         self.guidelines_segments_thickness = 5
 
         # Surface
-        self.guidelines_surface = pygame.Surface((self.scaled_surface.get_width(), self.scaled_surface.get_height()))
+        self.guidelines_surface = pygame_Surface((self.scaled_surface.get_width(), self.scaled_surface.get_height()))
         self.guidelines_surface.set_colorkey("black")
         self.guidelines_surface_default_alpha_level = 105
         self.guidelines_surface.set_alpha(self.guidelines_surface_default_alpha_level)
@@ -63,7 +79,7 @@ class Game:
         # ---------------------------------------------------------------------------------
         # Cursor images
 
-        self.default_cursor_image = pygame.image.load("graphics/Cursors/Default.png").convert_alpha()
+        self.default_cursor_image = pygame_image_load("graphics/Cursors/Default.png").convert_alpha()
     # --------------------------------------------------------------------------------------
     # Camera methods
 
@@ -155,7 +171,7 @@ class Game:
 
         # Create a dictionary filled with all of the tiles' images
         # Note: Start at index 1 because the "0" tile represents nothing. 
-        self.tile_images = {i + 1: pygame.image.load(f"graphics/Tiles/{i + 1}.png").convert() for i in range(0, len(os_listdir("graphics/Tiles")))} 
+        self.tile_images = {i + 1: pygame_image_load(f"graphics/Tiles/{i + 1}.png").convert() for i in range(0, len(os_listdir("graphics/Tiles")))} 
 
     def create_objects_tile_map(self, non_transformed_tile_map):
 
@@ -186,13 +202,13 @@ class Game:
                                             )
 
                         # Add the player to its group
-                        self.player_group = pygame.sprite.GroupSingle(self.player)
+                        self.player_group = pygame_sprite_GroupSingle(self.player)
 
 
                     # World tile 1
                     case 2:
                         # Create a world tile
-                        world_tile = WorldTile(x = (column_index * TILE_SIZE), y = (row_index * TILE_SIZE), image = pygame.transform.smoothscale(self.tile_images[1], (TILE_SIZE, TILE_SIZE)))
+                        world_tile = WorldTile(x = (column_index * TILE_SIZE), y = (row_index * TILE_SIZE), image = pygame_transform_smoothscale(self.tile_images[1], (TILE_SIZE, TILE_SIZE)))
 
                         # Add the world tile to the world tiles dictionary
                         # The key is the world tile because we use pygame.rect.collidedict in other areas of the code, the value is the type of world tile (The other type is building tiles)
@@ -253,7 +269,7 @@ class Game:
 
         for bamboo_projectile in self.bamboo_projectiles_group:
             # Draw the bamboo projectile 
-            # pygame.draw.rect(self.scaled_surface, "white", (bamboo_projectile.rect.x - self.camera_position[0], bamboo_projectile.rect.y - self.camera_position[1], bamboo_projectile.rect.width, bamboo_projectile.rect.height), 0)
+            # pygame_draw_rect(self.scaled_surface, "white", (bamboo_projectile.rect.x - self.camera_position[0], bamboo_projectile.rect.y - self.camera_position[1], bamboo_projectile.rect.width, bamboo_projectile.rect.height), 0)
             bamboo_projectile.draw(surface = self.scaled_surface, x = bamboo_projectile.rect.x - self.camera_position[0], y = bamboo_projectile.rect.y - self.camera_position[1])
        
         # ---------------------------------------------
@@ -348,7 +364,7 @@ class Game:
                     if bamboo_projectile.rect.colliderect(self.bosses_dict[self.bosses_dict["CurrentBoss"]].rect) == True:
                         
                         # Check for a pixel-perfect collision between the bamboo projectile and the current boss
-                        if pygame.sprite.collide_mask(bamboo_projectile, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
+                        if pygame_sprite_collide_mask(bamboo_projectile, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
                             # If there is a pixel-perfect collision:
 
                             # Damage the current boss by the amount of damage that was passed into the bamboo projectile
@@ -390,7 +406,7 @@ class Game:
         # Bamboo piles
 
         # Look for collisions between the player and bamboo piles, and only delete the bamboo pile if there is a collision and the player does not currently have the maximum amount of bamboo resource
-        player_and_bamboo_piles_collision_list = pygame.sprite.spritecollide(self.player, self.bamboo_piles_group, dokill = False, collided = pygame.sprite.collide_rect)
+        player_and_bamboo_piles_collision_list = pygame_sprite_spritecollide(self.player, self.bamboo_piles_group, dokill = False, collided = pygame_sprite_collide_rect)
         if len(player_and_bamboo_piles_collision_list) > 0 and \
             ((self.player.player_gameplay_info_dict["AmountOfBambooResource"] != self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]) or (self.player.player_gameplay_info_dict["CurrentHealth"] != self.player.player_gameplay_info_dict["MaximumHealth"])):
             
@@ -478,7 +494,7 @@ class Game:
                         stomp_attack_node.rescale_image()
                     
                     # Check for a pixel-perfect collision between the stomp attack node and the building tile
-                    if pygame.sprite.collide_mask(stomp_attack_node, collision_result[0]) != None:
+                    if pygame_sprite_collide_mask(stomp_attack_node, collision_result[0]) != None:
                         
                         # If the stomp attack node was blocked by a building tile
                         if collision_result[1] == "BuildingTile":
@@ -551,7 +567,7 @@ class Game:
                         stomp_attack_node.rescale_image()
 
                     # Check for a pixel-perfect collision between the stomp attack node and the player
-                    if pygame.sprite.collide_mask(stomp_attack_node, self.player) != None:
+                    if pygame_sprite_collide_mask(stomp_attack_node, self.player) != None:
 
                         # Remove the stomp attack node from the group if there is a collision
                         self.stomp_attack_nodes_group.remove(stomp_attack_node)
@@ -595,7 +611,7 @@ class Game:
                         stomp_attack_node.rescale_image()
 
                     # Check for a pixel-perfect collision between the bamboo projectile and the current boss
-                    if pygame.sprite.collide_mask(stomp_attack_node, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
+                    if pygame_sprite_collide_mask(stomp_attack_node, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
                         
                         # Remove the stomp attack node from the group if there is a collision
                         self.stomp_attack_nodes_group.remove(stomp_attack_node)
@@ -642,7 +658,7 @@ class Game:
                 if building_collision_result_index != -1:
                     
                     # Check for pixel-perfect collision between the boss and the building tile
-                    if pygame.sprite.collide_mask(self.boss_group.sprite, self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]) != None:
+                    if pygame_sprite_collide_mask(self.boss_group.sprite, self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]) != None:
                         
                         # Temporary variable for the building tile to remove
                         building_tile_to_remove = self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]
@@ -732,7 +748,7 @@ class Game:
             if self.boss_group.sprite.rect.colliderect(self.player.rect) == True and (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None):
 
                 # If there is pixel-perfect collision 
-                if pygame.sprite.collide_mask(self.boss_group.sprite, self.player):
+                if pygame_sprite_collide_mask(self.boss_group.sprite, self.player):
 
                     # Knockback the player
                     self.player.player_gameplay_info_dict["KnockbackAttackDirection"] = [self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"]]
@@ -777,7 +793,7 @@ class Game:
         if collision_result != None:
 
             # Check for a pixel-perfect collision between the item and the world tile that the item's rect collided with
-            if pygame.sprite.collide_mask(item, collision_result[0]) != None:
+            if pygame_sprite_collide_mask(item, collision_result[0]) != None:
                 # If there is a pixel-perfect collision, remove the item from the specified group
                 other_group.remove(item)
     
@@ -923,7 +939,7 @@ class Game:
                                 self.bosses_dict["ValidSpawningPosition"][1] - (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) <= empty_tile[1] <= self.bosses_dict["ValidSpawningPosition"][1] + (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE):
                                 
                                 # Highlight the empty tile
-                                pygame.draw.rect(
+                                pygame_draw_rect(
                                     surface = self.scaled_surface, 
                                     color = (40, 40, 40), 
                                     rect = (empty_tile[0] - self.camera_position[0], empty_tile[1] - self.camera_position[1], empty_tile[2], empty_tile[3]), 
@@ -931,7 +947,7 @@ class Game:
                                     border_radius = 5
                                     )
                                 # Draw a circle which grows with the spawning effect counter (inner circle)
-                                pygame.draw.circle(
+                                pygame_draw_circle(
                                                 surface = self.scaled_surface, 
                                                 color = (60, 60, 60),
                                                 center = ((self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2)) - self.camera_position[0], (self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)) - self.camera_position[1]), 
@@ -940,7 +956,7 @@ class Game:
                                                 )
 
                                 # Draw a circle which grows with the spawning effect counter (outer circle)
-                                pygame.draw.circle(
+                                pygame_draw_circle(
                                                 surface = self.scaled_surface, 
                                                 color = (80, 80, 80), 
                                                 center = ((self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2)) - self.camera_position[0], (self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)) - self.camera_position[1]), 
@@ -949,7 +965,7 @@ class Game:
                                                 )
 
                     # Draw the spawning tile
-                    pygame.draw.rect(
+                    pygame_draw_rect(
                                     surface = self.scaled_surface, 
                                     color = "firebrick1", 
                                     rect = (
@@ -963,7 +979,7 @@ class Game:
                                     )
         
                     # Draw the spawning tile outline    
-                    pygame.draw.rect(
+                    pygame_draw_rect(
                                     surface = self.scaled_surface, 
                                     color = "black", 
                                     rect = (
@@ -1040,35 +1056,35 @@ class Game:
                 # Create a class attribute for the SikaDeerBoss, which is an image dictionary holding all the images for each action that the boss has
                 SikaDeerBoss.ImagesDict = {
 
-                    "Chase": [pygame.image.load(f"graphics/Bosses/SikaDeer/Chase/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Chase")))],
-                    "Stomp": [pygame.image.load(f"graphics/Bosses/SikaDeer/Stomp/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Stomp")))],
+                    "Chase": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Chase/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Chase")))),
+                    "Stomp": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Stomp/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Stomp")))),
 
                     "Target": { 
-                            "Up": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/Up/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Up")))],
-                            "Up Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Target/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/UpRight")))],
-                            "Up Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/UpRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/UpRight")))],
+                            "Up": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Target/Up/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Up")))),
+                            "Up Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/SikaDeer/Target/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/UpRight")))),
+                            "Up Right": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Target/UpRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/UpRight")))),
 
-                            "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Target/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Right")))],
-                            "Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/Right/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Right")))],
+                            "Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/SikaDeer/Target/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Right")))),
+                            "Right": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Target/Right/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Right")))),
 
-                            "Down": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/Down/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Down")))],
-                            "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Target/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/DownRight")))],
-                            "Down Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Target/DownRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/DownRight")))],
+                            "Down": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Target/Down/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/Down")))),
+                            "Down Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/SikaDeer/Target/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/DownRight")))),
+                            "Down Right": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Target/DownRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Target/DownRight")))),
                             },
                     "Charge": {
-                            "Up": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/Up/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Up")))],
-                            "Up Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/UpRight")))],
-                            "Up Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/UpRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/UpRight")))],
+                            "Up": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Charge/Up/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Up")))),
+                            "Up Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/SikaDeer/Charge/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/UpRight")))),
+                            "Up Right": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Charge/UpRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/UpRight")))),
 
-                            "Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Right")))],
-                            "Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/Right/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Right")))],
+                            "Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/SikaDeer/Charge/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Right")))),
+                            "Right": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Charge/Right/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Right")))),
 
-                            "Down": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/Down/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Down")))],
-                            "Down Left": [pygame.transform.flip(surface = pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/DownRight")))],
-                            "Down Right": [pygame.image.load(f"graphics/Bosses/SikaDeer/Charge/DownRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/DownRight")))],
+                            "Down": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Charge/Down/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/Down")))),
+                            "Down Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/SikaDeer/Charge/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/DownRight")))),
+                            "Down Right": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Charge/DownRight/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Charge/DownRight")))),
                                 
                                 },
-                    "Stunned": [pygame.image.load(f"graphics/Bosses/SikaDeer/Stunned/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Stunned")))],
+                    "Stunned": tuple(pygame_image_load(f"graphics/Bosses/SikaDeer/Stunned/{i}.png").convert_alpha() for i in range(0, len(os_listdir("graphics/Bosses/SikaDeer/Stunned")))),
 
 
                                         }
@@ -1085,7 +1101,7 @@ class Game:
 
                 # Create a sprite group for the stomp attacks nodes created by the Sika Deer boss
                 from Level.Bosses.BossAttacks.stomp import StompController
-                self.stomp_attack_nodes_group = pygame.sprite.Group()
+                self.stomp_attack_nodes_group = pygame_sprite_Group()
                 StompController.nodes_group = self.stomp_attack_nodes_group
 
                 # Add the boss into the boss group
@@ -1231,7 +1247,7 @@ class Game:
         # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
         self.spawn_bamboo_pile(delta_time = delta_time)
 
-        if pygame.key.get_pressed()[pygame.K_f] or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None):
+        if pygame_key_get_pressed()[pygame_K_f] or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None):
             self.find_valid_boss_spawning_position(delta_time = delta_time)
 
         # Handle collisions between all objects in the level
@@ -1309,4 +1325,4 @@ class Game:
         self.game_ui.run(camera_position = self.camera_position)
 
         # Draw the scaled surface onto the screen
-        self.screen.blit(pygame.transform.scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))
+        self.screen.blit(pygame_transform_scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))

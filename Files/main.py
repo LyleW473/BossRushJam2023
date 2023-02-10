@@ -1,4 +1,7 @@
-import pygame
+from pygame import init as pygame_init
+from pygame.display import set_caption as pygame_display_set_caption
+from pygame.time import Clock as pygame_time_Clock
+from pygame.display import update as pygame_display_update
 from Global.settings import *
 from game_states_controller import GameStatesController
 from time import perf_counter
@@ -8,10 +11,10 @@ class Main:
     def __init__(self):
 
         # Pygame set-up
-        pygame.init()
+        pygame_init()
 
         # Set the caption
-        pygame.display.set_caption("BossRush2023")
+        pygame_display_set_caption("Panda's wit")
         
         # Create a game states controller
         self.game_states_controller = GameStatesController()
@@ -21,7 +24,7 @@ class Main:
         self.previous_frame = perf_counter()
         
         # Create an object to track time
-        self.clock = pygame.time.Clock()
+        self.clock = pygame_time_Clock()
         self.chosen_framerate = 60
         
     def run(self):
@@ -41,7 +44,7 @@ class Main:
             
             # -------------------------------------
             # Update display
-            pygame.display.update() 
+            pygame_display_update() 
             
 
 if __name__ == "__main__":

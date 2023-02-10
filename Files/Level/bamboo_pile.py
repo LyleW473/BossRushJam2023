@@ -1,11 +1,11 @@
 from Global.generic import Generic
 from Global.settings import TILE_SIZE
-from pygame.image import load as load_image
+from pygame.image import load as pygame_image_load
 
 class BambooPile(Generic):
 
     # Bamboo pile image
-    pile_image = load_image("graphics/Misc/BambooPile.png")
+    pile_image = pygame_image_load("graphics/Misc/BambooPile.png")
     
     # Dictionary containing information relating to bamboo piles
     bamboo_pile_info_dict = {
