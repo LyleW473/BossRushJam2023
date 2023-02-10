@@ -63,7 +63,7 @@ class Game:
                                         "BossTileCollideTime": 800,
 
                                         "StompTimer": None,
-                                        "StompTime": 2000,
+                                        "StompTime": 100,
 
                                     } 
 
@@ -181,6 +181,8 @@ class Game:
     
     def shake_camera(self, camera_position_to_change, delta_time):
         
+        # Sets the timers for each camera shake event and performs the camera shake
+        
         # If there are no camera shake events
         if len(self.camera_shake_info_dict["EventsList"]) == 0:
             # Return the original camera position
@@ -188,6 +190,9 @@ class Game:
     
         # If there are any camera shake events
         elif len(self.camera_shake_info_dict["EventsList"]) > 0:
+
+            # ---------------------------------------------------------------------------------------
+            # Setting the timers if there are any camera shake events and no timers have been activated
             
             # If all the camera shake events' timers are None (i.e. there is no camera shake to be performed currently)
             if self.camera_shake_info_dict["BossTileCollideTimer"] == None and self.camera_shake_info_dict["StompTimer"] == None:
@@ -206,10 +211,13 @@ class Game:
                         self.camera_shake_info_dict["BossTileCollideTimer"] = self.camera_shake_info_dict["BossTileCollideTime"]
 
                     case "Stomp":
-                        camera_position_to_change[0] += random_randrange(-5, 5)
-                        camera_position_to_change[1] += random_randrange(-5, 5)
+                        # Set the timer for the stomp screen shake to start
+                        self.camera_shake_info_dict["StompTimer"] = self.camera_shake_info_dict["StompTime"]
 
+            # ---------------------------------------------------------------------------------------
             # Performing the screen shake and removing events if their timer has finished counting down
+        
+            # Boss and tile timer:
             if self.camera_shake_info_dict["BossTileCollideTimer"] != None:
                 
                 # If the timer has not finished counting down
@@ -219,7 +227,7 @@ class Game:
                     dampening_factor = self.camera_shake_info_dict["BossTileCollideTimer"] / self.camera_shake_info_dict["BossTileCollideTime"]
 
                     # How impactful the screen shake should be
-                    shake_magnitude = 6
+                    shake_magnitude = 3.5
 
                     # Set the camera shake for the x and y axis depending on the movement of the boss during the charge
                     # random_uniform is for a random float number between a given range
@@ -240,6 +248,27 @@ class Game:
 
                     # Set the timer back to None
                     self.camera_shake_info_dict["BossTileCollideTimer"] = None
+
+            # Deer boss stomp timer
+            if self.camera_shake_info_dict["StompTimer"] != None:
+                
+                # If the timer has not finished counting down
+                if self.camera_shake_info_dict["StompTimer"] > 0:
+                    # Adjust the camera position by the camera shake amounts
+                    camera_position_to_change[0] += random_uniform(-1.75, 1.75)
+                    camera_position_to_change[1] += random_uniform(-1.75, 1.75)
+
+                    # Decrease the timer
+                    self.camera_shake_info_dict["StompTimer"] -= 1000 * delta_time
+
+                # If the timer has finished counting down 
+                if self.camera_shake_info_dict["StompTimer"] <= 0:
+                    # Remove the event from the camera shake events list
+                    # random_uniform is for a random float number between a given range
+                    self.camera_shake_info_dict["EventsList"].pop()
+
+                    # Set the timer back to None
+                    self.camera_shake_info_dict["StompTimer"] = None
 
             # Return the new camera position after shaking
             return camera_position_to_change
@@ -1231,6 +1260,9 @@ class Game:
 
             # Update the current boss' camera position 
             self.boss_group.sprite.camera_position = self.camera_position
+            
+            # Update the current boss' camera shake events list (Used for camera shake events e.g. SikaDeer stomp attack)
+            self.boss_group.sprite.camera_shake_events_list = self.camera_shake_info_dict["EventsList"]
 
             # Update the current boss with the current position of the player (Used for finding the angle between the boss and the player)
             self.boss_group.sprite.players_position = self.player.rect.center

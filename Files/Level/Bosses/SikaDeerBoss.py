@@ -47,6 +47,7 @@ class SikaDeerBoss(Generic, AI):
         self.camera_position
         self.players_position
         self.neighbouring_tiles_dict
+        self.camera_shake_events_list # A list of the camera shake events used to add the "Stomp" camera shake effect
         """
 
         # Stomp controller used to create stomp nodes and update each individual stomp node
@@ -54,7 +55,6 @@ class SikaDeerBoss(Generic, AI):
 
         # The current action that the boss is performing
         self.current_action = "Chase"
-
 
         # To delay actions right after spawning, set the cooldown timer to a desired amount of time and add it to this list, so that the cooldown timers can be updated
         self.previous_actions_dict = {
@@ -77,7 +77,8 @@ class SikaDeerBoss(Generic, AI):
                                             "CooldownTimer": 10000, # Delayed cooldown to when the boss can first use the stomp attack
 
                                             # The variation of the stomp for one entire stomp attack
-                                            "StompAttackVariation": 0
+                                            "StompAttackVariation": 0,
+
                                              },
 
                                     "Chase": { 
@@ -90,7 +91,7 @@ class SikaDeerBoss(Generic, AI):
                                     "Target": { 
                                             "Duration": 2200,
                                             "DurationTimer": None,
-                                            "CooldownTimer": 1000, #6500,  # This will be set to be the charge cooldown after the attack has completed (Change this number if you want to delay when the boss can first charge attack)
+                                            "CooldownTimer": 6500,  # This will be set to be the charge cooldown after the attack has completed (Change this number if you want to delay when the boss can first charge attack)
                                             "Cooldown": 50000, # Set to random number, this will be changed once the charge attack has finished
 
                                             # Animations
@@ -144,8 +145,6 @@ class SikaDeerBoss(Generic, AI):
         
         # The initial sin angle should be 0
         self.behaviour_patterns_dict["Target"]["BlinkingVisualEffectCurrentSinAngle"] = 0
-
-
 
         # ----------------------------------------------------------------------------------
         # Declare the animation attributes
@@ -611,6 +610,9 @@ class SikaDeerBoss(Generic, AI):
     
         # Create stomp attack nodes
         self.stomp_controller.create_stomp_nodes(center_of_boss_position = (self.rect.centerx, self.rect.centery), desired_number_of_nodes = 12, attack_variation =  self.extra_information_dict["StompAttackVariation"])
+
+        # Add a stomp camera shake event to the camera shake events list
+        self.camera_shake_events_list.append("Stomp")
 
     def chase_player(self):
 
