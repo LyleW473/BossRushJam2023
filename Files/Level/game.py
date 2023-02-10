@@ -24,6 +24,7 @@ from pygame.key import get_pressed as pygame_key_get_pressed
 from pygame import K_f as pygame_K_f
 from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
+from pygame.draw import line as pygame_draw_line
 
 
 class Game:
@@ -53,7 +54,22 @@ class Game:
         self.last_tile_position = [0, 0] # Stores the position of the last tile in the tile (This is changed inside the create_objects_tile_map method)
 
         # Camera modes
-        self.camera_mode = None # Can either be: Static, Follow
+        self.camera_mode = None # Can either be: Static, Follow, Pan
+
+        self.camera_pan_information_dict = {
+                                            "PanHorizontalDistanceTimeGradient": None,
+                                            "PanVerticalDistanceTimeGradient": None,                              
+
+                                            # Time it takes to pan the camera from the current camera position to the new position
+                                            "PanTime": 3000,
+                                            "PanTimer": None,
+
+
+                                            # Used to store the changing camera position for floating point accuracy
+                                            "NewCameraPositionX": None,
+                                            "NewCameraPositionY": None,
+                                            }
+
 
         self.camera_shake_info_dict = {
                                         "EventsList": [],
@@ -65,7 +81,7 @@ class Game:
                                         "StompTimer": None,
                                         "StompTime": 100,
 
-                                    } 
+                                    }
 
         # --------------------------------------------------------------------------------------
         # Groups
@@ -96,21 +112,63 @@ class Game:
     # --------------------------------------------------------------------------------------
     # Camera methods
 
-    def set_camera_mode(self):
+    def set_camera_mode(self, manual_camera_mode_setting = None):
         # Used to change the camera mode depending on the size of the tile map
         
-        # If the width of the tile map is one room
-        if self.last_tile_position[0] <= (self.scaled_surface.get_width() / 2):
-            # Set the camera mode to "Static"
-            self.camera_mode = "Static"
-        
-        # If the width of the tile map is more than one room
-        else:
-            # Set the camera mode to "Follow"
-            self.camera_mode = "Follow"
+        # If a manual camera mode setting has not been passed to this method
+        if manual_camera_mode_setting == None:
 
-    def update_camera_position(self, delta_time):   
-        # Moves the camera's position depending on what mode the camera has been set tow
+            # If the width of the tile map is one room
+            if self.last_tile_position[0] <= (self.scaled_surface.get_width() / 2):
+                # Set the camera mode to "Static"
+                self.camera_mode = "Static"
+            
+            # If the width of the tile map is more than one room
+            else:
+                # Set the camera mode to "Follow"
+                self.camera_mode = "Follow"
+
+        # If a manual camera mode setting has been passed to this method
+        elif manual_camera_mode_setting != None:
+            # Set the camera mode as the manual camera mode setting passed
+            self.camera_mode = manual_camera_mode_setting
+    
+    def update_focus_subject(self):
+        
+        # If a boss has not been created or if a boss has been created and has been spawned
+        if hasattr(self, "bosses_dict") == False or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] == None):
+
+            if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
+                
+                # Return the center of the player
+                return (self.player.rect.centerx,  self.player.rect.centery)
+
+        # If a boss has been created and is currently being spawned
+        elif (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None) and self.camera_mode != "Pan":
+
+            # Set the camera mode as "Pan"
+            self.set_camera_mode(manual_camera_mode_setting = "Pan")
+            
+            # The position of center of the screen / camera is the following
+            middle_camera_position = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), self.camera_position[1] + (self.scaled_surface.get_height() / 2))
+            
+            # Calculate the horizontal and vertical distance time gradients for the panning movement
+            self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] = (self.bosses_dict["ValidSpawningPosition"][0] - middle_camera_position[0]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+            self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] = (self.bosses_dict["ValidSpawningPosition"][1] - middle_camera_position[1]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+
+
+            # Set the new camera position X and Y to be the current camera position
+            self.camera_pan_information_dict["NewCameraPositionX"] = self.camera_position[0]
+            self.camera_pan_information_dict["NewCameraPositionY"] = self.camera_position[1]
+
+            # Set the pan timer to start counting down
+            self.camera_pan_information_dict["PanTimer"] = self.camera_pan_information_dict["PanTime"]
+
+            # Return None (as nothing is required)
+            return None
+
+    def update_camera_position(self, delta_time, focus_subject_center_pos):   
+        # Moves the camera's position depending on what mode the camera has been set as and according to who the focus subject is (i.e. the boss, the player, etc.)
         
         # If the camera mode is set to "Follow"
         if self.camera_mode == "Follow":
@@ -119,35 +177,42 @@ class Game:
             # Adjusting camera x position
 
             # If the player is in half the width of the scaled screen from the first tile in the tile map
-            if 0 <= self.player.rect.centerx <= (self.scaled_surface.get_width() / 2):
+            if 0 <= focus_subject_center_pos[0] <= (self.scaled_surface.get_width() / 2):
                 # Don't move the camera
                 camera_position_x = 0
 
-            # If the player is in between half of the size of the scaled screen width from the first tile in the tile map and half the width of the scaled screen from the last tile in the tile map
-            elif 0 + (self.scaled_surface.get_width() / 2) < self.player.rect.centerx < self.last_tile_position[0] - (self.scaled_surface.get_width() / 2):
-                # Set the camera to always follow the player
-                camera_position_x = self.player.rect.centerx - (self.scaled_surface.get_width() / 2)
+            # # If the player is in between half of the size of the scaled screen width from the first tile in the tile map and half the width of the scaled screen from the last tile in the tile map
+            # elif 0 + (self.scaled_surface.get_width() / 2) < focus_subject_center_pos[0] < self.last_tile_position[0] - (self.scaled_surface.get_width() / 2):
+            #     # Set the camera to always follow the player
+            #     camera_position_x = focus_subject_center_pos[0] - (self.scaled_surface.get_width() / 2)
 
-            # If the player is half the scaled screen width away from the last tile in the tile maps
-            elif self.player.rect.centerx >= self.last_tile_position[0] - (self.scaled_surface.get_width() / 2):
-                # Set the camera to stop moving and be locked at half the size of the scaled screen width from the last tile in the tile map
-                camera_position_x = self.last_tile_position[0] - self.scaled_surface.get_width() 
+            # # If the player is half the scaled screen width away from the last tile in the tile maps
+            # elif focus_subject_center_pos[0] >= self.last_tile_position[0] - (self.scaled_surface.get_width() / 2):
+            #     print("entered")
+            #     # Set the camera to stop moving and be locked at half the size of the scaled screen width from the last tile in the tile map
+            #     camera_position_x = self.last_tile_position[0] - self.scaled_surface.get_width() 
+
+            # If the player is in between half of the size of the scaled screen width from the first tile in the tile map and half the width of the scaled screen from the last tile in the tile map
+            else:
+                # Set the camera to always follow the player
+                camera_position_x = focus_subject_center_pos[0] - (self.scaled_surface.get_width() / 2)
+                # print(focus_subject_center_pos[0], camera_position_x, self.scaled_surface.get_width())
 
             # --------------------------------------------------------------------------------------
             # Adjusting camera y position
 
             # If the player is in half the height of the scaled screen from the first tile in the tile map
-            if 0 <= self.player.rect.centery <= (self.scaled_surface.get_height() / 2):
+            if 0 <= focus_subject_center_pos[1] <= (self.scaled_surface.get_height() / 2):
                 # Don't move the camera
                 camera_position_y = 0
 
             # If the player is in between half of the size of the scaled screen height from the first tile in the tile map and half the width of the scaled screen from the last tile in the tile map
-            elif 0 + (self.scaled_surface.get_height() / 2) <= self.player.rect.centery <= self.last_tile_position[1] - (self.scaled_surface.get_height() / 2):
+            elif 0 + (self.scaled_surface.get_height() / 2) <= focus_subject_center_pos[1] <= self.last_tile_position[1] - (self.scaled_surface.get_height() / 2):
                 # Set the camera to always follow the player
-                camera_position_y = self.player.rect.centery - (self.scaled_surface.get_height() / 2)
+                camera_position_y = focus_subject_center_pos[1] - (self.scaled_surface.get_height() / 2)
 
             # If the player is half the scaled screen width away from the last tile in the tile maps
-            elif self.player.rect.centery >= self.last_tile_position[1] - (self.scaled_surface.get_height() / 2):
+            elif focus_subject_center_pos[1] >= self.last_tile_position[1] - (self.scaled_surface.get_height() / 2):
                 # Set the camera to stop moving and be locked at half the size of the scaled screen width from the last tile in the tile map
                 camera_position_y = self.last_tile_position[1] - self.scaled_surface.get_height()     
 
@@ -155,19 +220,58 @@ class Game:
         elif self.camera_mode == "Static":
             # The camera's x position will always be at 0
             camera_position_x = 0
-        
+
+        # If the camera mode is set to "Pan" (will pan towards a specific location)
+        elif self.camera_mode == "Pan":
+
+            # If there has been a timer set for pan timer 
+            if self.camera_pan_information_dict["PanTimer"] != None:
+
+                # ------------------------------------------------------------------------------
+                # Moving the camera
+                
+                # Increase the new camera position x and y (Floating point accuracy)
+                self.camera_pan_information_dict["NewCameraPositionX"] += self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] * delta_time
+                self.camera_pan_information_dict["NewCameraPositionY"] += self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] * delta_time
+
+                # Set the camera position as the rounded values
+                camera_position_x = round(self.camera_pan_information_dict["NewCameraPositionX"])
+                camera_position_y = round(self.camera_pan_information_dict["NewCameraPositionY"])
+
+                # ------------------------------------------------------------------------------
+                # Updating the pan timer
+
+                # If the timer has not finished counting
+                if self.camera_pan_information_dict["PanTimer"]> 0:
+                    # Decrease the timer
+                    self.camera_pan_information_dict["PanTimer"]-= 1000 * delta_time
+                
+                # If the timer has finished counting
+                if self.camera_pan_information_dict["PanTimer"] <= 0:
+                    # Set the pan timer back to None
+                    self.camera_pan_information_dict["PanTimer"]= None
+
+
+            # If there timer has finished counting down
+            elif self.camera_pan_information_dict["PanTimer"] == None:
+                
+                camera_position_x = round(self.camera_pan_information_dict["NewCameraPositionX"])
+                camera_position_y = round(self.camera_pan_information_dict["NewCameraPositionY"])
+
+                # INVERT THE GRADIENTS AND SET THE PAN TIMER AGAIN SO THAT IT PANS BACK TO THE PLAYER (DO THIS AFTER THE BOSS HAS SPAWNED)
+                # I.E self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] *= -1
+
         # Update the camera position
         """
         - The camera's x position:
-            - Starts at 0 until the player reaches half the size of the scaled screen width from the player's spawning position
-            - Once the player reaches the center of the screen, then the camera will always follow the player
-            - Until the player reaches half the size of the scaled screen width from the last tile in the tile map
+            - Starts at 0 until the focus subject reaches half the size of the scaled screen width
+            - Once the focus subject reaches the center of the screen, then the camera will always follow the focus subject
+            - Until the focus subject reaches half the size of the scaled screen width from the last tile in the tile map
 
         - The camera's y position:
-            - Starts at 0 until the player reaches half the size of the scaled screen height from the player's spawning position
-            - Once the player reaches the center of the screen, then the camera will always follow the player
-            - Until the player reaches half the size of the scaled screen height from the last tile in the tile map
-            
+            - Starts at 0 until the focus subject reaches half the size of the scaled screen height
+            - Once the focus subject reaches the center of the screen, then the camera will always follow the focus subject
+            - Until the focus subject reaches half the size of the scaled screen height from the last tile in the tile map
         """
 
         # Assign the camera position
@@ -987,7 +1091,7 @@ class Game:
             number_of_tiles_for_checking = 4
             spawning_effect_counter = 0
             number_of_cycles = 8 # If the NumOfTilesForChecking was 3 and SpawningEffectCounter started at 0, then each cycle would consist of 4 changes
-            time_to_spawn = 1000 #8000
+            time_to_spawn = 16000 #8000
             time_between_each_change = (time_to_spawn / number_of_cycles) / ((number_of_tiles_for_checking + 1) - spawning_effect_counter) # The time between each change
             
             # Create a dictionary to hold information regarding bosses
@@ -1040,7 +1144,7 @@ class Game:
             
             # If there is "enough space" for the boss to spawn 
             if len(self.bosses_dict["SpawningPositionTilesList"]) == (((self.bosses_dict["NumOfTilesForChecking"] * 2) + 1) ** 2) - 1:
-                # Set the valid spawning position attribute to True
+                # Set the valid spawning position to be the random spawning position
                 self.bosses_dict["ValidSpawningPosition"] = self.bosses_dict["RandomSpawningPosition"]
                 # Set the boss spawn timer to start
                 self.bosses_dict["TimeToSpawnTimer"] = self.bosses_dict["TimeToSpawn"]
@@ -1375,8 +1479,8 @@ class Game:
         # Fill the scaled surface with a colour
         self.scaled_surface.fill("cornsilk4")
 
-        # Update the camera position 
-        self.update_camera_position(delta_time = delta_time)
+        # Update the camera position depending on who the focus subject is
+        self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = self.update_focus_subject())
 
         # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
         self.spawn_bamboo_pile(delta_time = delta_time)
@@ -1457,6 +1561,9 @@ class Game:
 
         # Run the game UI 
         self.game_ui.run(camera_position = self.camera_position)
+
+        pygame_draw_line(surface = self.scaled_surface, color = "blue", start_pos = (self.camera_position[0], 0), end_pos = (self.camera_position[0], self.scaled_surface.get_height()))
+        pygame_draw_line(surface = self.scaled_surface, color = "green", start_pos = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), 0), end_pos = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), self.scaled_surface.get_height()))
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame_transform_scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))
