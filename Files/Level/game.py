@@ -5,6 +5,7 @@ from Level.game_ui import GameUI
 from Level.bamboo_pile import BambooPile
 from random import choice as random_choice
 from random import randrange as random_randrange
+from random import uniform as random_uniform
 from math import sin, cos, dist
 from os import listdir as os_listdir
 
@@ -54,6 +55,18 @@ class Game:
         # Camera modes
         self.camera_mode = None # Can either be: Static, Follow
 
+        self.camera_shake_info_dict = {
+                                        "EventsList": [],
+
+                                        # Timers
+                                        "BossTileCollideTimer": None,
+                                        "BossTileCollideTime": 800,
+
+                                        "StompTimer": None,
+                                        "StompTime": 2000,
+
+                                    } 
+
         # --------------------------------------------------------------------------------------
         # Groups
         self.world_tiles_dict = {} # Dictionary used to hold all the world tiles 
@@ -96,7 +109,7 @@ class Game:
             # Set the camera mode to "Follow"
             self.camera_mode = "Follow"
 
-    def update_camera_position(self):   
+    def update_camera_position(self, delta_time):   
         # Moves the camera's position depending on what mode the camera has been set tow
         
         # If the camera mode is set to "Follow"
@@ -129,7 +142,7 @@ class Game:
                 camera_position_y = 0
 
             # If the player is in between half of the size of the scaled screen height from the first tile in the tile map and half the width of the scaled screen from the last tile in the tile map
-            elif 0 + (self.scaled_surface.get_height() / 2) < self.player.rect.centery < self.last_tile_position[1] - (self.scaled_surface.get_height() / 2):
+            elif 0 + (self.scaled_surface.get_height() / 2) <= self.player.rect.centery <= self.last_tile_position[1] - (self.scaled_surface.get_height() / 2):
                 # Set the camera to always follow the player
                 camera_position_y = self.player.rect.centery - (self.scaled_surface.get_height() / 2)
 
@@ -157,11 +170,80 @@ class Game:
             
         """
 
+        # Assign the camera position
         self.camera_position = [camera_position_x, camera_position_y]
+
+        # Perform screen / camera shake if the conditions are met
+        self.camera_position = self.shake_camera(camera_position_to_change = self.camera_position, delta_time = delta_time)
 
         # Update the player's camera position attribute so that tile rects are correctly aligned
         self.player.camera_position = self.camera_position
-     
+    
+    def shake_camera(self, camera_position_to_change, delta_time):
+        
+        # If there are no camera shake events
+        if len(self.camera_shake_info_dict["EventsList"]) == 0:
+            # Return the original camera position
+            return camera_position_to_change
+    
+        # If there are any camera shake events
+        elif len(self.camera_shake_info_dict["EventsList"]) > 0:
+            
+            # If all the camera shake events' timers are None (i.e. there is no camera shake to be performed currently)
+            if self.camera_shake_info_dict["BossTileCollideTimer"] == None and self.camera_shake_info_dict["StompTimer"] == None:
+
+                # Identify what this camera shake is for and start the timer for the screenshake
+                match self.camera_shake_info_dict["EventsList"][0]:
+
+                    # ------------------------------------------------------
+                    # Sika Deer boss
+                    
+                    # The boss collided with a world tile or a building tile
+                    case "BossTileCollide":
+                        print(self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"])
+
+                        # Set the timer for the boss tile collide screen shake to start
+                        self.camera_shake_info_dict["BossTileCollideTimer"] = self.camera_shake_info_dict["BossTileCollideTime"]
+
+                    case "Stomp":
+                        camera_position_to_change[0] += random_randrange(-5, 5)
+                        camera_position_to_change[1] += random_randrange(-5, 5)
+
+            # Performing the screen shake and removing events if their timer has finished counting down
+            if self.camera_shake_info_dict["BossTileCollideTimer"] != None:
+                
+                # If the timer has not finished counting down
+                if self.camera_shake_info_dict["BossTileCollideTimer"] > 0:
+
+                    # Calculate a dampening factor which is dependent on how much time is left before we stop shaking the camera
+                    dampening_factor = self.camera_shake_info_dict["BossTileCollideTimer"] / self.camera_shake_info_dict["BossTileCollideTime"]
+
+                    # How impactful the screen shake should be
+                    shake_magnitude = 6
+
+                    # Set the camera shake for the x and y axis depending on the movement of the boss during the charge
+                    # random_uniform is for a random float number between a given range
+                    camera_shake_x = random_uniform(-abs(self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"] * shake_magnitude), abs(self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"] * shake_magnitude)) * dampening_factor
+                    camera_shake_y = random_uniform(-abs(self.boss_group.sprite.movement_information_dict["VerticalSuvatS"] * shake_magnitude), abs(self.boss_group.sprite.movement_information_dict["VerticalSuvatS"] * shake_magnitude)) * dampening_factor
+
+                    # Adjust the camera position by the camera shake amounts
+                    camera_position_to_change[0] += camera_shake_x
+                    camera_position_to_change[1] += camera_shake_y
+
+                    # Decrease the timer
+                    self.camera_shake_info_dict["BossTileCollideTimer"] -= 1000 * delta_time
+
+                # If the timer has finished counting down 
+                if self.camera_shake_info_dict["BossTileCollideTimer"] <= 0:
+                    # Remove the event from the camera shake events list
+                    self.camera_shake_info_dict["EventsList"].pop()
+
+                    # Set the timer back to None
+                    self.camera_shake_info_dict["BossTileCollideTimer"] = None
+
+            # Return the new camera position after shaking
+            return camera_position_to_change
+
     # --------------------------------------------------------------------------------------
     # Tile map methods
 
@@ -243,26 +325,23 @@ class Game:
 
         for tile in self.world_tiles_dict.keys():
 
-            # Check the x co-ordinate of the camera
-            match self.camera_position[0]:
-
                 # If the camera is positioned at the start of the tile map and the object is within the boundaries of the screen
-                case 0 if tile.rect.right <= self.scaled_surface.get_width():
+                if tile.rect.right <= self.scaled_surface.get_width():
+                    # print("1")
 
                     # Draw all tile objects on the screen
                     tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))
 
                 # If the camera is positioned at the end of the tile map and the tile object is within the boundaries of the screen
-                case _ if (self.last_tile_position[0] - self.scaled_surface.get_width()) == self.camera_position[0] and tile.rect.right >= self.camera_position[0]:
-
+                elif (self.last_tile_position[0] - self.scaled_surface.get_width()) == self.camera_position[0] and tile.rect.right >= self.camera_position[0]:
                     # Draw all tile objects on the screen
                     tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))
 
                 # If the camera is neither at the start or the end of the tile map and the object is within the boundaries of the screen
-                case _ if self.player.rect.left - ((self.scaled_surface.get_width() / 2) + TILE_SIZE)  <= tile.rect.right <= self.player.rect.right + (self.scaled_surface.get_width() / 2): 
+                elif self.player.rect.left - ((self.scaled_surface.get_width() / 2) + TILE_SIZE)  <= tile.rect.right <= self.player.rect.right + (self.scaled_surface.get_width() / 2 + TILE_SIZE): 
 
                     # Draw the tile object
-                    tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))
+                    tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))           
 
         # ---------------------------------------------
         # Bamboo projectiles
@@ -732,6 +811,10 @@ class Game:
                                                                                                     self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["StunEnemyFrenzyModeIncrement"],
                                                                                                     self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                     )
+
+                            # Create a camera shake effect for when the boss collides with a tile
+                            self.camera_shake_info_dict["EventsList"].append("BossTileCollide")
+
             # --------------------------------------
             # World tiles while charging
 
@@ -741,7 +824,10 @@ class Game:
                     if self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsX"] == True or self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsY"] == True:
                         # Set the "Charge" duration timer to 0 (to end the charge attack)
                         self.boss_group.sprite.behaviour_patterns_dict["Charge"]["DurationTimer"] = 0
-            
+
+                        # Create a camera shake effect for when the boss collides with a tile
+                        self.camera_shake_info_dict["EventsList"].append("BossTileCollide")
+
             # --------------------------------------
             # Player
 
@@ -1258,8 +1344,7 @@ class Game:
         self.scaled_surface.fill("cornsilk4")
 
         # Update the camera position 
-        self.update_camera_position()
-
+        self.update_camera_position(delta_time = delta_time)
 
         # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
         self.spawn_bamboo_pile(delta_time = delta_time)

@@ -90,7 +90,7 @@ class SikaDeerBoss(Generic, AI):
                                     "Target": { 
                                             "Duration": 2200,
                                             "DurationTimer": None,
-                                            "CooldownTimer": 6500,  # This will be set to be the charge cooldown after the attack has completed (Change this number if you want to delay when the boss can first charge attack)
+                                            "CooldownTimer": 1000, #6500,  # This will be set to be the charge cooldown after the attack has completed (Change this number if you want to delay when the boss can first charge attack)
                                             "Cooldown": 50000, # Set to random number, this will be changed once the charge attack has finished
 
                                             # Animations
@@ -113,11 +113,11 @@ class SikaDeerBoss(Generic, AI):
                                             "EnterStunnedStateBoolean": False, # A boolean value that represents whether the boss has collided with the player during the charge attack"
 
                                             # Movement (Keep the time values to be less than the full charge duration)
-                                            "ChargeDistanceTravelled": 9 * TILE_SIZE, # 10 * TILE_SIZE
+                                            "ChargeDistanceTravelled": 8 * TILE_SIZE, # 10 * TILE_SIZE
                                             "HorizontalTimeToTravelDistanceAtFinalVelocity": 0.15, 
                                             "VerticalTimeToTravelDistanceAtFinalVelocity": 0.15, 
-                                            "HorizontalTimeToReachFinalVelocity": 0.25,
-                                            "VerticalTimeToReachFinalVelocity": 0.25,
+                                            "HorizontalTimeToReachFinalVelocity": 0.1, #0.25,
+                                            "VerticalTimeToReachFinalVelocity": 0.1, #0.25,
 
                                                 },
                                     # Stunned
@@ -610,7 +610,7 @@ class SikaDeerBoss(Generic, AI):
             self.extra_information_dict["StompAttackVariation"] = random_choice( (0, 1, 1, 2))
     
         # Create stomp attack nodes
-        self.stomp_controller.create_stomp_nodes(center_of_boss_position = (self.rect.centerx, self.rect.centery), desired_number_of_nodes = 12, attack_variation=  self.extra_information_dict["StompAttackVariation"])
+        self.stomp_controller.create_stomp_nodes(center_of_boss_position = (self.rect.centerx, self.rect.centery), desired_number_of_nodes = 12, attack_variation =  self.extra_information_dict["StompAttackVariation"])
 
     def chase_player(self):
 
