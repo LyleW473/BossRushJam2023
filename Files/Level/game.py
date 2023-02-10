@@ -391,13 +391,13 @@ class Game:
                                                                 text = "-" + str(bamboo_projectile.damage_amount),
                                                                 )
 
-                                # Create a few shattered bamboo pieces
-                                self.game_ui.create_angled_polygons_effects(
-                                                                            purpose = "ShatteredBambooPieces",
-                                                                            position = (self.boss_group.sprite.rect.centerx, self.boss_group.sprite.rect.centery),
-                                                                            angle = bamboo_projectile.angle,
-                                                                            specified_number_of_pieces = random_randrange(2, 6)
-                                                                            )
+                            # Create a few shattered bamboo pieces
+                            self.game_ui.create_angled_polygons_effects(
+                                                                        purpose = "ShatteredBambooPieces",
+                                                                        position = (self.boss_group.sprite.rect.centerx, self.boss_group.sprite.rect.centery),
+                                                                        angle = bamboo_projectile.angle,
+                                                                        specified_number_of_pieces = random_randrange(2, 6)
+                                                                        )
 
                             # Remove the bamboo projectile
                             self.bamboo_projectiles_group.remove(bamboo_projectile)
@@ -743,9 +743,18 @@ class Game:
             # --------------------------------------
             # Player
 
-            # If there is a rect collision between the player and the boss is not currently idling after the knockback 
-            # Note: Second check is so that the player doesn't keep setting off the idle timer in quick succession
-            if self.boss_group.sprite.rect.colliderect(self.player.rect) == True and (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None):
+            # If there is a rect collision between the player and the boss is not currently idling after the knockback and the boss is not currently stunned
+
+            """ Checks:
+            - If the boss collides with the player
+            - If the boss is not idling after knocking back the player (so that the player doesn't keep setting off the idle timer in quick succession)
+            - If the boss is not currently stunned 
+            - If the player is not invincible (after getting knocked back recently)
+            """
+            if self.boss_group.sprite.rect.colliderect(self.player.rect) == True and \
+                (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None) and \
+                    self.boss_group.sprite.current_action != "Stunned" and \
+                        self.player.player_gameplay_info_dict["InvincibilityTimer"] == None:
 
                 # If there is pixel-perfect collision 
                 if pygame_sprite_collide_mask(self.boss_group.sprite, self.player):
@@ -758,6 +767,9 @@ class Game:
                     # Note: Divided by 1000 because the knockback time is in milliseconds
                     self.player.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * cos(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
                     self.player.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * sin(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
+
+                    # Set the player's invincibility timer to start counting down 
+                    self.player.player_gameplay_info_dict["InvincibilityTimer"] = self.player.player_gameplay_info_dict["InvincibilityTime"]
 
                     # If the player is alive / has more than 0 health
                     if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
@@ -1132,8 +1144,11 @@ class Game:
             # Update the current boss' camera position 
             self.boss_group.sprite.camera_position = self.camera_position
 
-            # Update the current boss with the current position of the player
+            # Update the current boss with the current position of the player (Used for finding the angle between the boss and the player)
             self.boss_group.sprite.players_position = self.player.rect.center
+
+            # Update the player with the rect information of the current boss (Used for limiting building placement if the player is building on top of the boss)
+            self.player.boss_rect = self.boss_group.sprite.rect
 
             # Run the boss
             self.boss_group.sprite.run()

@@ -113,7 +113,7 @@ class SikaDeerBoss(Generic, AI):
                                             "EnterStunnedStateBoolean": False, # A boolean value that represents whether the boss has collided with the player during the charge attack"
 
                                             # Movement (Keep the time values to be less than the full charge duration)
-                                            "ChargeDistanceTravelled": 10 * TILE_SIZE,
+                                            "ChargeDistanceTravelled": 9 * TILE_SIZE, # 10 * TILE_SIZE
                                             "HorizontalTimeToTravelDistanceAtFinalVelocity": 0.15, 
                                             "VerticalTimeToTravelDistanceAtFinalVelocity": 0.15, 
                                             "HorizontalTimeToReachFinalVelocity": 0.25,
@@ -125,7 +125,7 @@ class SikaDeerBoss(Generic, AI):
                                             "Duration": 4000,
                                             "DurationTimer": None,
                                             "FullAnimationDuration": 1000,
-                                            "StunnedDamageAmount": 100
+                                            "StunnedDamageAmount": 350
                                             },
 
                                     "Death": {

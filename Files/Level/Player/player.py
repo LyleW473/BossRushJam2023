@@ -55,6 +55,7 @@ class Player(Generic):
         """
         self.camera_position = None # Position of the camera. This is updated inside "Game" class
         self.last_tile_position = None # Position of the last tile that the player can be on. This will be updated by "Game" when the level is created
+        self.boss_rect = None # Reference to the current boss' rect, updated by the "Game" when a boss has been spawned
         """
         self.neighbouring_tiles_dict = {} # Used to hold the neighbouring tiles near the player (i.e. within 1 tile of the player, horizontally and vertically)
         self.dx = 0 # The distance the player can move based on if there were any collisions
@@ -137,6 +138,18 @@ class Player(Generic):
                                         # "KnockbackVerticalDistanceTimeGradient": None,
 
                                         # ------------------------------------------------
+                                        # Invincibility timer (used after the player is knocked back by the boss so that they aren't stuck inside corners, etc.)
+                                        "InvincibilityTime": 3000,
+                                        "InvincibilityTimer": None,
+                                        "BlinkingInvincibilityVisualEffectAngleChange": 35,
+                                        "BlinkingInvincibilityVisualEffectAngleTimeGradient": 35 / 1, # Keep the first number to be the same as the angle change (they are the same thing)
+                                        "BlinkingInvincibilityVisualEffectCurrentSinAngle": 0,
+                                        "BlinkingInvincibilityVisualEffectOriginalColour": (0, 100, 125),
+                                        "BlinkingInvincibilityVisualEffectColourAdjusterIndex": (0, 1, 1), # Which RGB values in the colour should be adjusted (0 = don't adjust, 1 = adjust)
+                                        "BlinkingInvincibilityVisualEffectColour": [0, 100, 125],
+
+
+                                        # ------------------------------------------------
                                         # Angled Polygons visual effect
 
                                         "AngledPolygonsShootingSpawningPosition": 0,
@@ -155,11 +168,15 @@ class Player(Generic):
                                             "TileImage": pygame_image_load("graphics/Weapons/BuildingTool/BuildingTile.png").convert()
                                                   },
                                         "MaximumBuildingTileHP": 100,
-                                        "MaximumPlacingDistance": 6 * TILE_SIZE,
-                                        "MinimumPlacingDistance": 2 * TILE_SIZE,
+                                        "MaximumPlacingDistance": 7 * TILE_SIZE,
+                                        "MinimumPlacingDistance": 1.5 * TILE_SIZE,
                                         "ExistingBuildingTilesList": [],
+
+                                        # Timers
                                         "RemovalCooldown": 150,
-                                        "LastTileRemovedTimer": None,
+                                        "RemovalCooldownTimer": None,
+                                        
+                                        # Additional
                                         "BambooResourceDepletionAmount": 2.5,
                                         "ReflectionDamageMultiplier": 5
                                         },
@@ -465,6 +482,12 @@ class Player(Generic):
         elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
             # Colour the player as the current frenzy mode colour
             current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
+
+        # If the invincibility timer has been set off (The player was knocked back)
+        # Note: If statement so that it will also play over the frenzy mode colour
+        if self.player_gameplay_info_dict["InvincibilityTimer"] != None:
+            # Colour the player as the current invincibility mode colour
+            current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectColour"])
         
         # Set the image to be this animation frame
         self.image = current_animation_image
@@ -536,6 +559,12 @@ class Player(Generic):
             elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
                 # Colour the player as the current frenzy mode colour
                 head_image = change_image_colour(current_animation_image = head_image, desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
+
+            # If the invincibility timer has been set off (The player was knocked back)
+            # Note: If statement so that it will also play over the frenzy mode colour
+            if self.player_gameplay_info_dict["InvincibilityTimer"] != None:
+                # Colour the player as the current invincibility mode colour
+                head_image = change_image_colour(current_animation_image = head_image, desired_colour = self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectColour"])
 
             # ---------------------------------------------------------------------------------
             # Drawing the torso and the head
@@ -1301,7 +1330,7 @@ class Player(Generic):
             # If the timer is less than or equal to 0
             if self.player_gameplay_info_dict["FrenzyModeTimer"] <= 0:
 
-                # Set the shooting cooldown timer back to None
+                # Set the frenzy mode timer back to None
                 self.player_gameplay_info_dict["FrenzyModeTimer"] = None
 
                 # Reset the frenzy mode fire rate boost back to 1
@@ -1471,30 +1500,85 @@ class Player(Generic):
                 # Reset the knockback timer back to None
                 self.player_gameplay_info_dict["KnockbackTimer"] = None
 
+    def update_invincibility_timer_and_colour(self):
+        
+        # Updates the invincibility timer after the player is knocked back by the current boss
+
+        # If a frenzy mode timer has been set to start counting down 
+        if self.player_gameplay_info_dict["InvincibilityTimer"] != None:
+            
+            # --------------------------------------
+            # Updating timers and colour
+
+            # If the timer is greater than 0 
+            if self.player_gameplay_info_dict["InvincibilityTimer"] > 0:
+                # Decrease the invincibility timer
+                self.player_gameplay_info_dict["InvincibilityTimer"] -= 1000 * self.delta_time
+
+                # Calculate the new angle time gradient
+                self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectAngleTimeGradient"] = (self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectAngleChange"] - 0) / (self.player_gameplay_info_dict["InvincibilityTimer"] / 1000)
+
+                # Increase the current sin angle
+                self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectCurrentSinAngle"] += self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectAngleTimeGradient"] * self.delta_time
+                
+                # For each RGB Value
+                for i in range(0, len(self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectColourAdjusterIndex"])):
+                    # If the value isn't "0"
+                    if self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectColourAdjusterIndex"][i] != 0:
+                        # Limit the values to be between 0 and 255
+                        self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectColour"][i] = max(0, 
+                                                                            min(
+                                                                            self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectOriginalColour"][i] + (125 * sin(self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectCurrentSinAngle"])), 
+                                                                            255
+                                                                                )
+                                                                                                            )
+
+            # If the timer is less than or equal to 0
+            if self.player_gameplay_info_dict["InvincibilityTimer"] <= 0:
+                # Set the blinking invincibility timer back to None
+                self.player_gameplay_info_dict["InvincibilityTimer"] = None
+
+                # Reset the blinking invincibility visual effect colour
+                self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectColour"] = [
+                                                                                            self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectOriginalColour"][0], 
+                                                                                            self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectOriginalColour"][1], 
+                                                                                            self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectOriginalColour"][2]
+                                                                                            ]
+
+                # Reset the invincibility visual effect current sin angle
+                self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectCurrentSinAngle"] = 0 
+
+                # Note: The gradient will be "reset" the next time the player becomes invincible
+
+
     # ---------------------------------------
     # Building 
 
+    def update_removal_cooldown_timer(self):
+
+        # Updates the removal cooldown timer
+
+        # If there is a timer that has been set to start counting
+        if self.tools["BuildingTool"]["RemovalCooldownTimer"] != None:
+            
+            # If the timer is less than the removal cooldown of building tiles
+            if self.tools["BuildingTool"]["RemovalCooldownTimer"] < self.tools["BuildingTool"]["RemovalCooldown"]:
+                # Increase the timer
+                self.tools["BuildingTool"]["RemovalCooldownTimer"] += 1000 * self.delta_time
+        
+            # If the timer is greater than or equal to the removal cooldown of building tiles
+            if self.tools["BuildingTool"]["RemovalCooldownTimer"] >= self.tools["BuildingTool"]["RemovalCooldown"]:
+                # Set the last tile removed timer back to None
+                self.tools["BuildingTool"]["RemovalCooldownTimer"] = None
+        
     def handle_building(self):
         
         # If the player currently has the building tool equipped
         if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BuildingTool":
             
             # --------------------------------------
-            # Updating building tool removal timer
-
-            # If there is a timer that has been set to start counting
-            if self.tools["BuildingTool"]["LastTileRemovedTimer"] != None:
-                
-                # If the timer is less than  to the removal cooldown of building tiles
-                if self.tools["BuildingTool"]["LastTileRemovedTimer"] < self.tools["BuildingTool"]["RemovalCooldown"]:
-                    # Increase the timer
-                    self.tools["BuildingTool"]["LastTileRemovedTimer"] += 1000 * self.delta_time
-            
-                # If the timer is greater than or equal to the removal cooldown of building tiles
-                if self.tools["BuildingTool"]["LastTileRemovedTimer"] >= self.tools["BuildingTool"]["RemovalCooldown"]:
-                    # Set the last tile removed timer back to None
-                    self.tools["BuildingTool"]["LastTileRemovedTimer"] = None
-            
+            # Update the removal cooldown timer
+            self.update_removal_cooldown_timer()
 
             # --------------------------------------
             # Highlighting any tiles that are hovered over
@@ -1527,7 +1611,7 @@ class Player(Generic):
             if pygame_mouse_get_pressed()[2] and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0:
                 
                 # If enough time has passed since the player last removed a building tile
-                if self.tools["BuildingTool"]["LastTileRemovedTimer"] == None:
+                if self.tools["BuildingTool"]["RemovalCooldownTimer"] == None:
 
                     # Return the building tile at this collision index 
                     """ Note: If there is no collision, index -1 will be returned, which is perfect because then we should remove the last building tile placed down """
@@ -1546,7 +1630,7 @@ class Player(Generic):
                     self.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(collision_result_index)
 
                     # Start the last tile removed timer, so that the player has to wait "self.tools["BuildingTool"]["RemovalCooldown"]" before removing another tile
-                    self.tools["BuildingTool"]["LastTileRemovedTimer"] = 0
+                    self.tools["BuildingTool"]["RemovalCooldownTimer"] = 0
 
                     # If the building tile to remove is in the neighbouring tiles dictionary (keys)
                     if building_tile_to_remove in self.neighbouring_tiles_dict.keys():
@@ -1594,24 +1678,28 @@ class Player(Generic):
                         
                         # If the player has enough bamboo resource to place down another building tile
                         if self.player_gameplay_info_dict["AmountOfBambooResource"] - self.tools["BuildingTool"]["BambooResourceDepletionAmount"] > 0:
-
-                            # Create a building tile
-                            building_tile = BuildingTile(x = empty_tile_rect_info[0], y = empty_tile_rect_info[1], image = self.tools["BuildingTool"]["Images"]["TileImage"])
-
-                            # Add the building tile to the building tiles sprite group
-                            self.sprite_groups["WorldTiles"].add(building_tile)
-
-                            # Add the building tile to the world tiles dictionary with the key as the building tile and the value as the type of world tile
-                            self.world_tiles_dict[building_tile] = "BuildingTile"
-
-                            # Remove the empty tile from the empty tiles dictionary
-                            self.empty_tiles_dict.pop(empty_tile_rect_info)
                             
-                            # Add the building tile to the existing building tiles list
-                            self.tools["BuildingTool"]["ExistingBuildingTilesList"].append(building_tile)
+                            # If there is no current boss or there is a current boss and the player's mouse is not colliding with the rect of the boss
+                            # Note: This is so that the player can't build tiles right on top of the boss (Drains resource very quickly)
+                            if hasattr(self, "boss_rect") == False or (hasattr(self, "boss_rect") == True and self.mouse_rect.colliderect(self.boss_rect) == False):
 
-                            # Remove bamboo resource by the depletion amount set
-                            self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BuildingTool"]["BambooResourceDepletionAmount"]
+                                # Create a building tile
+                                building_tile = BuildingTile(x = empty_tile_rect_info[0], y = empty_tile_rect_info[1], image = self.tools["BuildingTool"]["Images"]["TileImage"])
+
+                                # Add the building tile to the building tiles sprite group
+                                self.sprite_groups["WorldTiles"].add(building_tile)
+
+                                # Add the building tile to the world tiles dictionary with the key as the building tile and the value as the type of world tile
+                                self.world_tiles_dict[building_tile] = "BuildingTile"
+
+                                # Remove the empty tile from the empty tiles dictionary
+                                self.empty_tiles_dict.pop(empty_tile_rect_info)
+                                
+                                # Add the building tile to the existing building tiles list
+                                self.tools["BuildingTool"]["ExistingBuildingTilesList"].append(building_tile)
+
+                                # Remove bamboo resource by the depletion amount set
+                                self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BuildingTool"]["BambooResourceDepletionAmount"]
 
                 # If the distance between the center of the player and the center of the empty tile at the mouse position:
                 # - Less than or equal to the minimum distance
@@ -1831,3 +1919,6 @@ class Player(Generic):
         
         # Perform knockback if the player gets knocked back
         self.perform_knockback()
+
+        # Update the invincibility timer and colour
+        self.update_invincibility_timer_and_colour()
