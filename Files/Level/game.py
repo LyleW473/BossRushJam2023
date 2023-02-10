@@ -56,21 +56,42 @@ class Game:
         # Camera modes
         self.camera_mode = None # Can either be: Static, Follow, Pan
 
+
+        # A dictionary containing information about camera panning
+        """ The panning is as follows:
+        - Pans from the player to the boss
+        - Locks on the boss for a short period of time
+        - Pans from the boss back to the player
+        - Locks on the player for a short period of time
+        - Resets the camera mode back to "Follow", allowing the player to play
+        
+        """
         self.camera_pan_information_dict = {
+                                            # The rate of change in the distance of the camera over time
                                             "PanHorizontalDistanceTimeGradient": None,
                                             "PanVerticalDistanceTimeGradient": None,                              
 
                                             # Time it takes to pan the camera from the current camera position to the new position
-                                            "PanTime": 3000,
+                                            "PanTime": 3000, # This must be less than the spawning timer of the boss
                                             "PanTimer": None,
+                                            
+                                            # The time the camera locks onto the boss for after panning from the player to the boss
+                                            "BossPanLockTime": 1500,
+                                            "BossPanLockTimer": None,
+                                            
+                                            # The time the camera locks onto the player for after panning from the boss back to the player
+                                            "PlayerPanLockTime": 1000, 
+                                            "PlayerPanLockTimer": None,
 
+                                            # Boolean variable used to track whether the camera has finished panning to the boss, locking in for a short period of time and started panning back to the player
+                                            "BossPanComplete": False, 
 
                                             # Used to store the changing camera position for floating point accuracy
                                             "NewCameraPositionX": None,
                                             "NewCameraPositionY": None,
                                             }
 
-
+        # A dictionary containing information to do with the camera / screen shake
         self.camera_shake_info_dict = {
                                         "EventsList": [],
 
@@ -113,11 +134,11 @@ class Game:
     # Camera methods
 
     def set_camera_mode(self, manual_camera_mode_setting = None):
-        # Used to change the camera mode depending on the size of the tile map
+
+        # Used to change the camera mode depending on the size of the tile map or changing the camera mode if a manual camera mode setting was passed in
         
         # If a manual camera mode setting has not been passed to this method
         if manual_camera_mode_setting == None:
-
             # If the width of the tile map is one room
             if self.last_tile_position[0] <= (self.scaled_surface.get_width() / 2):
                 # Set the camera mode to "Static"
@@ -137,10 +158,10 @@ class Game:
         
         # If a boss has not been created or if a boss has been created and has been spawned
         if hasattr(self, "bosses_dict") == False or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] == None):
-
+            
+            # If the player is currently alive
             if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
-                
-                # Return the center of the player
+                # Return the center of the player (so that the camera follows the player)
                 return (self.player.rect.centerx,  self.player.rect.centery)
 
         # If a boss has been created and is currently being spawned
@@ -156,7 +177,6 @@ class Game:
             self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] = (self.bosses_dict["ValidSpawningPosition"][0] - middle_camera_position[0]) / (self.camera_pan_information_dict["PanTime"] / 1000)
             self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] = (self.bosses_dict["ValidSpawningPosition"][1] - middle_camera_position[1]) / (self.camera_pan_information_dict["PanTime"] / 1000)
 
-
             # Set the new camera position X and Y to be the current camera position
             self.camera_pan_information_dict["NewCameraPositionX"] = self.camera_position[0]
             self.camera_pan_information_dict["NewCameraPositionY"] = self.camera_position[1]
@@ -164,10 +184,14 @@ class Game:
             # Set the pan timer to start counting down
             self.camera_pan_information_dict["PanTimer"] = self.camera_pan_information_dict["PanTime"]
 
+            # Don't allow the player to perform actions
+            self.player.player_gameplay_info_dict["CanStartOperating"] = False
+
             # Return None (as nothing is required)
             return None
 
     def update_camera_position(self, delta_time, focus_subject_center_pos):   
+        
         # Moves the camera's position depending on what mode the camera has been set as and according to who the focus subject is (i.e. the boss, the player, etc.)
         
         # If the camera mode is set to "Follow"
@@ -181,22 +205,15 @@ class Game:
                 # Don't move the camera
                 camera_position_x = 0
 
-            # # If the player is in between half of the size of the scaled screen width from the first tile in the tile map and half the width of the scaled screen from the last tile in the tile map
-            # elif 0 + (self.scaled_surface.get_width() / 2) < focus_subject_center_pos[0] < self.last_tile_position[0] - (self.scaled_surface.get_width() / 2):
-            #     # Set the camera to always follow the player
-            #     camera_position_x = focus_subject_center_pos[0] - (self.scaled_surface.get_width() / 2)
-
-            # # If the player is half the scaled screen width away from the last tile in the tile maps
-            # elif focus_subject_center_pos[0] >= self.last_tile_position[0] - (self.scaled_surface.get_width() / 2):
-            #     print("entered")
-            #     # Set the camera to stop moving and be locked at half the size of the scaled screen width from the last tile in the tile map
-            #     camera_position_x = self.last_tile_position[0] - self.scaled_surface.get_width() 
-
             # If the player is in between half of the size of the scaled screen width from the first tile in the tile map and half the width of the scaled screen from the last tile in the tile map
-            else:
+            elif 0 + (self.scaled_surface.get_width() / 2) < focus_subject_center_pos[0] < self.last_tile_position[0] - (self.scaled_surface.get_width() / 2):
                 # Set the camera to always follow the player
                 camera_position_x = focus_subject_center_pos[0] - (self.scaled_surface.get_width() / 2)
-                # print(focus_subject_center_pos[0], camera_position_x, self.scaled_surface.get_width())
+
+            # If the player is half the scaled screen width away from the last tile in the tile maps
+            elif focus_subject_center_pos[0] >= self.last_tile_position[0] - (self.scaled_surface.get_width() / 2):
+                # Set the camera to stop moving and be locked at half the size of the scaled screen width from the last tile in the tile map
+                camera_position_x = self.last_tile_position[0] - self.scaled_surface.get_width() 
 
             # --------------------------------------------------------------------------------------
             # Adjusting camera y position
@@ -224,7 +241,7 @@ class Game:
         # If the camera mode is set to "Pan" (will pan towards a specific location)
         elif self.camera_mode == "Pan":
 
-            # If there has been a timer set for pan timer 
+            # If there has been a timer set for pan timer
             if self.camera_pan_information_dict["PanTimer"] != None:
 
                 # ------------------------------------------------------------------------------
@@ -242,25 +259,92 @@ class Game:
                 # Updating the pan timer
 
                 # If the timer has not finished counting
-                if self.camera_pan_information_dict["PanTimer"]> 0:
+                if self.camera_pan_information_dict["PanTimer"] > 0:
                     # Decrease the timer
-                    self.camera_pan_information_dict["PanTimer"]-= 1000 * delta_time
+                    self.camera_pan_information_dict["PanTimer"] -= 1000 * delta_time
                 
                 # If the timer has finished counting
                 if self.camera_pan_information_dict["PanTimer"] <= 0:
                     # Set the pan timer back to None
-                    self.camera_pan_information_dict["PanTimer"]= None
+                    self.camera_pan_information_dict["PanTimer"] = None
 
+                    # If the camera has finished going from the boss to the player but the camera has not locked onto the player for a short period of time yet
+                    if self.camera_pan_information_dict["BossPanComplete"] == True and self.camera_pan_information_dict["PlayerPanLockTimer"] == None:
+                        # Set the camera to lock onto the player for a short period of time
+                        self.camera_pan_information_dict["PlayerPanLockTimer"] = self.camera_pan_information_dict["PlayerPanLockTime"] 
 
-            # If there timer has finished counting down
+            # If there has not been a timer set for pan timer
             elif self.camera_pan_information_dict["PanTimer"] == None:
-                
+
+                # Keep the camera the same
                 camera_position_x = round(self.camera_pan_information_dict["NewCameraPositionX"])
                 camera_position_y = round(self.camera_pan_information_dict["NewCameraPositionY"])
 
-                # INVERT THE GRADIENTS AND SET THE PAN TIMER AGAIN SO THAT IT PANS BACK TO THE PLAYER (DO THIS AFTER THE BOSS HAS SPAWNED)
-                # I.E self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] *= -1
+                # -------------------------------------
+                # If the boss has finished spawning and and the camera has finished panning to the boss but still needs to lock in for a short period of time
 
+                if self.bosses_dict["TimeToSpawnTimer"] == None and self.camera_pan_information_dict["BossPanLockTimer"] == None:
+                    # Set the boss pan lock timer to start
+                    self.camera_pan_information_dict["BossPanLockTimer"] = self.camera_pan_information_dict["BossPanLockTime"]
+
+                # ------------------------------------------------------------------------------
+                # Updating the boss pan lock timer
+
+                # If a boss pan lock timer has been set (Locks on the boss for short period of time)
+                if self.camera_pan_information_dict["BossPanLockTimer"] != None:
+
+                    # If the timer has not finished counting
+                    if self.camera_pan_information_dict["BossPanLockTimer"] > 0:
+                        # Decrease the timer
+                        self.camera_pan_information_dict["BossPanLockTimer"]-= 1000 * delta_time
+                    
+                    # If the timer has finished counting
+                    if self.camera_pan_information_dict["BossPanLockTimer"] <= 0:
+                        # Set the timer back to None
+                        self.camera_pan_information_dict["BossPanLockTimer"] = None
+
+                        # -----------------------------------------
+                        # Set the camera to pan back to the player
+
+                        # Invert the horizontal and vertical distance time gradients so that it pans back to the player
+                        self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] *= -1
+                        self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] *= -1
+
+                        # Set the camera to pan back to the player (start the pan timer to count down)
+                        self.camera_pan_information_dict["PanTimer"] = self.camera_pan_information_dict["PanTime"] 
+
+                        # Set the boss pan to be complete so that once the pan timer has finished panning back to the player.
+                        self.camera_pan_information_dict["BossPanComplete"] = True
+                
+                # -------------------------------------
+                # Updating the player pan lock timer
+
+                # If the camera has finished panning back to the player but still needs to lock in for a short period of time (THE FINAL STEP)
+
+                # If a timer has been set to lock on the player for a short period of time
+                if self.camera_pan_information_dict["PlayerPanLockTimer"] != None:
+
+                    # If the timer has not finished counting
+                    if self.camera_pan_information_dict["PlayerPanLockTimer"] > 0:
+                        # Decrease the timer
+                        self.camera_pan_information_dict["PlayerPanLockTimer"] -= 1000 * delta_time
+                    
+                    # If the timer has finished counting
+                    if self.camera_pan_information_dict["PlayerPanLockTimer"] <= 0:
+
+                        # Set the timer back to None
+                        self.camera_pan_information_dict["PlayerPanLockTimer"] = None
+
+                        # Set the camera mode back to Follow
+                        self.set_camera_mode("Follow")
+
+                        # Allow the boss to start operating (i.e, moving and performing actions)
+                        self.boss_group.sprite.extra_information_dict["CanStartOperating"] = True
+
+                        # Allow the player to start operating (i.e, moving and performing actions)
+                        self.player.player_gameplay_info_dict["CanStartOperating"] = True
+
+        # --------------------------------------------------------------------------------------------------------------
         # Update the camera position
         """
         - The camera's x position:
@@ -927,15 +1011,12 @@ class Game:
                             # Damage the current boss by the amount of damage dealt from being stunned
                             self.boss_group.sprite.extra_information_dict["CurrentHealth"] -= self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["StunnedDamageAmount"]
 
-                            # If the current boss is alive
-                            if self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
-
-                                # Create damage effect text
-                                self.game_ui.create_effect_text(
-                                                                type_of_effect_text = "Damage",
-                                                                target = "Boss",
-                                                                text = "-" + str(self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["StunnedDamageAmount"]),
-                                                                )
+                            # Create damage effect text
+                            self.game_ui.create_effect_text(
+                                                            type_of_effect_text = "Damage",
+                                                            target = "Boss",
+                                                            text = "-" + str(self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["StunnedDamageAmount"]),
+                                                            )
                                 
                             # If the player's frenzy mode is not activated
                             if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
@@ -1091,7 +1172,7 @@ class Game:
             number_of_tiles_for_checking = 4
             spawning_effect_counter = 0
             number_of_cycles = 8 # If the NumOfTilesForChecking was 3 and SpawningEffectCounter started at 0, then each cycle would consist of 4 changes
-            time_to_spawn = 16000 #8000
+            time_to_spawn = 8000 #8000
             time_between_each_change = (time_to_spawn / number_of_cycles) / ((number_of_tiles_for_checking + 1) - spawning_effect_counter) # The time between each change
             
             # Create a dictionary to hold information regarding bosses

@@ -56,7 +56,8 @@ class AI:
                                         
                                         # World tile collision results (For cancelling the charge state for the Sika Deer.)
                                         "WorldTileCollisionResultsX": False, 
-                                        "WorldTileCollisionResultsY": False        
+                                        "WorldTileCollisionResultsY": False,
+                                        
                                         }
         
         # A dictionary containing extra information about the Sika deer boss
@@ -75,7 +76,10 @@ class AI:
                                         # No-action timer
                                         # Note: Used so that the boss does not use actions (other than "Chase", in quick succession):
                                         "NoActionTime": 8500,
-                                        "NoActionTimer": None
+                                        "NoActionTimer": None,
+                                        
+                                        # Holds a boolean value to allow the AI to move / perform actions, etc, depending on if the camera panning for spawning the boss has been completed
+                                        "CanStartOperating": False
                                       }
 
 
@@ -87,7 +91,10 @@ class AI:
 
     def move(self):
         
-        # If the distance between the AI and the player is greater than the distance threshold and there is no timer set for the cooldown after knockback collision
+        """If:
+        - The distance between the AI and the player is greater than the distance threshold 
+        - There is no timer set for the cooldown after knockback collision
+        """
         if dist(self.movement_information_dict["CurrentPosition"], self.movement_information_dict["PlayersPosition"]) > self.movement_information_dict["DistanceThreshold"] and \
             self.movement_information_dict["KnockbackCollisionIdleTimer"] == None:
             

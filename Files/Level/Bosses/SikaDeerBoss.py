@@ -630,7 +630,7 @@ class SikaDeerBoss(Generic, AI):
 
         # If the current action is "Chase"
         if self.current_action == "Chase":
-            
+
             # Create a list of all the actions that the AI can currently perform, if the action's cooldown timer is None
             action_list = [action for action in self.behaviour_patterns_dict.keys() if (action == "Stomp" or action == "Target") and self.behaviour_patterns_dict[action]["CooldownTimer"] == None]
 
@@ -712,9 +712,11 @@ class SikaDeerBoss(Generic, AI):
 
         # If the boss' health is greater than 0
         if self.extra_information_dict["CurrentHealth"] > 0:
-        
-            # Decide the action that the boss should perform
-            self.decide_action()
+            
+            # If the boss has spawned and the camera panning has been completed
+            if self.extra_information_dict["CanStartOperating"] == True:
+                # Decide the action that the boss should perform
+                self.decide_action()
 
             pygame_draw_rect(self.surface, "green", pygame_Rect(self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 1)
             pygame_draw_line(self.surface, "white", (0 - self.camera_position[0], self.rect.centery - self.camera_position[1]), (self.surface.get_width() - self.camera_position[0], self.rect.centery - self.camera_position[1]))
@@ -728,27 +730,30 @@ class SikaDeerBoss(Generic, AI):
                 y = (self.rect.y - ((self.image.get_height() / 2) - (self.rect.height / 2))) - self.camera_position[1]
                     )
 
-            # Play animations
-            self.play_animations()
+            # If the boss has spawned and the camera panning has been completed
+            if self.extra_information_dict["CanStartOperating"] == True:
+                
+                # Play animations
+                self.play_animations()
 
-            # Create / update a mask for pixel - perfect collisions
-            self.mask = pygame_mask_from_surface(self.image)
+                # Create / update a mask for pixel - perfect collisions
+                self.mask = pygame_mask_from_surface(self.image)
 
-            # Update the duration timers
-            self.update_duration_timers()
+                # Update the duration timers
+                self.update_duration_timers()
 
-            # Update the cooldown timers
-            self.update_cooldown_timers()
+                # Update the cooldown timers
+                self.update_cooldown_timers()
 
-            # Update the knockback collision idle timer
-            self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
+                # Update the knockback collision idle timer
+                self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
 
-            # Update the no action timer
-            self.update_no_action_timer(delta_time = self.delta_time)
+                # Update the no action timer
+                self.update_no_action_timer(delta_time = self.delta_time)
 
-            # TEMPORARY
-            for tile in self.neighbouring_tiles_dict.keys():
-                pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
+                # TEMPORARY
+                for tile in self.neighbouring_tiles_dict.keys():
+                    pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
         # If the boss' health is less than 0
         if self.extra_information_dict["CurrentHealth"] <= 0:

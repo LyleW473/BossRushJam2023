@@ -82,6 +82,11 @@ class Player(Generic):
 
         # A dictionary containing information such as the HP the player has, the current tool equipped, amount of bamboo resource, etc.
         self.player_gameplay_info_dict = {
+
+                                        # Holds a boolean value to allow the player to shoot / move, etc, depending on if the camera panning for spawning the boss has been completed
+                                        "CanStartOperating": True, # This will be set to False when the camera panning starts, and then back to True once complete
+
+                                        # Current tool equipped
                                         "CurrentToolEquipped": "BambooAssaultRifle",
 
                                         # Bamboo resource
@@ -269,76 +274,79 @@ class Player(Generic):
 
         # Changes the player's animation state if the conditions are met
 
-        # If the player is moving left, right, up or down
-        if pygame_key_get_pressed()[pygame_K_a] or pygame_key_get_pressed()[pygame_K_d] or pygame_key_get_pressed()[pygame_K_w] or pygame_key_get_pressed()[pygame_K_s]:
+        # If the player is allowed to start performing actions (i.e. not during the camera panning when a boss is spawned)
+        if self.player_gameplay_info_dict["CanStartOperating"] == True:
 
-            """ 
-            Play the idle animation:
-                - If the player is at the beginning or end of the tile map
-                or 
-                - If the player is colliding with a neighbouring tile in the direction that the player is going in
-                - If there are two directions the player is going and there is a collision on both directions
-                - If the player isn't pressing any of the movement input keys (The elif statement)
-            """
-            # If this dictionary does not already exist
-            if hasattr(self, "direction_collisions") == False:
-                # Create a dictionary that holds the collisions in the direction that the player is facing
-                self.direction_collisions = {
-                                            "Left": pygame_Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height),
-                                            "Right": pygame_Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height),
-                                            "Up": pygame_Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height),
-                                            "Down": pygame_Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
-                                            }
-            # If this dictionary already exists
-            else:
-                # Update the dictionary's rect values
-                self.direction_collisions["Left"]  = pygame_Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height)
-                self.direction_collisions["Right"] = pygame_Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height)
-                self.direction_collisions["Up"] = pygame_Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height)
-                self.direction_collisions["Down"]  = pygame_Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
+            # If the player is moving left, right, up or down
+            if pygame_key_get_pressed()[pygame_K_a] or pygame_key_get_pressed()[pygame_K_d] or pygame_key_get_pressed()[pygame_K_w] or pygame_key_get_pressed()[pygame_K_s]:
 
-            # Create a tuple of the directions the player is currently moving in
-            current_directions = [key for key in self.direction_variables_dict.keys() if self.direction_variables_dict[key] == True]
+                """ 
+                Play the idle animation:
+                    - If the player is at the beginning or end of the tile map
+                    or 
+                    - If the player is colliding with a neighbouring tile in the direction that the player is going in
+                    - If there are two directions the player is going and there is a collision on both directions
+                    - If the player isn't pressing any of the movement input keys (The elif statement)
+                """
+                # If this dictionary does not already exist
+                if hasattr(self, "direction_collisions") == False:
+                    # Create a dictionary that holds the collisions in the direction that the player is facing
+                    self.direction_collisions = {
+                                                "Left": pygame_Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height),
+                                                "Right": pygame_Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height),
+                                                "Up": pygame_Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height),
+                                                "Down": pygame_Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
+                                                }
+                # If this dictionary already exists
+                else:
+                    # Update the dictionary's rect values
+                    self.direction_collisions["Left"]  = pygame_Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height)
+                    self.direction_collisions["Right"] = pygame_Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height)
+                    self.direction_collisions["Up"] = pygame_Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height)
+                    self.direction_collisions["Down"]  = pygame_Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
 
-            if (self.rect.x == 0 or self.rect.right == self.last_tile_position[0]) or \
-                len(current_directions) == 1 and self.direction_collisions[current_directions[0]] != None and self.direction_collisions[current_directions[0]].collidedict(self.neighbouring_tiles_dict) != None or \
-                len(current_directions) == 2 and (self.direction_collisions[current_directions[0]] != None and self.direction_collisions[current_directions[1]] != None) and \
-                (self.direction_collisions[current_directions[0]].collidedict(self.neighbouring_tiles_dict) != None and self.direction_collisions[current_directions[1]].collidedict(self.neighbouring_tiles_dict) != None):
+                # Create a tuple of the directions the player is currently moving in
+                current_directions = [key for key in self.direction_variables_dict.keys() if self.direction_variables_dict[key] == True]
+
+                if (self.rect.x == 0 or self.rect.right == self.last_tile_position[0]) or \
+                    len(current_directions) == 1 and self.direction_collisions[current_directions[0]] != None and self.direction_collisions[current_directions[0]].collidedict(self.neighbouring_tiles_dict) != None or \
+                    len(current_directions) == 2 and (self.direction_collisions[current_directions[0]] != None and self.direction_collisions[current_directions[1]] != None) and \
+                    (self.direction_collisions[current_directions[0]].collidedict(self.neighbouring_tiles_dict) != None and self.direction_collisions[current_directions[1]].collidedict(self.neighbouring_tiles_dict) != None):
+
+                    # If the current animation state has not been set to "Idle" yet
+                    if self.current_animation_state != "Idle":
+                        # Set the current animation state to "Idle"
+                        self.current_animation_state = "Idle"
+
+                        # Reset the animation frame counter and index
+                        self.animation_frame_counter = 0
+                        self.animation_index = 0
+
+                # If the player isn't colliding with a neighbouring tile or is not at the beginning or end of the tile map
+                else:
+                    # If the current animation state has not been set to "Run" yet
+                    if self.current_animation_state != "Run":
+                        # Set the current animation state to "Run"
+                        self.current_animation_state = "Run"
+
+                        # Reset the animation frame counter and index
+                        self.animation_frame_counter = 0
+                        self.animation_index = 0
+
+            # If the player has stopped running left or right
+            elif pygame_key_get_pressed()[pygame_K_a] == False and pygame_key_get_pressed()[pygame_K_d] == False and pygame_key_get_pressed()[pygame_K_w] == False and pygame_key_get_pressed()[pygame_K_s] == False:
 
                 # If the current animation state has not been set to "Idle" yet
                 if self.current_animation_state != "Idle":
+                    
+                    # # If the player has stopped running
+                    # if self.current_animation_state == "Run":
                     # Set the current animation state to "Idle"
                     self.current_animation_state = "Idle"
 
                     # Reset the animation frame counter and index
                     self.animation_frame_counter = 0
                     self.animation_index = 0
-
-            # If the player isn't colliding with a neighbouring tile or is not at the beginning or end of the tile map
-            else:
-                # If the current animation state has not been set to "Run" yet
-                if self.current_animation_state != "Run":
-                    # Set the current animation state to "Run"
-                    self.current_animation_state = "Run"
-
-                    # Reset the animation frame counter and index
-                    self.animation_frame_counter = 0
-                    self.animation_index = 0
-
-        # If the player has stopped running left or right
-        elif pygame_key_get_pressed()[pygame_K_a] == False and pygame_key_get_pressed()[pygame_K_d] == False and pygame_key_get_pressed()[pygame_K_w] == False and pygame_key_get_pressed()[pygame_K_s] == False:
-
-            # If the current animation state has not been set to "Idle" yet
-            if self.current_animation_state != "Idle":
-                
-                # # If the player has stopped running
-                # if self.current_animation_state == "Run":
-                # Set the current animation state to "Idle"
-                self.current_animation_state = "Idle"
-
-                # Reset the animation frame counter and index
-                self.animation_frame_counter = 0
-                self.animation_index = 0
 
     def play_animations(self):
 
@@ -595,9 +603,11 @@ class Player(Generic):
         elif self.current_animation_state == "Idle":
 
             # If the player is pressing the left mouse button
-            if pygame_mouse_get_pressed()[0] == True:
+            if pygame_mouse_get_pressed()[0] == True or self.player_gameplay_info_dict["CanStartOperating"] == False:
                 """ There is an error where the animation index is not reset when switching to this "shooting idle" animation. 
                 Therefore, if the animation index + 1 is greater than the number of frames in the current animation list, the animation index should be reset.
+
+                - The second check is so that the player can move their character around whilst the camera is panning.
                 """
                 if (self.animation_index + 1) > len(self.animations_dict[self.current_player_element]["Idle"][self.current_look_direction]):
                     # Reset the animation index
@@ -696,31 +706,32 @@ class Player(Generic):
     def update_direction_variables(self):
 
         # Updates the direction variables inside the dictionary direction variables dictionary. Creates a list of the direction the player is moving towards.
+        if self.player_gameplay_info_dict["CanStartOperating"] == True:
 
-        # Left
-        if pygame_key_get_pressed()[pygame_K_a] == False:
-            self.direction_variables_dict["Left"] = False
-        elif pygame_key_get_pressed()[pygame_K_a] == True:
-            self.direction_variables_dict["Left"] = True
-        
-        # Right
-        if pygame_key_get_pressed()[pygame_K_d] == False:
-            self.direction_variables_dict["Right"] = False
-        elif pygame_key_get_pressed()[pygame_K_d] == True:
-            self.direction_variables_dict["Right"] = True
-        # Up
-        if pygame_key_get_pressed()[pygame_K_w] == False:
-            self.direction_variables_dict["Up"] = False
-        elif pygame_key_get_pressed()[pygame_K_w] == True:
-            self.direction_variables_dict["Up"] = True
-        # Down
-        if pygame_key_get_pressed()[pygame_K_s] == False:
-            self.direction_variables_dict["Down"] = False
-        elif pygame_key_get_pressed()[pygame_K_s] == True:
-            self.direction_variables_dict["Down"] = True
+            # Left
+            if pygame_key_get_pressed()[pygame_K_a] == False:
+                self.direction_variables_dict["Left"] = False
+            elif pygame_key_get_pressed()[pygame_K_a] == True:
+                self.direction_variables_dict["Left"] = True
+            
+            # Right
+            if pygame_key_get_pressed()[pygame_K_d] == False:
+                self.direction_variables_dict["Right"] = False
+            elif pygame_key_get_pressed()[pygame_K_d] == True:
+                self.direction_variables_dict["Right"] = True
+            # Up
+            if pygame_key_get_pressed()[pygame_K_w] == False:
+                self.direction_variables_dict["Up"] = False
+            elif pygame_key_get_pressed()[pygame_K_w] == True:
+                self.direction_variables_dict["Up"] = True
+            # Down
+            if pygame_key_get_pressed()[pygame_K_s] == False:
+                self.direction_variables_dict["Down"] = False
+            elif pygame_key_get_pressed()[pygame_K_s] == True:
+                self.direction_variables_dict["Down"] = True
 
-        # Create a list that stores the direction(s) that the player is moving towards
-        self.player_direction = [key for key in self.direction_variables_dict.keys() if self.direction_variables_dict[key] == True]
+            # Create a list that stores the direction(s) that the player is moving towards
+            self.player_direction = [key for key in self.direction_variables_dict.keys() if self.direction_variables_dict[key] == True]
 
     def movement_acceleration(self):
 
@@ -1734,23 +1745,12 @@ class Player(Generic):
         # If the current tool equipped by the player is not the building tool
         if self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":       
 
-            # --------------------------------------
-            # Updating shooting cooldown timers
-
             # The current weapon selected (as a temp variable)
             current_weapon = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]
 
-            # If there is a timer that has been set to start counting
-            if current_weapon["ShootingCooldownTimer"] != None:
-                # If the timer is greater than 0 (counts down from the shooting cooldown)
-                if current_weapon["ShootingCooldownTimer"] > 0:
-                    # Increase the timer
-                    current_weapon["ShootingCooldownTimer"] -= 1000 * self.delta_time * self.player_gameplay_info_dict["FrenzyModeFireRateBoost"]
-
-                # If the timer is less than or equal to 0 (counts down from the shooting cooldown)
-                if current_weapon["ShootingCooldownTimer"] <= 0:
-                    # Set the shooting cooldown timer back to None
-                    current_weapon["ShootingCooldownTimer"] = None
+            # --------------------------------------
+            # Updating shooting cooldown timers
+            self.update_shooting_cooldown_timer(current_weapon = current_weapon)
 
             # If the left mouse button has been pressed and the player has enough resources to shoot
             if pygame_mouse_get_pressed()[0] == True and \
@@ -1841,40 +1841,58 @@ class Player(Generic):
                                 # Remove the amount of bamboo resource set for the bamboo assault rifle
                                 self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BambooAssaultRifle"]["BambooResourceDepletionAmount"]
 
-        # ---------------------------------------------------------------------------------
-        # Updating bamboo projectiles 
+    def update_bamboo_projectiles(self):
 
-        # For all bamboo projectiles
-        for bamboo_projectile in self.sprite_groups["BambooProjectiles"]:
-            
-            # If the bamboo projectile was created whilst frenzy mode was activated
-            if bamboo_projectile.is_frenzy_mode_projectile == True:
+        # Updates bamboo projectiles (moves them, changes colour, etc.)
 
-                # If the player has activated frenzy mode
-                if self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+        if len(self.sprite_groups["BambooProjectiles"]) > 0:
+            # For all bamboo projectiles
+            for bamboo_projectile in self.sprite_groups["BambooProjectiles"]:
+                
+                # If the bamboo projectile was created whilst frenzy mode was activated
+                if bamboo_projectile.is_frenzy_mode_projectile == True:
 
-                    # Note: The copy of the original image is so that we don't continuously add onto the current RGB values of the projectile's image (otherwise it will become completely white)
+                    # If the player has activated frenzy mode
+                    if self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
 
-                    # Set the bamboo projectile image to be the same colour as the player when in frenzy mode
-                    bamboo_projectile.image = change_image_colour(current_animation_image = bamboo_projectile.original_image.copy(), desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
+                        # Note: The copy of the original image is so that we don't continuously add onto the current RGB values of the projectile's image (otherwise it will become completely white)
 
-                # If the player has not activated frenzy mode
-                elif self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
-                    
-                    # Note: This check is so that once the frenzy mode is over, all images need to be reset back to the original image
+                        # Set the bamboo projectile image to be the same colour as the player when in frenzy mode
+                        bamboo_projectile.image = change_image_colour(current_animation_image = bamboo_projectile.original_image.copy(), desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
 
-                    # If the bamboo projectile's image is not the original image
-                    if bamboo_projectile.image != bamboo_projectile.original_image:
-                        # Set the image back to the original image
-                        bamboo_projectile.image = bamboo_projectile.original_image
+                    # If the player has not activated frenzy mode
+                    elif self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                        
+                        # Note: This check is so that once the frenzy mode is over, all images need to be reset back to the original image
+
+                        # If the bamboo projectile's image is not the original image
+                        if bamboo_projectile.image != bamboo_projectile.original_image:
+                            # Set the image back to the original image
+                            bamboo_projectile.image = bamboo_projectile.original_image
 
 
-            # Update the bamboo projectile's delta time
-            bamboo_projectile.delta_time = self.delta_time
+                # Update the bamboo projectile's delta time
+                bamboo_projectile.delta_time = self.delta_time
 
-            # Move the projectile
-            bamboo_projectile.move_projectile()
+                # Move the projectile
+                bamboo_projectile.move_projectile()
     
+    def update_shooting_cooldown_timer(self, current_weapon):
+
+        # Updates the shooting cooldown timer of the current weapon
+
+        # If there is a timer that has been set to start counting
+        if current_weapon["ShootingCooldownTimer"] != None:
+            # If the timer is greater than 0 (counts down from the shooting cooldown)
+            if current_weapon["ShootingCooldownTimer"] > 0:
+                # Increase the timer
+                current_weapon["ShootingCooldownTimer"] -= 1000 * self.delta_time * self.player_gameplay_info_dict["FrenzyModeFireRateBoost"]
+
+            # If the timer is less than or equal to 0 (counts down from the shooting cooldown)
+            if current_weapon["ShootingCooldownTimer"] <= 0:
+                # Set the shooting cooldown timer back to None
+                current_weapon["ShootingCooldownTimer"] = None
+
     def run(self, delta_time):
 
         # Update the delta time
@@ -1886,39 +1904,57 @@ class Player(Generic):
         # Play animations
         self.play_animations()
 
-        # # TEMPORARY
-        # for tile in self.neighbouring_tiles_dict.keys():
-        #     pygame_draw_rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
+        # If the player is allowed to start performing actions (i.e. not during the camera panning when a boss is spawned)
+        if self.player_gameplay_info_dict["CanStartOperating"] == False:
+            # If the current animation is not set to "Idle", set it to "Idle"
+            if self.current_animation_state != "Idle":
+                self.current_animation_state = "Idle"
 
-        # Track player movement
-        self.handle_player_movement()
-        
-        # Create / update a mask for pixel - perfect collisions
-        self.mask = pygame_mask_from_surface(self.image)
+            # If there are any bamboo projectiles, keep updating them
+            self.update_bamboo_projectiles()
 
-        # ----------------------------------
-        # Gameplay
+            # If the player shot recently, continue updating the shooting cooldown timer
+            self.update_shooting_cooldown_timer(current_weapon = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]])
+    
+        # If the player is allowed to start performing actions (i.e. not during the camera panning when a boss is spawned)
+        elif self.player_gameplay_info_dict["CanStartOperating"] == True:
 
-        # Activate frenzy mode if the conditions are met
-        self.activate_frenzy_mode()
+            # # TEMPORARY
+            # for tile in self.neighbouring_tiles_dict.keys():
+            #     pygame_draw_rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
-        # Update the frenzy mode timer
-        self.update_frenzy_mode_timer()
+            # Track player movement
+            self.handle_player_movement()
+            
+            # Create / update a mask for pixel - perfect collisions
+            self.mask = pygame_mask_from_surface(self.image)
 
-        # Update the frenzy mode colour's RGB values
-        self.update_frenzy_mode_colour()
+            # ----------------------------------
+            # Gameplay
 
-        # Draw the player tool
-        self.draw_player_tool()
+            # Activate frenzy mode if the conditions are met
+            self.activate_frenzy_mode()
 
-        # Handle player building
-        self.handle_building() 
+            # Update the frenzy mode timer
+            self.update_frenzy_mode_timer()
 
-        # Handle player shooting
-        self.handle_shooting()
-        
-        # Perform knockback if the player gets knocked back
-        self.perform_knockback()
+            # Update the frenzy mode colour's RGB values
+            self.update_frenzy_mode_colour()
 
-        # Update the invincibility timer and colour
-        self.update_invincibility_timer_and_colour()
+            # Draw the player tool
+            self.draw_player_tool()
+
+            # Handle player building
+            self.handle_building() 
+
+            # Handle player shooting
+            self.handle_shooting()
+
+            # Update any bamboo projectiles that have been created
+            self.update_bamboo_projectiles()
+            
+            # Perform knockback if the player gets knocked back
+            self.perform_knockback()
+
+            # Update the invincibility timer and colour
+            self.update_invincibility_timer_and_colour()
