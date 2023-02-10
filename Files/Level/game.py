@@ -26,6 +26,8 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.draw import line as pygame_draw_line
 
+from pygame import Rect as pygame_Rect
+
 
 class Game:
     def __init__(self):
@@ -55,8 +57,7 @@ class Game:
 
         # Camera modes
         self.camera_mode = None # Can either be: Static, Follow, Pan
-
-
+        
         # A dictionary containing information about camera panning
         """ The panning is as follows:
         - Pans from the player to the boss
@@ -170,7 +171,7 @@ class Game:
             # Set the camera mode as "Pan"
             self.set_camera_mode(manual_camera_mode_setting = "Pan")
             
-            # The position of center of the screen / camera is the following
+            # The position of the center of the screen, that the camera is following (i.e. the center of the camera)
             middle_camera_position = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), self.camera_position[1] + (self.scaled_surface.get_height() / 2))
             
             # Calculate the horizontal and vertical distance time gradients for the panning movement
@@ -393,8 +394,6 @@ class Game:
                     
                     # The boss collided with a world tile or a building tile
                     case "BossTileCollide":
-                        print(self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"])
-
                         # Set the timer for the boss tile collide screen shake to start
                         self.camera_shake_info_dict["BossTileCollideTimer"] = self.camera_shake_info_dict["BossTileCollideTime"]
 
@@ -542,23 +541,12 @@ class Game:
 
         for tile in self.world_tiles_dict.keys():
 
-                # If the camera is positioned at the start of the tile map and the object is within the boundaries of the screen
-                if tile.rect.right <= self.scaled_surface.get_width():
-                    # print("1")
-
-                    # Draw all tile objects on the screen
-                    tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))
-
-                # If the camera is positioned at the end of the tile map and the tile object is within the boundaries of the screen
-                elif (self.last_tile_position[0] - self.scaled_surface.get_width()) == self.camera_position[0] and tile.rect.right >= self.camera_position[0]:
-                    # Draw all tile objects on the screen
-                    tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))
-
-                # If the camera is neither at the start or the end of the tile map and the object is within the boundaries of the screen
-                elif self.player.rect.left - ((self.scaled_surface.get_width() / 2) + TILE_SIZE)  <= tile.rect.right <= self.player.rect.right + (self.scaled_surface.get_width() / 2 + TILE_SIZE): 
-
-                    # Draw the tile object
-                    tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))           
+            # If the tile object is within view of the camera (i.e. on the screen)
+            if self.camera_position[0] - TILE_SIZE <= tile.rect.x <= (self.camera_position[0] + (self.scaled_surface.get_width())) + TILE_SIZE and \
+                self.camera_position[1] - TILE_SIZE <= tile.rect.y <= (self.camera_position[1] + (self.scaled_surface.get_height())) + TILE_SIZE:
+                
+                # Draw the world / building tile onto the screen
+                tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))         
 
         # ---------------------------------------------
         # Bamboo projectiles
@@ -1642,9 +1630,6 @@ class Game:
 
         # Run the game UI 
         self.game_ui.run(camera_position = self.camera_position)
-
-        pygame_draw_line(surface = self.scaled_surface, color = "blue", start_pos = (self.camera_position[0], 0), end_pos = (self.camera_position[0], self.scaled_surface.get_height()))
-        pygame_draw_line(surface = self.scaled_surface, color = "green", start_pos = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), 0), end_pos = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), self.scaled_surface.get_height()))
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame_transform_scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))
