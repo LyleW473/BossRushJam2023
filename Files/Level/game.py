@@ -26,7 +26,6 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.draw import line as pygame_draw_line
 
-from pygame import Rect as pygame_Rect
 
 
 class Game:
@@ -77,7 +76,7 @@ class Game:
                                             "PanTimer": None,
                                             
                                             # The time the camera locks onto the boss for after panning from the player to the boss
-                                            "BossPanLockTime": 1500,
+                                            "BossPanLockTime": 4000,
                                             "BossPanLockTimer": None,
                                             
                                             # The time the camera locks onto the player for after panning from the boss back to the player
@@ -175,8 +174,9 @@ class Game:
             middle_camera_position = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), self.camera_position[1] + (self.scaled_surface.get_height() / 2))
             
             # Calculate the horizontal and vertical distance time gradients for the panning movement
-            self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] = (self.bosses_dict["ValidSpawningPosition"][0] - middle_camera_position[0]) / (self.camera_pan_information_dict["PanTime"] / 1000)
-            self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] = (self.bosses_dict["ValidSpawningPosition"][1] - middle_camera_position[1]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+            # Note: TILE_SIZE / 2 so that the center of the camera is aligned with the center of the spawning tile
+            self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] = ((self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2)) - middle_camera_position[0]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+            self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] = ((self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)) - middle_camera_position[1]) / (self.camera_pan_information_dict["PanTime"] / 1000)
 
             # Set the new camera position X and Y to be the current camera position
             self.camera_pan_information_dict["NewCameraPositionX"] = self.camera_position[0]
@@ -530,7 +530,13 @@ class Game:
         self.set_camera_mode()
 
         # Create the game UI
-        self.game_ui = GameUI(surface = self.scaled_surface, scale_multiplier = self.scale_multiplier, player_tools = self.player.tools, player_gameplay_info_dict = self.player.player_gameplay_info_dict)
+        self.game_ui = GameUI(
+                            surface = self.scaled_surface, 
+                            scale_multiplier = self.scale_multiplier, 
+                            player_tools = self.player.tools, 
+                            player_gameplay_info_dict = self.player.player_gameplay_info_dict,
+                            camera_pan_information_dict = self.camera_pan_information_dict
+                            )
 
     def draw_tile_map_objects(self):
 
@@ -1160,7 +1166,7 @@ class Game:
             number_of_tiles_for_checking = 4
             spawning_effect_counter = 0
             number_of_cycles = 8 # If the NumOfTilesForChecking was 3 and SpawningEffectCounter started at 0, then each cycle would consist of 4 changes
-            time_to_spawn = 8000 #8000
+            time_to_spawn = 6000 #8000
             time_between_each_change = (time_to_spawn / number_of_cycles) / ((number_of_tiles_for_checking + 1) - spawning_effect_counter) # The time between each change
             
             # Create a dictionary to hold information regarding bosses
@@ -1539,9 +1545,17 @@ class Game:
 
         # Current boss
         self.game_ui.current_boss = self.boss_group.sprite
+
+        # If the game UI does not have the current boss' name yet and a boss is currently being spawned
+        if self.game_ui.current_boss_name == None and hasattr(self, "bosses_dict") == True:
+            # Update the game UI
+            self.game_ui.current_boss_name = self.bosses_dict["CurrentBoss"]
             
         # Mouse position 
         self.game_ui.mouse_position = (self.player.mouse_position[0] - self.camera_position[0], self.player.mouse_position[1] - self.camera_position[1])
+
+        # The camera pan information dict
+        self.game_ui.camera_pan_information_dict = self.camera_pan_information_dict
 
     def run(self, delta_time):
 

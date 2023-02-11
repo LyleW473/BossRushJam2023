@@ -14,7 +14,7 @@ from math import degrees
 
 class GameUI:
 
-    def __init__(self, surface, scale_multiplier, player_tools, player_gameplay_info_dict):
+    def __init__(self, surface, scale_multiplier, player_tools, player_gameplay_info_dict, camera_pan_information_dict):
 
         # Surface the UI will be drawn onto
         self.surface = surface
@@ -27,6 +27,9 @@ class GameUI:
 
         # The current boss
         self.current_boss = None
+
+        # The current boss' name
+        self.current_boss_name = None
 
         # The current mouse position
         self.mouse_position = None
@@ -166,6 +169,42 @@ class GameUI:
         # Angled polygons
         self.angled_polygons_surface = pygame_Surface((self.surface.get_width(), self.surface.get_height()))
         self.angled_polygons_surface.set_colorkey("black")
+
+        # ------------------------------------------------------------
+        # Camera panning 
+
+        # A dictionary containing information relating to the camera panning
+        self.camera_pan_information_dict = camera_pan_information_dict
+
+        # -----------------------------
+        # Black bars
+
+        # The height of the black bars
+        self.black_bar_height = 0
+
+        # The rate of change of the height over time
+        self.black_bar_height_time_gradient = ((self.surface.get_height() / 5) - 0) / (self.camera_pan_information_dict["PanTime"] / 1000)
+        self.original_black_bar_height_time_gradient = ((self.surface.get_height() / 5) - 0) / (self.camera_pan_information_dict["PanTime"] / 1000)
+        
+        # A variable to store the new height (floating point accuracy)
+        self.black_bar_new_height = 0
+
+        # -----------------------------
+        # Boss text
+
+        # The text font (Re-using the same font for the frenzy mode value)
+        self.boss_text_font = pygame_font_Font("graphics/Fonts/frenzy_mode_value_font.ttf", 56)
+
+        # The size required to render the text depending on the text
+        self.boss_text_font_size = None
+        
+        # The name of the boss
+        self.boss_text = None
+
+        # The rate of change in the alpha level of the over time
+        # Note: THe time is in half so that it fades in and out
+        self.boss_text_alpha_level_time_gradient = 200 / ((self.camera_pan_information_dict["BossPanLockTime"] / 1000) / 5) # 5 so that at the middle of the timer, the text will be completely opaque
+        self.boss_text_new_alpha_level = 0
 
     def create_player_tools_display_cards(self):
 
@@ -519,6 +558,119 @@ class GameUI:
         # Blit the cursor image at the mouse position, subtracting half of the cursor image's width and height
         self.surface.blit(self.default_cursor_image, (self.mouse_position[0] - (self.default_cursor_image.get_width()/ 2), self.mouse_position[1]- (self.default_cursor_image.get_height() / 2)))
 
+    def draw_camera_pan_bars(self):
+
+        # Draws the black bars when the camera is panning towards the boss
+
+        # If the camera is panning
+        if self.camera_pan_information_dict["PanTimer"] != None:
+            
+            # If the camera is panning back to the player and the if the black bar height time gradient has not already been inverted / flipped
+            if self.camera_pan_information_dict["BossPanComplete"] == True and self.black_bar_height_time_gradient == self.original_black_bar_height_time_gradient:
+                # Invert the black bar height time gradient so that the black bars shrink
+                self.black_bar_height_time_gradient *= -1
+
+            # Shrink / Increase the black bar height depending on the black bar height time gradient
+            self.black_bar_new_height += self.black_bar_height_time_gradient * self.delta_time
+            self.black_bar_height = round(self.black_bar_new_height)
+
+        # If the camera panning has been completed and the black bar variables have not been reset yet (Camera panning has completely finished)
+        elif self.player_gameplay_info_dict["CanStartOperating"] == True and self.black_bar_height_time_gradient != self.original_black_bar_height_time_gradient:
+            # Reset the black bar heights and gradient
+            self.black_bar_height = 0
+            self.black_bar_new_height = 0
+            self.black_bar_height_time_gradient = self.original_black_bar_height_time_gradient
+
+            # Reset the boss text font size back to None, so that if the player spawns another boss, the text will be different
+            self.boss_text_font_size = None
+            self.boss_text = None
+
+        # If the black bar height is greater than 0
+        if self.black_bar_height > 0:
+
+            # ----------------------------------------------------------
+            # Drawing the black bars
+
+            # The top black bar
+            pygame_draw_rect(
+                surface = self.surface,
+                color = "black", 
+                rect = (
+                        0, 
+                        0, 
+                        self.surface.get_width(), 
+                        self.black_bar_height
+                        ),
+                width = 0
+                            )
+
+            # The bottom black bar
+            pygame_draw_rect(
+                surface = self.surface,
+                color = "black", 
+                rect = (
+                        0, 
+                        self.surface.get_height() - self.black_bar_height , 
+                        self.surface.get_width(), 
+                        self.black_bar_height
+                        ),
+                width = 0
+                            )
+            
+            # ----------------------------------------------------------
+            # Drawing the boss text
+
+            # If the camera is currently locking onto the boss
+            if self.camera_pan_information_dict["BossPanLockTimer"] != None:
+                
+                # If the boss text (and all its components) has not been created yet
+                if self.boss_text_font_size == None:
+
+                    # Assigning the boss text 
+                    if self.current_boss_name == "SikaDeer":
+                        self.boss_text = "Sika Deer"
+
+                    # Calculae the text font size for positioning the text correctly
+                    self.boss_text_font_size = self.boss_text_font.size(self.boss_text)
+
+                    # Create an alpha surface for the boss text
+                    self.boss_text_alpha_surface = pygame_Surface(self.boss_text_font_size)
+                    self.boss_text_alpha_surface.set_colorkey("black")
+                    self.boss_text_alpha_surface.set_alpha(0)
+
+                # Fill the boss text alpha surface with black
+                self.boss_text_alpha_surface.fill("black")
+                
+                # Draw the boss text onto the boss text alpha surface
+                draw_text(
+                        text = self.boss_text,
+                        text_colour = "white",
+                        font = self.boss_text_font,
+                        x = 0,
+                        y = 0,
+                        surface = self.boss_text_alpha_surface
+
+                        )      
+
+                # Draw the boss text alpha surface onto the main surface, at the midtop of the screen
+                self.surface.blit(self.boss_text_alpha_surface, ((self.surface.get_width() / 2) - (self.boss_text_font_size[0] / 2), (self.black_bar_height / 2) - (self.boss_text_font_size[1] / 2)))
+
+                # ---------------------------
+                # Adjust alpha of the surface
+
+                # If the boss pan lock timer is not halfway through the countdown (Countdown is near the start)
+                if self.camera_pan_information_dict["BossPanLockTimer"] > (self.camera_pan_information_dict["BossPanLockTime"] / 2):
+                    # The text should be fading in
+                    self.boss_text_new_alpha_level += self.boss_text_alpha_level_time_gradient * self.delta_time
+
+                # If the boss pan lock timer is halfway through the countdown (Countdown is nearly finished)
+                if self.camera_pan_information_dict["BossPanLockTimer"] < (self.camera_pan_information_dict["BossPanLockTime"] / 2):
+                    # The text should be fading out
+                    self.boss_text_new_alpha_level -= self.boss_text_alpha_level_time_gradient * self.delta_time
+
+                # Set the alpha level, not allowing it to go below 0 or above 255
+                self.boss_text_alpha_surface.set_alpha(max(0, min(255, self.boss_text_new_alpha_level)))
+
     # -----------------------------------------------------------------------------
     # Visual effects
 
@@ -800,24 +952,30 @@ class GameUI:
         self.surface.blit(self.angled_polygons_surface, (0, 0))
 
     def run(self, camera_position):
+        
+        # Draw the camera pan bars if the conditions are met
+        self.draw_camera_pan_bars()
 
-        # Create shooting angled polygons effects
-        self.create_angled_polygons_effects(purpose = "Shooting")
+        # If a boss has been spawned and the camera has been panned back to the player
+        if self.player_gameplay_info_dict["CanStartOperating"] == True:
 
-        # Draw the display cards onto the screen
-        self.draw_display_cards()
+            # Create shooting angled polygons effects
+            self.create_angled_polygons_effects(purpose = "Shooting")
 
-        # Draw the boss' health if a boss has been spawned
-        self.draw_boss_health()
+            # Draw the display cards onto the screen
+            self.draw_display_cards()
 
-        # Draw the player's frenzy mode bar
-        self.draw_player_frenzy_mode_bar()
+            # Draw the boss' health if a boss has been spawned
+            self.draw_boss_health()
 
-        # Draw and update any effect text
-        self.draw_and_update_effect_text(camera_position = camera_position)
+            # Draw the player's frenzy mode bar
+            self.draw_player_frenzy_mode_bar()
 
-        # Draw the mouse cursor
-        self.draw_mouse_cursor()
+            # Draw and update any effect text
+            self.draw_and_update_effect_text(camera_position = camera_position)
+
+            # Draw the mouse cursor
+            self.draw_mouse_cursor()
 
 
 
