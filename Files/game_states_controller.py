@@ -15,13 +15,14 @@ from sys import exit as sys_exit
 from Global.settings import *
 from Menu.menu import Menu
 from Level.game import Game
+from pygame.draw import rect as pygame_draw_rect
 
 class GameStatesController():
     def __init__(self):
 
         # Screen
         # Set the screen to be full screen 
-        self.screen = pygame_display_set_mode((screen_width, screen_height), flags = pygame_SCALED + pygame_FULLSCREEN)
+        self.surface = pygame_display_set_mode((screen_width, screen_height), flags = pygame_SCALED + pygame_FULLSCREEN)
 
         self.full_screen = True
 
@@ -31,6 +32,38 @@ class GameStatesController():
         
         # Attribute so that we only load the level once, and not every frame
         self.level_loaded = False
+
+        # ------------------------------------------------------------------------------------------------------------------------------------------------
+        # Restart menu functionality
+
+        # -----------------------------
+        # Black bars
+
+        # The height of the black bars
+        self.bar_height = 0
+
+        self.bar_height_change_time = 600
+        self.bar_lock_in_time = 300
+
+        # The total transition time should be: The time it takes to increase and decrease the black bar height, and the lock in time
+        self.bar_transition_time = (self.bar_height_change_time * 2) + self.bar_lock_in_time
+        self.bar_transition_timer = None
+
+        # The rate of change of the height over time
+        self.bar_height_time_gradient = ((self.surface.get_height() / 2) - 0) / (self.bar_height_change_time / 1000)
+        
+        # A variable to store the new height (floating point accuracy)
+        self.bar_new_height = 0
+
+        # A variable that stores which menu is being transitioned to
+        self.transition_where = "Nothing"
+        """ Possible locations:
+        "Nothing" = Nothing
+        "Game" = The game / level
+        The names of the menus = any menu
+        
+        """
+
 
     def load_level(self, chosen_level_number):
         # Note: Load level is here because in the future, a level select menu may be added (which will be inside the Menu class), so we need to retrieve the level selected from the Menu class and then pass it to the actual level (i.e. Game)
@@ -122,20 +155,20 @@ class GameStatesController():
                             if self.full_screen == True:
                                 
                                 # Change to windowed mode
-                                self.screen = pygame_display_set_mode((screen_width, screen_height))
+                                self.surface = pygame_display_set_mode((screen_width, screen_height))
                                 self.full_screen = False
 
                             # Changing from windowed to full screen mode
                             elif self.full_screen == False:
                                 
                                 # Change to full screen mode
-                                self.screen = pygame_display_set_mode((screen_width, screen_height), pygame_SCALED + pygame_FULLSCREEN)
+                                self.surface = pygame_display_set_mode((screen_width, screen_height), pygame_SCALED + pygame_FULLSCREEN)
                                 self.full_screen = True
 
                     # ------------------------------------------------------------
                     # In-game / Level events
 
-                    if self.game.running == True:
+                    if self.menu.current_menu == "game":
                         
                         # Find which key was pressed
                         match event.key:
@@ -146,9 +179,11 @@ class GameStatesController():
                                 # Set the mouse cursor back to visible
                                 pygame_mouse_set_visible(True)
                     
-                                # Show the paused menu
-                                self.game.running = False
-                                self.menu.current_menu = "paused_menu"
+                                # Transition to the paused menu (the menu's current menu will be set to "paused_menu")
+                                self.transition_where = "paused_menu"
+
+                                # Start the transition timer
+                                self.bar_transition_timer = self.bar_transition_time
                             
                             # "1" key
                             case _ if event.key == pygame_K_1:
@@ -162,32 +197,152 @@ class GameStatesController():
                             case _ if event.key == pygame_K_3:
                                 # Switch the player's tool to the bamboo launcher
                                 self.game.player.switch_tool(tool = "BambooLauncher")
-                                    
+
+    def detect_game_state_transitions(self):
+
+        # Detects for game state transitions
+        
+        # If the player has died (Transition from the game to the restart menu) and the transition has not started
+        if self.game.game_over == True and self.menu.current_menu != "restart_menu" and self.bar_transition_timer == None:
+
+            # Show the mouse cursor
+            pygame_mouse_set_visible(True)
+
+            # Transition from the game to the restart menu
+            self.transition_where = "restart_menu"
+
+            # Start the transition timer
+            self.bar_transition_timer = self.bar_transition_time
+
+            # Set game over to False
+            self.game.game_over = False
+
+        # Transitions between menus and the menu and the game and the transition has not started
+        elif self.menu.transition_to_which_menu != "Nothing" and self.menu.current_menu != self.menu.transition_to_which_menu and self.bar_transition_timer == None:
+
+            # Set the transition to begin depending on what button was pressed
+            self.transition_where = self.menu.transition_to_which_menu
+
+            # Start the transition timer
+            self.bar_transition_timer = self.bar_transition_time
+
+    def detect_and_perform_game_over_reset(self):
+        
+        # If the player just played and died and has returned to the main menu
+        if self.game.game_over == True and self.menu.current_menu == "main_menu":
+
+            print("RESTART")
+            # RESET THE GAME (call methods from the game)
+            self.game.game_over = False
+
+    def perform_transition(self, delta_time):
+
+        # Performs the transition between game states (i.e. changes between the menu and draws the transition)
+
+        # If a transition has been set to start
+        if self.transition_where != "Nothing":
+
+            # Top black bar
+            pygame_draw_rect(
+                surface = self.surface,
+                color = (113, 179, 64),
+                rect = (
+                        0, 
+                        0, 
+                        self.surface.get_width(), 
+                        self.bar_height
+                        ),
+                width = 0
+                )
+
+            # Bottom black bar
+            pygame_draw_rect(
+                surface = self.surface,
+                color = (113, 179, 64),
+                rect = (
+                        0, 
+                        self.surface.get_height() - self.bar_height, 
+                        self.surface.get_width(), 
+                        self.bar_height
+                        ),
+                width = 0
+                )            
+
+
+            # Updating the size of the black bar
+
+            # Temp variable for the time elapsed
+            time_elapsed = self.bar_transition_time - self.bar_transition_timer
+
+            # If the time elapsed is less than the black bar change time (Increasing the black bar height)
+            if time_elapsed < self.bar_height_change_time:
+                # Increase the size of the bars
+                self.bar_new_height += self.bar_height_time_gradient * delta_time
+                self.bar_height = round(self.bar_new_height)
+
+            # If we the time elapsed is past the increasing time and the lock in time (Decreasing the black bar height)
+            elif time_elapsed > (self.bar_transition_time - self.bar_height_change_time):
+                # Decrease the height of the bars
+                self.bar_new_height -= self.bar_height_time_gradient * delta_time
+                self.bar_height = round(self.bar_new_height)
+        
+            # --------------------------------------------------
+            # Updating timer
+
+            # If the timer has not finished counting down
+            if self.bar_transition_timer > 0:
+                
+                # If the transition has finished increasing and locking in for a short period of time
+                if self.bar_transition_timer < (self.bar_transition_time - (self.bar_height_change_time + self.bar_lock_in_time)):
+                    
+                    # If the current menu has not been set to the menu specified to be transitioned to or has not been set to transition from the menus to the game
+                    if self.menu.current_menu != self.transition_where:
+                        # Set the current menu as the game (so that it stops showing menus, and shows the game
+                        self.menu.current_menu = self.transition_where
+
+                # Decrease the timer
+                self.bar_transition_timer -= 1000 * delta_time
+
+            # If the timer has finished counting down
+            elif self.bar_transition_timer <= 0:
+
+                # Reset the timer back to None
+                self.bar_transition_timer = None
+
+                # Reset the black bar heights
+                self.bar_height = 0
+                self.bar_new_height = 0
+
+                # Stop the transition
+                self.transition_where = "Nothing"
+                self.menu.transition_to_which_menu = "Nothing"
+
     def run(self, delta_time):
         
         # Run the event loop
         self.event_loop()
 
-        # If none of the menus are being shown
-        if self.menu.current_menu == None:
+        # Check if we need to reset the game, and reset the game if we do
+        self.detect_and_perform_game_over_reset()
 
-            # If this attribute is False (This would be the case if the player went into the Paused menu and then clicked the "Continue" button)
-            if self.game.running == False:
-                
-                # Hide the mouse cursor
-                pygame_mouse_set_visible(False)
-                
-                # Set the game's running attribute to True
-                self.game.running = True
+        # Detect for game state transitions
+        self.detect_game_state_transitions()
+
+        # If none of the menus are being shown
+        if self.menu.current_menu == "game":
 
             # Load the level (Has conditions which will only perform this if the level hasn't been loaded into the game yet)
             self.load_level(chosen_level_number = 1)
 
-            # Run the game
-            self.game.run(delta_time)
+            if self.game.game_over == False:
+                # Run the game
+                self.game.run(delta_time)
 
 
-        # Otherwise    
-        else:
+        # If any menus are being shown
+        elif self.menu.current_menu != "game":
             # Run the menus
             self.menu.run(delta_time)
+
+        # Performs the transition between game states (i.e. changes between the menu and draws the transition)
+        self.perform_transition(delta_time = delta_time)

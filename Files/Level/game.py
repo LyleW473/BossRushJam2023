@@ -38,13 +38,13 @@ class Game:
         self.scale_multiplier = 2
         self.scaled_surface = pygame_Surface((screen_width / self.scale_multiplier, screen_height / self.scale_multiplier))
 
-        # Attribute which is monitored by the game states controller
+        # Attribute which is monitored by the game states controller (Set to True when the player enters the game)
         self.running = False
 
         # Delta time attribute is created
         # self.delta_time = None
 
-        # Attribute controlling whether the game is over or not
+        # Attribute controlling whether the game is over or not (This is not the same as self.running as that attribute will be set to False when the player opens up the "Paused" menu)
         self.game_over = False
 
         # --------------------------------------------------------------------------------------
@@ -322,8 +322,10 @@ class Game:
                         
                         # If the player is not alive
                         elif self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
-                            # Instead of panning back to the player, end the game
+                            # Instead of panning back to the player, end the game (This will start the transition to the restart menu)
                             self.game_over = True
+
+                            # Exit the method
                             return None
 
                 # -------------------------------------
@@ -1580,80 +1582,76 @@ class Game:
 
     def set_player_death_transition_attributes(self):
 
-        # If the following attributes / variables have not been set to the end-game transition
-        if self.player.player_gameplay_info_dict["CanStartOperating"] == True:
+        # ----------------------------------------------------------------------------------------------------------
+        # Reset the following groups (The player and boss will be reset as part of the restart button / menu)
 
-            # ----------------------------------------------------------------------------------------------------------
-            # Ending camera pan
-            
-            # Modify the times of the camera pan
-            self.camera_pan_information_dict["PanTime"] = 1250
-            self.camera_pan_information_dict["BossPanLockTime"] = 250
+        self.bamboo_projectiles_group.empty()
+        self.bamboo_piles_group.empty()
 
-            # The time it takes for the black bars to reach the center of the screen should be how long the camera takes to pan to the boss and the duration of the boss pan lock
-            self.game_ui.black_bar_height_time_gradient = ((self.scaled_surface.get_height() / 2) - 0) / ((self.camera_pan_information_dict["PanTime"] + self.camera_pan_information_dict["BossPanLockTime"]) / 1000)
 
-            # Don't allow the player to do anything
-            self.player.player_gameplay_info_dict["CanStartOperating"] = False
 
-            # Set the camera mode as "Pan"
-            self.set_camera_mode(manual_camera_mode_setting = "Pan")
-            
-            # The position of the center of the screen, that the camera is following (i.e. the center of the camera)
-            middle_camera_position = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), self.camera_position[1] + (self.scaled_surface.get_height() / 2))
-            
-            # Calculate the horizontal and vertical distance time gradients for the panning movement
-            self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] = (self.boss_group.sprite.rect.centerx - middle_camera_position[0]) / (self.camera_pan_information_dict["PanTime"] / 1000)
-            self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] = (self.boss_group.sprite.rect.centery - middle_camera_position[1]) / (self.camera_pan_information_dict["PanTime"] / 1000)
-
-            # Set the new camera position X and Y to be the current camera position
-            self.camera_pan_information_dict["NewCameraPositionX"] = self.camera_position[0]
-            self.camera_pan_information_dict["NewCameraPositionY"] = self.camera_position[1]
-
-            # Set the pan timer to start counting down
-            self.camera_pan_information_dict["PanTimer"] = self.camera_pan_information_dict["PanTime"]
-
-            # ----------------------------------------------------------------------------------------------------------
-            # Reset the following groups (The player and boss will be reset as part of the restart button / menu)
-
-            self.bamboo_projectiles_group.empty()
-            self.bamboo_piles_group.empty()
+        print("SET TO GAME OVER")
 
 
     def run(self, delta_time):
 
-        # If the player has died
-        if self.game_over == True:
-            # Fill the screen with black
-            self.scaled_surface.fill("black")
+        # Check if the player has just "died"
+        if self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
+            
+            # If the player can still move/ perform actions whilst dead
+            if self.player.player_gameplay_info_dict["CanStartOperating"] == True:
 
-            # ADD A BUTTON IN THE MIDDLE (KEEP IT AS BLACK BUT MAKE IT BE JUST TEXT)
+                # Set the camera mode as "Pan"
+                self.set_camera_mode(manual_camera_mode_setting = "Pan")
+
+                # Set the pan time to be the length of the death animation (synced with the player's death animation)
+                self.camera_pan_information_dict["PanTime"] = self.player.animation_frame_cooldowns_dict["Death"] * len(self.player.animations_dict["Death"])
+
+                # Set the pan timer to start counting down
+                self.camera_pan_information_dict["PanTimer"] = self.camera_pan_information_dict["PanTime"]
+                # Set there to be no boss pan lock time
+                self.camera_pan_information_dict["BossPanLockTime"] = 0 
+
+                # The position of the center of the screen, that the camera is following (i.e. the center of the camera)
+                middle_camera_position = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), self.camera_position[1] + (self.scaled_surface.get_height() / 2))
+                
+                # Calculate the horizontal and vertical distance time gradients for the panning movement
+                # Note: TILE_SIZE / 2 so that the center of the camera is aligned with the center of the spawning tile
+                self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] = ((self.player.rect.centerx) - middle_camera_position[0]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+                self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] = ((self.player.rect.centery) - middle_camera_position[1]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+
+                # Set the new camera position X and Y to be the current camera position
+                self.camera_pan_information_dict["NewCameraPositionX"] = self.camera_position[0]
+                self.camera_pan_information_dict["NewCameraPositionY"] = self.camera_position[1]
+
+                # Set this to False so that the player does not change animation states, etc.
+                self.player.player_gameplay_info_dict["CanStartOperating"] = False
+
+            # Pan the camera towards the center of the player
+            self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = (self.player.rect.centerx, self.player.rect.centery))
 
         # If the game is not over
-        elif self.game_over == False:
+        if self.game_over == False:
 
             # Fill the scaled surface with a colour
             self.scaled_surface.fill("cornsilk4")
 
-            # Check if the player has just "died"
-            if self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
-                # Set the player death transition attributes
-                self.set_player_death_transition_attributes()
-        
-            # Update the camera position depending on who the focus subject is
-            self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = self.update_focus_subject())
+            if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
 
-            # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
-            self.spawn_bamboo_pile(delta_time = delta_time)
+                # Update the camera position depending on who the focus subject is
+                self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = self.update_focus_subject())
 
-            if pygame_key_get_pressed()[pygame_K_f] or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None):
-                self.find_valid_boss_spawning_position(delta_time = delta_time)
+                # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
+                self.spawn_bamboo_pile(delta_time = delta_time)
 
-            # Handle collisions between all objects in the level
-            self.handle_collisions()
+                if pygame_key_get_pressed()[pygame_K_f] or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None):
+                    self.find_valid_boss_spawning_position(delta_time = delta_time)
 
-            # Find the neighbouring tiles for the player and the current boss
-            self.find_neighbouring_tiles()
+                # Handle collisions between all objects in the level
+                self.handle_collisions()
+
+                # Find the neighbouring tiles for the player and the current boss
+                self.find_neighbouring_tiles()
 
             # ---------------------------------------------------------
             # Hierarchy of drawing 
@@ -1731,9 +1729,6 @@ class Game:
 
                     # Draw world and building tiles
                     self.draw_world_and_building_tiles()
-
-                    # Draw the ending transition
-                    self.game_ui.draw_ending_transition()
                     
             # If the current boss is not alive
             elif self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
@@ -1752,13 +1747,13 @@ class Game:
                 # Run the player methods
                 self.player.run(delta_time = delta_time)
             
-        # ---------------------------------------------------------
+            # ---------------------------------------------------------
 
-        # Always update the game UI (required for ending transition)
-        self.update_game_ui(delta_time = delta_time)
+            # Update the game UI when the player is alive
+            self.update_game_ui(delta_time = delta_time)
 
-        # Only run the game UI (If the player is not alive, nothing will run inside the game UI other than the ending transition)
-        self.game_ui.run(camera_position = self.camera_position)
+            # Run the game UI when the player is alive
+            self.game_ui.run(camera_position = self.camera_position)
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame_transform_scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))

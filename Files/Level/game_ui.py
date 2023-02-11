@@ -671,42 +671,6 @@ class GameUI:
                 # Set the alpha level, not allowing it to go below 0 or above 255
                 self.boss_text_alpha_surface.set_alpha(max(0, min(255, self.boss_text_new_alpha_level)))
 
-    def draw_ending_transition(self):
-
-        # Draws the ending transition / scene
-
-        # If the black bars have not reached the center of the screen
-        if self.black_bar_height < self.surface.get_height() / 2:
-            # Increase the black bar height
-            self.black_bar_new_height += self.black_bar_height_time_gradient * self.delta_time
-            self.black_bar_height = round(self.black_bar_new_height)
-
-        # The top black bar
-        pygame_draw_rect(
-            surface = self.surface,
-            color = "black", 
-            rect = (
-                    0, 
-                    0, 
-                    self.surface.get_width(), 
-                    self.black_bar_height
-                    ),
-            width = 0
-                        )
-
-        # The bottom black bar
-        pygame_draw_rect(
-            surface = self.surface,
-            color = "black", 
-            rect = (
-                    0, 
-                    self.surface.get_height() - self.black_bar_height , 
-                    self.surface.get_width(), 
-                    self.black_bar_height
-                    ),
-            width = 0
-                        )
-            
     # -----------------------------------------------------------------------------
     # Visual effects
 

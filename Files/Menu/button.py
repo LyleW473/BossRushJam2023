@@ -80,8 +80,8 @@ class Button:
         self.button_highlighting_info_dict = {
                                                 "maximum_highlight_colour": (255, 255, 255),
                                                 "minimum_highlight_colour": (60, 60, 60), 
-                                                "highlight_colour": [255, 255, 255],
-                                                "highlight_decrease": True,
+                                                "highlight_colour": [60, 60, 60], # Start at the minimum highlight colour first
+                                                "highlight_decrease": False,
                                                 "highlight_width": 10,
                                                 "highlight_gradient": 0
         }
@@ -222,7 +222,7 @@ class Button:
         # Resize the alpha surface for the button regardless if we are inflating / deflating the button
         self.button_alpha_surface = pygame_transform_scale(surface = self.button_alpha_surface, size = (self.rect.width, self.rect.height))
 
-    def change_alpha_level(self, increase):#
+    def change_alpha_level(self, increase):
 
         # Increases or decreases the alpha level of the surface that the body of the button is drawn onto
 
@@ -271,7 +271,7 @@ class Button:
                             break
             
             # If we should increase the highlight colour
-            else:
+            elif self.button_highlighting_info_dict["highlight_decrease"] == False:
                 
                 # If the current highlight colour is greater than or equal to the maximum highlight colour
                 if tuple(self.button_highlighting_info_dict["highlight_colour"]) >= self.button_highlighting_info_dict["maximum_highlight_colour"]:
@@ -298,7 +298,7 @@ class Button:
             # The button is inflated with the highlight width x 2 so that the highlight will be highlighting the border of the button
             inflated_button_to_highlight_rect = self.rect.inflate(
                                                                         self.button_highlighting_info_dict["highlight_width"] * 2,
-                                                                        self.button_highlighting_info_dict["highlight_width"] * 2)
+                                                                        self.button_highlighting_info_dict["highlight_width"] * 2)                       
             # Draw the highlight border "rect"
             pygame_draw_rect(
                             surface = self.surface, 
@@ -309,10 +309,11 @@ class Button:
         
         # If the player's mouse is not on any of the buttons
         elif mouse_rect.colliderect(self.rect) == False:
-            # If the current highlight colour is not the same as the maximum highlight colour
-            if tuple(self.button_highlighting_info_dict["highlight_colour"]) != self.button_highlighting_info_dict["maximum_highlight_colour"]:
+            """Note: This is used to set the button colour as the minimum (or maximum) highlight colour at the start of the button highlighting """
+            # If the current highlight colour is not the same as the minimum highlight colour
+            if tuple(self.button_highlighting_info_dict["highlight_colour"]) != self.button_highlighting_info_dict["minimum_highlight_colour"]:
                 # Set the current highlight colour to be the same as the maximum highlight colour 
-                self.button_highlighting_info_dict["highlight_colour"] = list(self.button_highlighting_info_dict["maximum_highlight_colour"])
+                self.button_highlighting_info_dict["highlight_colour"] = list(self.button_highlighting_info_dict["minimum_highlight_colour"])
 
     def draw(self):
 
