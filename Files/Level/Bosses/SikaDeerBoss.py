@@ -12,7 +12,7 @@ from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from os import listdir as os_listdir
 from pygame.draw import ellipse as pygame_draw_ellipse
-from Global.settings import TILE_SIZE
+from Global.settings import TILE_SIZE, FULL_DEATH_ANIMATION_DURATION
 from math import degrees, cos, sin
 
 class SikaDeerBoss(Generic, AI):
@@ -29,11 +29,11 @@ class SikaDeerBoss(Generic, AI):
         # Surface that the boss is drawn onto
         self.surface = surface 
         
-        # The starting image when spawned
-        starting_image = SikaDeerBoss.ImagesDict["Stomp"][0]
+        # The starting image when spawned (Used as the ending image of the deer boss if the player dies)
+        self.starting_image = SikaDeerBoss.ImagesDict["Stomp"][0]
 
         # Inherit from the Generic class, which has basic attributes and methods.
-        Generic.__init__(self, x = x , y = y, image = starting_image)
+        Generic.__init__(self, x = x , y = y, image = self.starting_image)
 
         # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
         # Note: Do this before inheriting the AI class so that the rect positions are the same
@@ -773,7 +773,7 @@ class SikaDeerBoss(Generic, AI):
                     for i in range(0, len(os_listdir("graphics/Misc/DeathAnimation")))]
 
                 # Set up the animation speed and timer
-                self.behaviour_patterns_dict["Death"]["FullAnimationDuration"] = 800
+                self.behaviour_patterns_dict["Death"]["FullAnimationDuration"] = FULL_DEATH_ANIMATION_DURATION
                 self.behaviour_patterns_dict["Death"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["Death"]["FullAnimationDuration"] / len(self.behaviour_patterns_dict["Death"]["Images"])
                 self.behaviour_patterns_dict["Death"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["Death"]["TimeBetweenAnimFrames"]
             
@@ -817,5 +817,3 @@ class SikaDeerBoss(Generic, AI):
 
                 # Decrease the death animation frame timer
                 self.behaviour_patterns_dict["Death"]["AnimationFrameTimer"] -= 1000 * self.delta_time
-
-

@@ -94,7 +94,7 @@ class Player(Generic):
                                         "MaximumAmountOfBambooResource": 150,
 
                                         # Health
-                                        "CurrentHealth": 100,
+                                        "CurrentHealth": 10,
                                         "MaximumHealth": 100,
 
                                         # ------------------------------------------------
@@ -405,98 +405,108 @@ class Player(Generic):
             - Current player animation state's list, e.g. The list containing the images of the "Idle" animation
             - The current animation image
             """
-        # Idle animation state
-        if self.current_animation_state == "Idle":
-            # If there is only one direction the player is going in (i.e. Left, Right, Up or Down)
-            if len(self.player_direction) == 1:
-                current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
-                current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
-            
-            # If there are two directions the player is going in (i.e Up Left, Up Right, Down Left, Down Right)
-            elif len(self.player_direction) > 1:
-                # Concatenate the strings (e.g. Up Right
-                two_direction = self.player_direction[0] + " " + self.player_direction[1]
-                current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][two_direction]
-                current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][two_direction][self.animation_index]
-
-        # Run animation state
-        if self.current_animation_state == "Run":
-            """ 
-            Note: Only the first player direction is checked, therefore if the playing was moving Up and Right, the player direction would be ["Right", "Up"], as the x direction is checked before the y direction.
-            - If the player is running Right, the body will face Right as long as the player looks between Up, Up Right, Right and Down Right, Down. Otherwise, the body will face in the direction the player is pointing towards.
-              (The same applies for all directions i.e. Up, Down, Left and Right)
-            """
-            # Moving up or down
-            if self.player_direction[0] == "Up" or self.player_direction[0] == "Down":
-
-                # If the player is looking towards any direction in front of where they are moving
-                # E.g. Moving down and looking Left, DownLeft, Down, DownRight, Right
-                if (self.player_direction[0] == "Down" and 180 <= degrees(self.look_angle) < 360) or (self.player_direction[0] == "Up" and 0 <= degrees(self.look_angle) < 180):
-                    # Set the body (torso) to point towards where the player is moving
-                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
-                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
-
-                # If the player is looking towards the opposite direction of where the player is moving towards
-                else:
-                    if 0 <= degrees(self.look_angle) < 180 :
-                        body_direction = "Up"
-                    elif 180 <= degrees(self.look_angle) < 360:
-                        body_direction = "Down"
-                    
-                    # Set the body (torso) to point towards where the player is looking towards (with the mouse)
-                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction]
-                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction][self.animation_index]
-
-            # Moving left or right
-            if self.player_direction[0] == "Left" or self.player_direction[0] == "Right":
-                # If the player is looking towards any direction in front of where they are moving
-                # E.g. Moving Left and looking Up, UpLeft, Left, DownLeft, Down
-                if self.player_direction[0] == "Right" and (0 <= degrees(self.look_angle) < 90 or 270 <= degrees(self.look_angle) < 360) or \
-                    self.player_direction[0] == "Left" and (90 <= degrees(self.look_angle) < 270):
-
-                    # Set the body (torso) to point towards where the player is moving
+        
+        # If the player's current animation state is not "Death" (i.e. the player is alive)
+        if self.current_animation_state != "Death":
+            # Idle animation state
+            if self.current_animation_state == "Idle":
+                # If there is only one direction the player is going in (i.e. Left, Right, Up or Down)
+                if len(self.player_direction) == 1:
                     current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
                     current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
                 
-                # If the player is looking towards the opposite direction of where the player is moving towards
-                else:
-                    # If the player is looking left
-                    if self.player_direction[0] == "Left":
-                        if degrees(self.look_angle) <= 90 :
+                # If there are two directions the player is going in (i.e Up Left, Up Right, Down Left, Down Right)
+                elif len(self.player_direction) > 1:
+                    # Concatenate the strings (e.g. Up Right
+                    two_direction = self.player_direction[0] + " " + self.player_direction[1]
+                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][two_direction]
+                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][two_direction][self.animation_index]
+
+            # Run animation state
+            if self.current_animation_state == "Run":
+                """ 
+                Note: Only the first player direction is checked, therefore if the playing was moving Up and Right, the player direction would be ["Right", "Up"], as the x direction is checked before the y direction.
+                - If the player is running Right, the body will face Right as long as the player looks between Up, Up Right, Right and Down Right, Down. Otherwise, the body will face in the direction the player is pointing towards.
+                (The same applies for all directions i.e. Up, Down, Left and Right)
+                """
+                # Moving up or down
+                if self.player_direction[0] == "Up" or self.player_direction[0] == "Down":
+
+                    # If the player is looking towards any direction in front of where they are moving
+                    # E.g. Moving down and looking Left, DownLeft, Down, DownRight, Right
+                    if (self.player_direction[0] == "Down" and 180 <= degrees(self.look_angle) < 360) or (self.player_direction[0] == "Up" and 0 <= degrees(self.look_angle) < 180):
+                        # Set the body (torso) to point towards where the player is moving
+                        current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
+                        current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
+
+                    # If the player is looking towards the opposite direction of where the player is moving towards
+                    else:
+                        if 0 <= degrees(self.look_angle) < 180 :
                             body_direction = "Up"
-                        elif degrees(self.look_angle) >= 270:
+                        elif 180 <= degrees(self.look_angle) < 360:
                             body_direction = "Down"
+                        
+                        # Set the body (torso) to point towards where the player is looking towards (with the mouse)
+                        current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction]
+                        current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction][self.animation_index]
+
+                # Moving left or right
+                if self.player_direction[0] == "Left" or self.player_direction[0] == "Right":
+                    # If the player is looking towards any direction in front of where they are moving
+                    # E.g. Moving Left and looking Up, UpLeft, Left, DownLeft, Down
+                    if self.player_direction[0] == "Right" and (0 <= degrees(self.look_angle) < 90 or 270 <= degrees(self.look_angle) < 360) or \
+                        self.player_direction[0] == "Left" and (90 <= degrees(self.look_angle) < 270):
+
+                        # Set the body (torso) to point towards where the player is moving
+                        current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
+                        current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
                     
-                    # If the player is looking right
-                    elif self.player_direction[0] == "Right":
-                        if 180 <= degrees(self.look_angle) <= 270:
-                            body_direction = "Down"
-                        elif 90 <= degrees(self.look_angle) < 180:
-                            body_direction = "Up"
+                    # If the player is looking towards the opposite direction of where the player is moving towards
+                    else:
+                        # If the player is looking left
+                        if self.player_direction[0] == "Left":
+                            if degrees(self.look_angle) <= 90 :
+                                body_direction = "Up"
+                            elif degrees(self.look_angle) >= 270:
+                                body_direction = "Down"
+                        
+                        # If the player is looking right
+                        elif self.player_direction[0] == "Right":
+                            if 180 <= degrees(self.look_angle) <= 270:
+                                body_direction = "Down"
+                            elif 90 <= degrees(self.look_angle) < 180:
+                                body_direction = "Up"
 
-                    # Set the body (torso) to point towards where the player is looking towards (with the mouse)
-                    current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction]
-                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction][self.animation_index]
+                        # Set the body (torso) to point towards where the player is looking towards (with the mouse)
+                        current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction]
+                        current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][body_direction][self.animation_index]
 
-        # ---------------------------------------------------------------------------------
-        # Set the image to be this animation frame
+            # ---------------------------------------------------------------------------------
+            # Set the image to be this animation frame
 
-        # If the player has been damaged
-        if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
-            # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
-            current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = (255, 255, 255))
+            # If the player has been damaged
+            if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
+                # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
+                current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = (255, 255, 255))
 
-        # If the player is in frenzy mode
-        elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
-            # Colour the player as the current frenzy mode colour
-            current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
+            # If the player is in frenzy mode
+            elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
+                # Colour the player as the current frenzy mode colour
+                current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"])
 
-        # If the invincibility timer has been set off (The player was knocked back)
-        # Note: If statement so that it will also play over the frenzy mode colour
-        if self.player_gameplay_info_dict["InvincibilityTimer"] != None:
-            # Colour the player as the current invincibility mode colour
-            current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectColour"])
+            # If the invincibility timer has been set off (The player was knocked back)
+            # Note: If statement so that it will also play over the frenzy mode colour
+            if self.player_gameplay_info_dict["InvincibilityTimer"] != None:
+                # Colour the player as the current invincibility mode colour
+                current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectColour"])
         
+        # If the player's current animation is "Death" (i.e. the player is not alive)
+        elif self.current_animation_state == "Death":
+            # Set the current animation list to be "Death"
+            current_player_state_animation_list = self.animations_dict["Death"] 
+            # Set the current animation image based on the animation index
+            current_animation_image = current_player_state_animation_list[self.animation_index]
+
         # Set the image to be this animation frame
         self.image = current_animation_image
 
@@ -540,6 +550,20 @@ class Player(Generic):
                     # Reset the animation frame counter
                     self.animation_frame_counter = 0
 
+            case "Death":
+
+                """ Only play the animation once"""
+
+                # If enough time has passed since the last frame was played or since the animation was reset
+                if self.animation_frame_counter >= self.animation_frame_cooldowns_dict["Death"]:
+
+                    # If the animation index isn't at the end of the list 
+                    if self.animation_index < (len(current_player_state_animation_list) - 1):
+                        # Increment the animation index
+                        self.animation_index += 1
+
+                        # Reset the animation frame counter
+                        self.animation_frame_counter = 0
         # ---------------------------------------------------------------------------------
         # Draw the player onto the main screen
 
@@ -629,6 +653,11 @@ class Player(Generic):
                     self.player_direction = self.current_look_direction.split()
 
             # Draw the idle animation
+            self.draw(surface = self.surface, x = (self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), y = (self.rect.centery - self.camera_position[1]) - int(self.image.get_height() / 2))
+
+        # If the current animation state is "Death" (i.e. the player is not alive)
+        elif self.current_animation_state == "Death":
+            # Draw the death animation
             self.draw(surface = self.surface, x = (self.rect.centerx - self.camera_position[0]) - int(self.image.get_width() / 2), y = (self.rect.centery - self.camera_position[1]) - int(self.image.get_height() / 2))
 
     def update_damage_flash_effect_timer(self):
@@ -1904,57 +1933,79 @@ class Player(Generic):
         # Play animations
         self.play_animations()
 
-        # If the player is allowed to start performing actions (i.e. not during the camera panning when a boss is spawned)
-        if self.player_gameplay_info_dict["CanStartOperating"] == False:
-            # If the current animation is not set to "Idle", set it to "Idle"
-            if self.current_animation_state != "Idle":
-                self.current_animation_state = "Idle"
+        # If the player is not alive
+        if self.player_gameplay_info_dict["CurrentHealth"] <= 0:
 
-            # If there are any bamboo projectiles, keep updating them
-            self.update_bamboo_projectiles()
+            # If the animation state has not been set to "Death" yet
+            if self.current_animation_state != "Death":
+                # Set the current animation state to "Death"
+                self.current_animation_state = "Death"
 
-            # If the player shot recently, continue updating the shooting cooldown timer
-            self.update_shooting_cooldown_timer(current_weapon = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]])
+                # Reset the animation index
+                self.animation_index = 0
+            
+                # If the death animations have not been loaded before
+                if "Death" not in self.animations_dict.keys():
+                    # Load the death animation images
+                    self.animations_dict["Death"] = tuple(pygame_image_load(f'graphics/Misc/DeathAnimation/{i}.png').convert_alpha() for i in range(0, len(os_list_dir('graphics/Misc/DeathAnimation'))))
+
+                    # Set the frame cooldown (time between each frame)
+                    self.animation_frame_cooldowns_dict["Death"] = FULL_DEATH_ANIMATION_DURATION / len(self.animations_dict["Death"])
+
+        # If the player is alive
+        if self.player_gameplay_info_dict["CurrentHealth"] > 0:
+
+            # If the player is allowed to start performing actions (i.e. not during the camera panning when a boss is spawned)
+            if self.player_gameplay_info_dict["CanStartOperating"] == False:
+                # If the current animation is not set to "Idle", set it to "Idle"
+                if self.current_animation_state != "Idle":
+                    self.current_animation_state = "Idle"
+
+                # If there are any bamboo projectiles, keep updating them
+                self.update_bamboo_projectiles()
+
+                # If the player shot recently, continue updating the shooting cooldown timer
+                self.update_shooting_cooldown_timer(current_weapon = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]])
     
-        # If the player is allowed to start performing actions (i.e. not during the camera panning when a boss is spawned)
-        elif self.player_gameplay_info_dict["CanStartOperating"] == True:
+            # If the player is allowed to start performing actions (i.e. not during the camera panning when a boss is spawned)
+            elif self.player_gameplay_info_dict["CanStartOperating"] == True:
 
-            # # TEMPORARY
-            # for tile in self.neighbouring_tiles_dict.keys():
-            #     pygame_draw_rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
+                # # TEMPORARY
+                # for tile in self.neighbouring_tiles_dict.keys():
+                #     pygame_draw_rect(self.surface, "green", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
 
-            # Track player movement
-            self.handle_player_movement()
-            
-            # Create / update a mask for pixel - perfect collisions
-            self.mask = pygame_mask_from_surface(self.image)
+                # Track player movement
+                self.handle_player_movement()
+                
+                # Create / update a mask for pixel - perfect collisions
+                self.mask = pygame_mask_from_surface(self.image)
 
-            # ----------------------------------
-            # Gameplay
+                # ----------------------------------
+                # Gameplay
 
-            # Activate frenzy mode if the conditions are met
-            self.activate_frenzy_mode()
+                # Activate frenzy mode if the conditions are met
+                self.activate_frenzy_mode()
 
-            # Update the frenzy mode timer
-            self.update_frenzy_mode_timer()
+                # Update the frenzy mode timer
+                self.update_frenzy_mode_timer()
 
-            # Update the frenzy mode colour's RGB values
-            self.update_frenzy_mode_colour()
+                # Update the frenzy mode colour's RGB values
+                self.update_frenzy_mode_colour()
 
-            # Draw the player tool
-            self.draw_player_tool()
+                # Draw the player tool
+                self.draw_player_tool()
 
-            # Handle player building
-            self.handle_building() 
+                # Handle player building
+                self.handle_building() 
 
-            # Handle player shooting
-            self.handle_shooting()
+                # Handle player shooting
+                self.handle_shooting()
 
-            # Update any bamboo projectiles that have been created
-            self.update_bamboo_projectiles()
-            
-            # Perform knockback if the player gets knocked back
-            self.perform_knockback()
+                # Update any bamboo projectiles that have been created
+                self.update_bamboo_projectiles()
+                
+                # Perform knockback if the player gets knocked back
+                self.perform_knockback()
 
-            # Update the invincibility timer and colour
-            self.update_invincibility_timer_and_colour()
+                # Update the invincibility timer and colour
+                self.update_invincibility_timer_and_colour()

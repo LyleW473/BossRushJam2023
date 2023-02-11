@@ -44,6 +44,9 @@ class Game:
         # Delta time attribute is created
         # self.delta_time = None
 
+        # Attribute controlling whether the game is over or not
+        self.game_over = False
+
         # --------------------------------------------------------------------------------------
         # Tile map
         
@@ -72,11 +75,11 @@ class Game:
                                             "PanVerticalDistanceTimeGradient": None,                              
 
                                             # Time it takes to pan the camera from the current camera position to the new position
-                                            "PanTime": 3000, # This must be less than the spawning timer of the boss
+                                            "PanTime": 1500, # This must be less than the spawning timer of the boss"
                                             "PanTimer": None,
                                             
                                             # The time the camera locks onto the boss for after panning from the player to the boss
-                                            "BossPanLockTime": 4000,
+                                            "BossPanLockTime": 2500,
                                             "BossPanLockTimer": None,
                                             
                                             # The time the camera locks onto the player for after panning from the boss back to the player
@@ -156,16 +159,13 @@ class Game:
     
     def update_focus_subject(self):
         
-        # If a boss has not been created or if a boss has been created and has been spawned
-        if hasattr(self, "bosses_dict") == False or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] == None):
-            
-            # If the player is currently alive
-            if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
-                # Return the center of the player (so that the camera follows the player)
-                return (self.player.rect.centerx,  self.player.rect.centery)
+        # If a boss has not been created or if a boss has been created and has been spawned and the player is currently alive
+        if hasattr(self, "bosses_dict") == False or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] == None) and self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
+            # Return the center of the player (so that the camera follows the player)
+            return (self.player.rect.centerx,  self.player.rect.centery)
 
-        # If a boss has been created and is currently being spawned
-        elif (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None) and self.camera_mode != "Pan":
+        # If a boss has been created and is currently being spawned and the player is alive
+        elif (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None) and self.camera_mode != "Pan" and self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
 
             # Set the camera mode as "Pan"
             self.set_camera_mode(manual_camera_mode_setting = "Pan")
@@ -284,7 +284,7 @@ class Game:
                 # -------------------------------------
                 # If the boss has finished spawning and and the camera has finished panning to the boss but still needs to lock in for a short period of time
 
-                if self.bosses_dict["TimeToSpawnTimer"] == None and self.camera_pan_information_dict["BossPanLockTimer"] == None:
+                if self.bosses_dict["TimeToSpawnTimer"] == None and self.camera_pan_information_dict["BossPanLockTimer"] == None and self.camera_pan_information_dict["PlayerPanLockTimer"] == None:
                     # Set the boss pan lock timer to start
                     self.camera_pan_information_dict["BossPanLockTimer"] = self.camera_pan_information_dict["BossPanLockTime"]
 
@@ -304,19 +304,28 @@ class Game:
                         # Set the timer back to None
                         self.camera_pan_information_dict["BossPanLockTimer"] = None
 
-                        # -----------------------------------------
-                        # Set the camera to pan back to the player
+                        # If the player is alive
+                        if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
 
-                        # Invert the horizontal and vertical distance time gradients so that it pans back to the player
-                        self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] *= -1
-                        self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] *= -1
+                            # -----------------------------------------
+                            # Set the camera to pan back to the player
 
-                        # Set the camera to pan back to the player (start the pan timer to count down)
-                        self.camera_pan_information_dict["PanTimer"] = self.camera_pan_information_dict["PanTime"] 
+                            # Invert the horizontal and vertical distance time gradients so that it pans back to the player
+                            self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] *= -1
+                            self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] *= -1
 
-                        # Set the boss pan to be complete so that once the pan timer has finished panning back to the player.
-                        self.camera_pan_information_dict["BossPanComplete"] = True
-                
+                            # Set the camera to pan back to the player (start the pan timer to count down)
+                            self.camera_pan_information_dict["PanTimer"] = self.camera_pan_information_dict["PanTime"] 
+
+                            # Set the boss pan to be complete so that once the pan timer has finished panning back to the player.
+                            self.camera_pan_information_dict["BossPanComplete"] = True
+                        
+                        # If the player is not alive
+                        elif self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
+                            # Instead of panning back to the player, end the game
+                            self.game_over = True
+                            return None
+
                 # -------------------------------------
                 # Updating the player pan lock timer
 
@@ -344,6 +353,9 @@ class Game:
 
                         # Allow the player to start operating (i.e, moving and performing actions)
                         self.player.player_gameplay_info_dict["CanStartOperating"] = True
+
+                        # Reset the boss pan complete variable
+                        self.camera_pan_information_dict["BossPanComplete"] = False
 
         # --------------------------------------------------------------------------------------------------------------
         # Update the camera position
@@ -538,12 +550,10 @@ class Game:
                             camera_pan_information_dict = self.camera_pan_information_dict
                             )
 
-    def draw_tile_map_objects(self):
-
-        # Calls the draw methods of all objects in the level
-
-        # ---------------------------------------------
-        # World tiles and building tiles
+    def draw_world_and_building_tiles(self):
+        
+        # Draws the world and building tiles
+        # Note: This is separated so that when the player dies, the world tiles and building tiles are still drawn
 
         for tile in self.world_tiles_dict.keys():
 
@@ -553,6 +563,15 @@ class Game:
                 
                 # Draw the world / building tile onto the screen
                 tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))         
+
+    def draw_tile_map_objects(self):
+
+        # Calls the draw methods of all objects in the level
+
+        # ---------------------------------------------
+        # World tiles and building tiles
+
+        self.draw_world_and_building_tiles()  
 
         # ---------------------------------------------
         # Bamboo projectiles
@@ -1166,7 +1185,7 @@ class Game:
             number_of_tiles_for_checking = 4
             spawning_effect_counter = 0
             number_of_cycles = 8 # If the NumOfTilesForChecking was 3 and SpawningEffectCounter started at 0, then each cycle would consist of 4 changes
-            time_to_spawn = 6000 #8000
+            time_to_spawn = self.camera_pan_information_dict["PanTime"] * 2.25 # Set the time to spawn to be dependent on the time it takes for the camera to pan to the boss' spawning location (To keep everything synced)
             time_between_each_change = (time_to_spawn / number_of_cycles) / ((number_of_tiles_for_checking + 1) - spawning_effect_counter) # The time between each change
             
             # Create a dictionary to hold information regarding bosses
@@ -1556,93 +1575,191 @@ class Game:
 
         # The camera pan information dict
         self.game_ui.camera_pan_information_dict = self.camera_pan_information_dict
+    
+    # --------------------------------------------------------------------------------------
+    # End-game methods
+
+
+    def set_player_death_transition_attributes(self):
+
+        # If the following attributes / variables have not been set to the end-game transition
+        if self.player.player_gameplay_info_dict["CanStartOperating"] == True:
+
+            # ----------------------------------------------------------------------------------------------------------
+            # Ending camera pan
+            
+            # Modify the times of the camera pan
+            self.camera_pan_information_dict["PanTime"] = 1250
+            self.camera_pan_information_dict["BossPanLockTime"] = 250
+
+            # The time it takes for the black bars to reach the center of the screen should be how long the camera takes to pan to the boss and the duration of the boss pan lock
+            self.game_ui.black_bar_height_time_gradient = ((self.scaled_surface.get_height() / 2) - 0) / ((self.camera_pan_information_dict["PanTime"] + self.camera_pan_information_dict["BossPanLockTime"]) / 1000)
+
+            # Don't allow the player to do anything
+            self.player.player_gameplay_info_dict["CanStartOperating"] = False
+
+            # Set the camera mode as "Pan"
+            self.set_camera_mode(manual_camera_mode_setting = "Pan")
+            
+            # The position of the center of the screen, that the camera is following (i.e. the center of the camera)
+            middle_camera_position = (self.camera_position[0] + (self.scaled_surface.get_width() / 2), self.camera_position[1] + (self.scaled_surface.get_height() / 2))
+            
+            # Calculate the horizontal and vertical distance time gradients for the panning movement
+            self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] = (self.boss_group.sprite.rect.centerx - middle_camera_position[0]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+            self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] = (self.boss_group.sprite.rect.centery - middle_camera_position[1]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+
+            # Set the new camera position X and Y to be the current camera position
+            self.camera_pan_information_dict["NewCameraPositionX"] = self.camera_position[0]
+            self.camera_pan_information_dict["NewCameraPositionY"] = self.camera_position[1]
+
+            # Set the pan timer to start counting down
+            self.camera_pan_information_dict["PanTimer"] = self.camera_pan_information_dict["PanTime"]
+
+            # ----------------------------------------------------------------------------------------------------------
+            # Reset the following groups (The player and boss will be reset as part of the restart button / menu)
+
+            self.bamboo_projectiles_group.empty()
+            self.bamboo_piles_group.empty()
+
 
     def run(self, delta_time):
 
-        # Fill the scaled surface with a colour
-        self.scaled_surface.fill("cornsilk4")
+        # If the player has died
+        if self.game_over == True:
+            # Fill the screen with black
+            self.scaled_surface.fill("black")
 
-        # Update the camera position depending on who the focus subject is
-        self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = self.update_focus_subject())
+            # ADD A BUTTON IN THE MIDDLE (KEEP IT AS BLACK BUT MAKE IT BE JUST TEXT)
 
-        # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
-        self.spawn_bamboo_pile(delta_time = delta_time)
+        # If the game is not over
+        elif self.game_over == False:
 
-        if pygame_key_get_pressed()[pygame_K_f] or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None):
-            self.find_valid_boss_spawning_position(delta_time = delta_time)
+            # Fill the scaled surface with a colour
+            self.scaled_surface.fill("cornsilk4")
 
-        # Handle collisions between all objects in the level
-        self.handle_collisions()
-
-        # Find the neighbouring tiles for the player and the current boss
-        self.find_neighbouring_tiles()
-
-        # ---------------------------------------------------------
-        # Hierarchy of drawing 
-
-        # If there is no boss
-        if self.boss_group.sprite == None:
-
-            # Draw all objects inside the tile map / level
-            self.draw_tile_map_objects()
-            
-            # Draw the angled polygon visual effects
-            self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
-
-            # Run the player methods
-            self.player.run(delta_time = delta_time)
-
-            # If the current boss is spawning
-            if self.boss_group.sprite == None and hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] != None:
-                # Draw guidelines between the player and the boss' spawning location
-                self.game_ui.draw_guidelines_between_a_and_b(
-                                                            a = (self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)), 
-                                                            b = self.player.rect.center,
-                                                            colour = "white",
-                                                            camera_position = self.camera_position,
-                                                            guidelines_segments_thickness = self.guidelines_segments_thickness,
-                                                            guidelines_surface = self.guidelines_surface,
-                                                            main_surface = self.scaled_surface
-                                                            )
-        # If the current boss is alive
-        if self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
-
-            # Draw all objects inside the tile map / level
-            self.draw_tile_map_objects()
-
-            # Draw the boss guidelines underneath the player and the boss
-            self.draw_boss_guidelines(delta_time = delta_time)
-
-            # Run the player methods
-            self.player.run(delta_time = delta_time)
-
-            # Update and run the boss
-            self.update_and_run_boss(delta_time = delta_time)
-            
-            # Draw the angled polygon visual effects
-            self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
-
-        # If the current boss is not alive
-        elif self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
-
-            # Update and run the boss
-            self.update_and_run_boss(delta_time = delta_time)
-
-            # Draw all objects inside the tile map / level
-            self.draw_tile_map_objects()
-
-            # Draw the angled polygon visual
-            self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
-
-            # Run the player methods
-            self.player.run(delta_time = delta_time)
+            # Check if the player has just "died"
+            if self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
+                # Set the player death transition attributes
+                self.set_player_death_transition_attributes()
         
+            # Update the camera position depending on who the focus subject is
+            self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = self.update_focus_subject())
+
+            # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
+            self.spawn_bamboo_pile(delta_time = delta_time)
+
+            if pygame_key_get_pressed()[pygame_K_f] or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None):
+                self.find_valid_boss_spawning_position(delta_time = delta_time)
+
+            # Handle collisions between all objects in the level
+            self.handle_collisions()
+
+            # Find the neighbouring tiles for the player and the current boss
+            self.find_neighbouring_tiles()
+
+            # ---------------------------------------------------------
+            # Hierarchy of drawing 
+
+            # If there is no boss
+            if self.boss_group.sprite == None:
+
+                # Draw all objects inside the tile map / level
+                self.draw_tile_map_objects()
+                
+                # Draw the angled polygon visual effects
+                self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
+
+                # Run the player methods
+                self.player.run(delta_time = delta_time)
+
+                # If the current boss is spawning
+                if self.boss_group.sprite == None and hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] != None:
+                    # Draw guidelines between the player and the boss' spawning location
+                    self.game_ui.draw_guidelines_between_a_and_b(
+                                                                a = (self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)), 
+                                                                b = self.player.rect.center,
+                                                                colour = "white",
+                                                                camera_position = self.camera_position,
+                                                                guidelines_segments_thickness = self.guidelines_segments_thickness,
+                                                                guidelines_surface = self.guidelines_surface,
+                                                                main_surface = self.scaled_surface
+                                                                )
+            
+            # If the current boss is alive
+            if self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
+
+                # If the player is also alive
+                if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
+
+                    """ Draw the main game, with the boss always being drawn over the player """
+
+                    # Draw all objects inside the tile map / level
+                    self.draw_tile_map_objects()
+
+                    # Draw the boss guidelines underneath the player and the boss
+                    self.draw_boss_guidelines(delta_time = delta_time)
+
+                    # Run the player methods
+                    self.player.run(delta_time = delta_time)
+
+                    # Update and run the boss
+                    self.update_and_run_boss(delta_time = delta_time)
+                    
+                    # Draw the angled polygon visual effects
+                    self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
+
+                # If the player is not alive
+                elif self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
+
+                    """ Only draw the player, boss and tiles (no other objects) and the ending transition on top of all of these """
+
+                    # Run the player methods
+                    self.player.run(delta_time = delta_time)
+
+                    # If this is the "SikaDeer" boss
+                    # Note: This is to set the image of the boss to be them standing still and upright
+                    if self.bosses_dict["CurrentBoss"] == "SikaDeer":
+                        # If the boss' image is not the starting image
+                        if self.boss_group.sprite.image != self.boss_group.sprite.starting_image:
+                            # Set their image as the starting image
+                            self.boss_group.sprite.image =  self.boss_group.sprite.starting_image
+
+                    # Only draw the boss (Do not update them)
+                    self.boss_group.sprite.draw(
+                                                surface = self.scaled_surface, 
+                                                x = (self.boss_group.sprite.rect.x - ((self.boss_group.sprite.image.get_width() / 2)  - (self.boss_group.sprite.rect.width / 2))) - self.camera_position[0], 
+                                                y = (self.boss_group.sprite.rect.y - ((self.boss_group.sprite.image.get_height() / 2) - (self.boss_group.sprite.rect.height / 2))) - self.camera_position[1]
+                                                    )
+
+                    # Draw world and building tiles
+                    self.draw_world_and_building_tiles()
+
+                    # Draw the ending transition
+                    self.game_ui.draw_ending_transition()
+                    
+            # If the current boss is not alive
+            elif self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
+
+                """ Draws the player over the skull """
+
+                # Update and run the boss
+                self.update_and_run_boss(delta_time = delta_time)
+
+                # Draw all objects inside the tile map / level
+                self.draw_tile_map_objects()
+
+                # Draw the angled polygon visual
+                self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
+
+                # Run the player methods
+                self.player.run(delta_time = delta_time)
+            
         # ---------------------------------------------------------
 
-        # Update the game UI
+        # Always update the game UI (required for ending transition)
         self.update_game_ui(delta_time = delta_time)
 
-        # Run the game UI 
+        # Only run the game UI (If the player is not alive, nothing will run inside the game UI other than the ending transition)
         self.game_ui.run(camera_position = self.camera_position)
 
         # Draw the scaled surface onto the screen

@@ -30,7 +30,7 @@ class AI:
                                         # "DeltaTime": None,
 
                                         # # Positions
-                                        # "CurrentPosition": None,wwa
+                                        # "CurrentPosition": None,
                                         # "PlayersPosition": None
                                         "NewPositionCenterX": self.rect.centerx,
                                         "NewPositionCenterY": self.rect.centery,

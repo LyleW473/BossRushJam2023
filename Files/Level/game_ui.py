@@ -671,6 +671,42 @@ class GameUI:
                 # Set the alpha level, not allowing it to go below 0 or above 255
                 self.boss_text_alpha_surface.set_alpha(max(0, min(255, self.boss_text_new_alpha_level)))
 
+    def draw_ending_transition(self):
+
+        # Draws the ending transition / scene
+
+        # If the black bars have not reached the center of the screen
+        if self.black_bar_height < self.surface.get_height() / 2:
+            # Increase the black bar height
+            self.black_bar_new_height += self.black_bar_height_time_gradient * self.delta_time
+            self.black_bar_height = round(self.black_bar_new_height)
+
+        # The top black bar
+        pygame_draw_rect(
+            surface = self.surface,
+            color = "black", 
+            rect = (
+                    0, 
+                    0, 
+                    self.surface.get_width(), 
+                    self.black_bar_height
+                    ),
+            width = 0
+                        )
+
+        # The bottom black bar
+        pygame_draw_rect(
+            surface = self.surface,
+            color = "black", 
+            rect = (
+                    0, 
+                    self.surface.get_height() - self.black_bar_height , 
+                    self.surface.get_width(), 
+                    self.black_bar_height
+                    ),
+            width = 0
+                        )
+            
     # -----------------------------------------------------------------------------
     # Visual effects
 
@@ -952,30 +988,32 @@ class GameUI:
         self.surface.blit(self.angled_polygons_surface, (0, 0))
 
     def run(self, camera_position):
-        
-        # Draw the camera pan bars if the conditions are met
-        self.draw_camera_pan_bars()
 
-        # If a boss has been spawned and the camera has been panned back to the player
-        if self.player_gameplay_info_dict["CanStartOperating"] == True:
+        # If the player is alive
+        if self.player_gameplay_info_dict["CurrentHealth"] > 0:
+            # Draw the camera pan bars if the conditions are met
+            # Note: This transition is only for bosses
+            self.draw_camera_pan_bars()
 
-            # Create shooting angled polygons effects
-            self.create_angled_polygons_effects(purpose = "Shooting")
+            # If a boss has been spawned and the camera has been panned back to the player
+            if self.player_gameplay_info_dict["CanStartOperating"] == True:
 
-            # Draw the display cards onto the screen
-            self.draw_display_cards()
+                # Create shooting angled polygons effects
+                self.create_angled_polygons_effects(purpose = "Shooting")
 
-            # Draw the boss' health if a boss has been spawned
-            self.draw_boss_health()
+                # Draw the display cards onto the screen
+                self.draw_display_cards()
 
-            # Draw the player's frenzy mode bar
-            self.draw_player_frenzy_mode_bar()
+                # Draw the boss' health if a boss has been spawned
+                self.draw_boss_health()
 
-            # Draw and update any effect text
-            self.draw_and_update_effect_text(camera_position = camera_position)
+                # Draw the player's frenzy mode bar
+                self.draw_player_frenzy_mode_bar()
 
-            # Draw the mouse cursor
-            self.draw_mouse_cursor()
+                # Draw and update any effect text
+                self.draw_and_update_effect_text(camera_position = camera_position)
 
+                # Draw the mouse cursor
+                self.draw_mouse_cursor()
 
-
+            
