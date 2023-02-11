@@ -21,6 +21,7 @@ from pygame.mouse import get_pos as pygame_mouse_get_pos
 from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.mask import from_surface as pygame_mask_from_surface
+from random import choice as random_choice
 
 
 class Player(Generic):
@@ -99,7 +100,7 @@ class Player(Generic):
 
                                         # ------------------------------------------------
                                         # Frenzy mode
-                                        "CurrentFrenzyModeValue": 50,
+                                        "CurrentFrenzyModeValue": 0, # The starting frenzy mode value
                                         "MaximumFrenzyModeValue": 100,
                                         
                                         # Values for increasing the current frenzy mode value depending on what the player did
@@ -107,7 +108,7 @@ class Player(Generic):
                                         "TakeDamageFrenzyModeIncrement": 0.5,
                                         "BlockDamageFrenzyModeIncrement": 0.25,
                                         "ReflectDamageFrenzyModeIncrement": 0.75, 
-                                        "StunEnemyFrenzyModeIncrement": 1.5,
+                                        "StunEnemyFrenzyModeIncrement": 5,
                                         
                                         # Time 
                                         "FrenzyModeTime": 6000, # Duration of the frenzy mode in milliseconds
@@ -127,7 +128,7 @@ class Player(Generic):
 
                                         # ------------------------------------------------
                                         # Damage flash effect
-                                        "DamagedFlashEffectTime": 100, # The time that the flash effect should play when the player is damaged
+                                        "DamagedFlashEffectTime": 150, # The time that the flash effect should play when the player is damaged
                                         "DamagedFlashEffectTimer": None,
 
 
@@ -487,7 +488,7 @@ class Player(Generic):
             # If the player has been damaged
             if self.player_gameplay_info_dict["DamagedFlashEffectTimer"] != None:
                 # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
-                current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = (255, 255, 255))
+                current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = random_choice(((255, 255, 255), (40, 40, 40))))
 
             # If the player is in frenzy mode
             elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:

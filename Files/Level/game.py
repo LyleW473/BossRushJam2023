@@ -660,14 +660,14 @@ class Game:
                 # --------------------------------
                 # World / building tiles
 
-                # Look for tile collisions between the bamboo projectile and world/ building tiles
+                # Look for tile collisions between the bamboo projectile and world/ building tilesd
                 self.look_for_world_tile_collisions(item = bamboo_projectile, other_group = self.bamboo_projectiles_group)
 
                 # --------------------------------
                 # Bosses
 
                 # If a boss has been spawned
-                if self.boss_group.sprite != None: # hasattr(self, "bosses_dict") and self.bosses_dict[self.bosses_dict["CurrentBoss"]] != None:
+                if self.boss_group.sprite != None:
 
                     # If the bamboo projectile's rect has collided with the current boss' rect
                     if bamboo_projectile.rect.colliderect(self.bosses_dict[self.bosses_dict["CurrentBoss"]].rect) == True:
@@ -678,15 +678,14 @@ class Game:
 
                             # Damage the current boss by the amount of damage that was passed into the bamboo projectile and a random additive damage amount (e.g. 25 - 3)
                             # Note: This allows for different damage values for e.g. different weapons
-                            
                             randomised_damage_amount = bamboo_projectile.damage_amount + random_randrange(-3, 3)
                             self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= randomised_damage_amount
 
                             # Play the boss' damaged flash effect
                             self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTimer"] = self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTime"]
 
-                            # If the player's frenzy mode is not activated
-                            if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                            # If the player's frenzy mode is not activated and the current boss is alive
+                            if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
                                 # Increase the player's frenzy mode meter by the deal damage increment amount, limiting it to the maximum frenzy mode value
                                 self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
                                                                                                     self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["DealDamageFrenzyModeIncrement"],
@@ -1578,7 +1577,6 @@ class Game:
     
     # --------------------------------------------------------------------------------------
     # End-game methods
-
 
     def set_player_death_transition_attributes(self):
 
