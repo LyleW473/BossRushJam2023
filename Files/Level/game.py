@@ -673,19 +673,19 @@ class Game:
                 if self.boss_group.sprite != None:
 
                     # If the bamboo projectile's rect has collided with the current boss' rect
-                    if bamboo_projectile.rect.colliderect(self.bosses_dict[self.bosses_dict["CurrentBoss"]].rect) == True:
+                    if bamboo_projectile.rect.colliderect(self.boss_group.sprite.rect) == True:
                         
                         # Check for a pixel-perfect collision between the bamboo projectile and the current boss
-                        if pygame_sprite_collide_mask(bamboo_projectile, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
+                        if pygame_sprite_collide_mask(bamboo_projectile, self.boss_group.sprite) != None:
                             # If there is a pixel-perfect collision:
 
                             # Damage the current boss by the amount of damage that was passed into the bamboo projectile and a random additive damage amount (e.g. 25 - 3)
                             # Note: This allows for different damage values for e.g. different weapons
                             randomised_damage_amount = bamboo_projectile.damage_amount + random_randrange(-3, 3)
-                            self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= randomised_damage_amount
+                            self.boss_group.sprite.extra_information_dict["CurrentHealth"] -= randomised_damage_amount
 
                             # Play the boss' damaged flash effect
-                            self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTimer"] = self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTime"]
+                            self.boss_group.sprite.extra_information_dict["DamagedFlashEffectTimer"] = self.boss_group.sprite.extra_information_dict["DamagedFlashEffectTime"]
 
                             # If the player's frenzy mode is not activated and the current boss is alive
                             if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
@@ -913,7 +913,7 @@ class Game:
 
                 # Look for tile rect collisions between the stomp attack nodes and the current boss
                 # Only enter if there is a rect collision and the stomp attack node was reflected
-                if stomp_attack_node.rect.colliderect(self.bosses_dict[self.bosses_dict["CurrentBoss"]].rect) and stomp_attack_node.reflected == True:
+                if stomp_attack_node.rect.colliderect(self.boss_group.sprite.rect) and stomp_attack_node.reflected == True:
                     
                     # If the stomp attack node image is not the same as the diameter of the attack node 
                     """ Note: This is here instead of inside the stomp attack node's increase_size method to avoid resizing the image everytime the attack node's size is changed
@@ -924,13 +924,13 @@ class Game:
                         stomp_attack_node.rescale_image()
 
                     # Check for a pixel-perfect collision between the bamboo projectile and the current boss
-                    if pygame_sprite_collide_mask(stomp_attack_node, self.bosses_dict[self.bosses_dict["CurrentBoss"]]) != None:
+                    if pygame_sprite_collide_mask(stomp_attack_node, self.boss_group.sprite) != None:
                         
                         # Remove the stomp attack node from the group if there is a collision
                         self.stomp_attack_nodes_group.remove(stomp_attack_node)
                         
                         # Damage the boss by 5 times the stomp attack node damage
-                        self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["CurrentHealth"] -= (stomp_attack_node.damage_amount * self.player.tools["BuildingTool"]["ReflectionDamageMultiplier"])
+                        self.boss_group.sprite.extra_information_dict["CurrentHealth"] -= (stomp_attack_node.damage_amount * self.player.tools["BuildingTool"]["ReflectionDamageMultiplier"])
 
                         # If the boss is alive / has more than 0 health
                         if self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
@@ -942,7 +942,7 @@ class Game:
                                                         )
 
                         # Set the damaged flash effect timer to the damage flash effect time set (damaged flashing effect)
-                        self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTimer"] = self.bosses_dict[self.bosses_dict["CurrentBoss"]].extra_information_dict["DamagedFlashEffectTime"]
+                        self.boss_group.sprite.extra_information_dict["DamagedFlashEffectTimer"] = self.boss_group.sprite.extra_information_dict["DamagedFlashEffectTime"]
 
                         # If the player's frenzy mode is not activated
                         if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
@@ -1186,7 +1186,7 @@ class Game:
             
             # Temporary variables for the spawning effect
             number_of_tiles_for_checking = 4
-            spawning_effect_counter = 0
+            spawning_effect_counter = 1 # The starting spawning effect counter (e.g. if it was 1, then the spawning effect will start with 1 tile circling the valid spawning position)
             number_of_cycles = 8 # If the NumOfTilesForChecking was 3 and SpawningEffectCounter started at 0, then each cycle would consist of 4 changes
             time_to_spawn = self.camera_pan_information_dict["PanTime"] * 2.25 # Set the time to spawn to be dependent on the time it takes for the camera to pan to the boss' spawning location (To keep everything synced)
             time_between_each_change = (time_to_spawn / number_of_cycles) / ((number_of_tiles_for_checking + 1) - spawning_effect_counter) # The time between each change
@@ -1206,12 +1206,7 @@ class Game:
                         "SpawningEffectOriginalTimeBetweenEachChange": time_between_each_change,
                         "SpawningEffectTimer": None,
                         "OriginalSpawningEffectCounter": spawning_effect_counter,
-                        "SpawningEffectCounter": spawning_effect_counter, # If the NumOfTilesForChecking was 3, then each cycle would consist of 4 changes
-
-                        # The bosses (The values will be replaced with a boss instance)
-                        "SikaDeer": None,
-                        "GoldenMonkey": None,
-                        "AsiaticBlackBear": None,
+                        "SpawningEffectCounter": spawning_effect_counter, # If the NumOfTilesForChecking is 3, and SpawningEffectCounter is 0, then each cycle would consist of 4 changes
                         
                                 }
 
@@ -1365,7 +1360,7 @@ class Game:
                 if self.bosses_dict["TimeToSpawnTimer"] == None:
 
                     # If there is no current boss
-                    if self.bosses_dict[self.bosses_dict["CurrentBoss"]] == None:
+                    if len(self.boss_group) == 0:
                         # Spawn the boss
                         self.spawn_boss(boss_to_spawn = self.bosses_dict["CurrentBoss"])
 
@@ -1594,16 +1589,22 @@ class Game:
         self.bamboo_piles_group.empty()
         self.boss_group.empty()
 
-        # If there is a boss dictionary
-        # Note: The player could have decided to exit the current session, and this was called as a result of that
-        if hasattr(self, "bosses_dict") == True:
-            # Set the current boss to None
-            self.bosses_dict[self.bosses_dict["CurrentBoss"]] = None
-
         # If there is a group for the stomp attack nodes
         if hasattr(self, "stomp_attack_nodes_group"):
             # Empty the group
             self.stomp_attack_nodes_group.empty()
+
+        # ------------------------------------------------------
+        # Boss dictionary
+        if hasattr(self, "bosses_dict"):
+            print("RESET")
+            self.bosses_dict["TimeToSpawnTimer"] = None
+            self.bosses_dict["SpawningEffectTimer"] = None
+            self.bosses_dict["SpawningEffectCounter"] = self.bosses_dict["OriginalSpawningEffectCounter"]
+            self.bosses_dict["SpawningPositionTilesList"] = []
+            self.bosses_dict["ValidSpawningPosition"] = None
+            # Generate a new spawning position
+            self.bosses_dict["RandomSpawningPosition"] = random_choice(list(self.empty_tiles_dict.keys()))
 
         # ------------------------------------------------------
         # Effect text and VFX
@@ -1616,8 +1617,16 @@ class Game:
         # Camera mode and panning
         self.camera_mode = "Follow"
         self.camera_pan_information_dict["BossPanComplete"] = False
-        self.camera_pan_information_dict["BossPanLockTime"] = 2500
+
+        # Reset the pan time and boss pan lock time (which were altered as part of the final camera pan when the player died)
         self.camera_pan_information_dict["PanTime"] = 1500
+        self.camera_pan_information_dict["BossPanLockTime"] = 2500 
+        
+        # Reset pan and pan lock timers
+        self.camera_pan_information_dict["BossPanLockTimer"] = None
+        self.camera_pan_information_dict["PlayerPanLockTimer"] = None
+        self.camera_pan_information_dict["PanTimer"] = None
+
 
         # Camera shake
 
@@ -1629,6 +1638,27 @@ class Game:
             if "Timer" in key and self.camera_shake_info_dict[key] != None:
                 # Reset the timer
                 self.camera_shake_info_dict[key] = None
+
+        # ------------------------------------------------------
+        # Game UI
+
+        # Current black bar height
+        self.game_ui.black_bar_height = 0
+
+        # A variable to store the new height (floating point accuracy)
+        self.game_ui.black_bar_new_height = 0
+
+        # The size required to render the text depending on the text
+        self.game_ui.boss_text_font_size = None
+
+        # The name of the boss
+        self.game_ui.boss_text = None
+
+        # Alpha level of the boss text
+        self.game_ui.boss_text_new_alpha_level = 0
+
+        # Height time gradient fo the black bar
+        self.game_ui.black_bar_height_time_gradient = self.game_ui.original_black_bar_height_time_gradient
 
         # ------------------------------------------------------
         # Building tiles and neighbouring tiles

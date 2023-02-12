@@ -176,14 +176,17 @@ class GameStatesController():
                             # "Esc" key
                             case _ if event.key == pygame_K_ESCAPE:
 
-                                # Set the mouse cursor back to visible
-                                pygame_mouse_set_visible(True)
-                    
-                                # Transition to the paused menu (the menu's current menu will be set to "paused_menu")
-                                self.transition_where = "paused_menu"
+                                # If the program is not already transitioning to the paused menu
+                                if self.bar_transition_timer == None:
 
-                                # Start the transition timer
-                                self.bar_transition_timer = self.bar_transition_time
+                                    # Set the mouse cursor back to visible
+                                    pygame_mouse_set_visible(True)
+                        
+                                    # Transition to the paused menu (the menu's current menu will be set to "paused_menu")
+                                    self.transition_where = "paused_menu"
+
+                                    # Start the transition timer
+                                    self.bar_transition_timer = self.bar_transition_time
                             
                             # "1" key
                             case _ if event.key == pygame_K_1:
@@ -229,7 +232,10 @@ class GameStatesController():
     def detect_and_perform_game_over_reset(self):
 
         # If the player just played and died and has returned to the main menu OR the player left their current session
-        if (self.game.game_over == True and self.menu.current_menu == "main_menu") or self.menu.session_exit == True:
+        """ Note: the self.menu.current_menu == "main_menu" check is so that the following only occurs once (as the player can spam click the exit session button, resulting in multiple resets)
+        - Therefore by only resetting it once the player is back in the main menu, that issue can be prevented
+        """
+        if (self.game.game_over == True and self.menu.current_menu == "main_menu") or (self.menu.session_exit == True and self.menu.current_menu == "main_menu"):
 
             # Reset the player's attributes
             self.game.player.reset_player()
@@ -246,7 +252,6 @@ class GameStatesController():
             if self.menu.session_exit == True:
                 # Set the menu session exit attribute back to False
                 self.menu.session_exit = False
-
 
     def perform_transition(self, delta_time):
 
