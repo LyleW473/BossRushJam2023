@@ -14,7 +14,7 @@ class Main:
         pygame_init()
 
         # Set the caption
-        pygame_display_set_caption("Panda's wit")
+        pygame_display_set_caption("A Panda's Wit")
         
         # Create a game states controller
         self.game_states_controller = GameStatesController()

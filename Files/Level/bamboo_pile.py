@@ -12,7 +12,7 @@ class BambooPile(Generic):
                             "BambooResourceReplenishAmount": 25,
                             "HealthReplenishmentAmount": 30,
                             "SpawningCooldown": 4000, 
-                            "SpawningCooldownTimer": 4000, # Starts counting down when the current boss is spawned
+                            "SpawningCooldownTimer": 4000,
                             "MinimumSpawningDistanceFromPlayer": 10 * TILE_SIZE,
                             "MaximumSpawningDistanceFromPlayer": 25 * TILE_SIZE,
                             "MaximumNumberOfPilesAtOneTime": 8

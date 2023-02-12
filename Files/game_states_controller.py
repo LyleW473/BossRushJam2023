@@ -42,8 +42,8 @@ class GameStatesController():
         # The height of the black bars
         self.bar_height = 0
 
-        self.bar_height_change_time = 600
-        self.bar_lock_in_time = 300
+        self.bar_height_change_time = 300
+        self.bar_lock_in_time = 350
 
         # The total transition time should be: The time it takes to increase and decrease the black bar height, and the lock in time
         self.bar_transition_time = (self.bar_height_change_time * 2) + self.bar_lock_in_time
@@ -231,8 +231,13 @@ class GameStatesController():
         # If the player just played and died and has returned to the main menu
         if self.game.game_over == True and self.menu.current_menu == "main_menu":
 
-            print("RESTART")
-            # RESET THE GAME (call methods from the game)
+            # Reset the player's attributes
+            self.game.player.reset_player()
+
+            # Empty the groups, reset the level, camera, etc.
+            self.game.reset_level()
+
+            # Set game over back to False
             self.game.game_over = False
 
     def perform_transition(self, delta_time):

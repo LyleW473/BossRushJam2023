@@ -132,7 +132,8 @@ class GameUI:
 
                                                         },
                         }
-        
+     
+
         # Create a list for all the effect text
         EffectText.effect_text_list = []
 
@@ -205,6 +206,31 @@ class GameUI:
         # Note: THe time is in half so that it fades in and out
         self.boss_text_alpha_level_time_gradient = 200 / ((self.camera_pan_information_dict["BossPanLockTime"] / 1000) / 5) # 5 so that at the middle of the timer, the text will be completely opaque
         self.boss_text_new_alpha_level = 0
+    
+    # ---------------------------------------------------------------------
+    # Resetting methods
+
+    def reset_effect_text_list(self):
+
+        # Resets the effect text list when the game is over
+
+        # If there are any effect text in the list
+        if len(EffectText.effect_text_list) > 0:
+            # Clear the list
+            EffectText.effect_text_list = []
+
+    def reset_visual_effects_dict(self):
+
+        # Resets visual effects dictionaries
+        
+        # If there are any angled polygons effects
+        if hasattr(self, "angled_polygons_controller") and len(self.angled_polygons_controller.polygons_dict) > 0:
+            # Empty the dictionary and reset the amount of polygons created
+            self.angled_polygons_controller.polygons_dict = {}
+            self.angled_polygons_controller.polygons_created = 0
+
+    # ---------------------------------------------------------------------
+    # Display methods
 
     def create_player_tools_display_cards(self):
 

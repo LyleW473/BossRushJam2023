@@ -34,6 +34,9 @@ class Player(Generic):
         # The sprite groups that the player interacts with
         self.sprite_groups = sprite_groups
 
+        # Saves the original player's position so that when the game is reset, the player can be repositioned at the same spawn location
+        self.original_player_position = (x, y)
+
         # ---------------------------------------------------------------------------------
         # Movement
 
@@ -160,8 +163,6 @@ class Player(Generic):
 
                                         "AngledPolygonsShootingSpawningPosition": 0,
                                         "AngledPolygonsShootingAngle": 0
-
-
                                          }
 
 
@@ -208,7 +209,7 @@ class Player(Generic):
                     
                         "BambooLauncher": {
                                             "ShootingCooldown": 0, 
-                                            "PreviouslyShotTime": 0,
+                                            "ShootingCooldownTimer": None,
                                             "Images": {
                                                 "IconImage": pygame_image_load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
                                                       }
@@ -217,6 +218,51 @@ class Player(Generic):
 
     # ---------------------------------------------------------------------------------
     # Animations
+
+    def reset_player(self):
+
+        # Resets all the attributes that need to be reset when the game is restarted
+        # Note: Building tiles list and neighbouring tiles dict is reset as part of the game reset method so that empty tiles can be added back to the empty tiles dictionary
+        
+        # -----------------------------------------------------------------------------------------
+        # Animation / direction
+        self.current_player_element = "Normal"
+        self.current_animation_state = "Idle"
+        self.player_direction = ["Down"]
+        self.current_look_direction = "Down"
+        self.animation_index = 0
+        self.animation_frame_counter = 0
+
+        # -----------------------------------------------------------------------------------------
+        # Main gameplay
+        self.player_gameplay_info_dict["CanStartOperating"] = True
+        self.player_gameplay_info_dict["CurrentToolEquipped"] = "BambooAssaultRifle"
+        self.player_gameplay_info_dict["CurrentFrenzyModeValue"] = 0
+        self.player_gameplay_info_dict["AmountOfBambooResource"] = self.player_gameplay_info_dict["MaximumAmountOfBambooResource"]
+        self.player_gameplay_info_dict["CurrentHealth"] = self.player_gameplay_info_dict["MaximumHealth"]
+        
+        # -----------------------------------------------------------------------------------------
+        # Movement
+        self.declare_movement_attributes()
+
+        # -----------------------------------------------------------------------------------------
+        # Timers
+
+        # Resetting timers in the player gameplay information dictionary
+        for component in self.player_gameplay_info_dict.keys():
+            # If the timer inside the player gameplay information dictionary is not None
+            if "Timer" in component and self.player_gameplay_info_dict[component] != None:
+                # Set it to None
+                self.player_gameplay_info_dict[component] = None
+
+        # Resetting the timers for each tool
+        for tool_dict in self.tools.keys():
+            # For component for each tool
+            for component in self.tools[tool_dict].keys():
+                # If the timer for the tool is not None
+                if "Timer" in component and self.tools[tool_dict][component] != None:
+                    # Set it to None
+                    self.tools[tool_dict][component] = None
 
     def load_animations(self):
         
@@ -1965,9 +2011,6 @@ class Player(Generic):
                 # If there are any bamboo projectiles, keep updating them
                 self.update_bamboo_projectiles()
 
-                # If the player shot recently, continue updating the shooting cooldown timer
-                self.update_shooting_cooldown_timer(current_weapon = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]])
-    
             # If the player is allowed to start performing actions (i.e. not during the camera panning when a boss is spawned)
             elif self.player_gameplay_info_dict["CanStartOperating"] == True:
 
