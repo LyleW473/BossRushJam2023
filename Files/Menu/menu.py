@@ -34,6 +34,9 @@ class Menu:
         # Stores the menu to transition to
         self.transition_to_which_menu = "Nothing"
 
+        # Stores whether the player decided to exit the session, in that case the game would need to be reset again
+        self.session_exit = False
+
         # ------------------------------------------------------------------------------------------------------------------------------------------------
         # Mouse
         self.left_mouse_button_released = True # Attribute used to track if the left mouse button is released so that 
@@ -62,7 +65,7 @@ class Menu:
         self.menu_buttons_dict = {
             
             "main_menu": {"ButtonPurposes": ("Play", "Controls", "Quit"), "ButtonsList": [], "StartingPositions": (screen_width / 2, 450), "ButtonSpacing": button_spacing},
-            "paused_menu": {"ButtonPurposes": ("Continue", "Controls", "Quit"), "ButtonsList": [], "StartingPositions": (screen_width / 2, 350), "ButtonSpacing": button_spacing},
+            "paused_menu": {"ButtonPurposes": ("Continue", "Controls", "Exit session"), "ButtonsList": [], "StartingPositions": (screen_width / 2, 350), "ButtonSpacing": button_spacing},
             "controls_menu": {"ButtonPurposes": ["Back"], "ButtonsList": [], "StartingPositions": (screen_width / 2, screen_height - 150), "ButtonSpacing": (0, 0)},
             "restart_menu": {"ButtonPurposes": ["Return to main menu", "Quit"], "ButtonsList": [], "StartingPositions": (screen_width / 2, 350), "ButtonSpacing": button_spacing}
                                     }
@@ -287,11 +290,13 @@ class Menu:
                             # Set the previous menu to be this menu so that we can come back to this menu when the "Back" button is clicked
                             self.previous_menu = "paused_menu"
 
-                        # If the mouse collided with the "Quit" button 
-                        case "Quit":
-                            # Exit the program
-                            pygame_quit()
-                            sys_exit()
+                        # If the mouse collided with the "Exit session" button 
+                        case "Exit session":
+                            # Transition to the main menu
+                            self.transition_to_which_menu = "main_menu"
+
+                            # Set this attribute to True, allowing for the game to be reset again
+                            self.session_exit = True
 
         # ---------------------------------------------
         # Restart menu

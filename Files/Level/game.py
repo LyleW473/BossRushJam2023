@@ -1593,8 +1593,17 @@ class Game:
         self.bamboo_projectiles_group.empty()
         self.bamboo_piles_group.empty()
         self.boss_group.empty()
-        self.bosses_dict[self.bosses_dict["CurrentBoss"]] = None
-        self.stomp_attack_nodes_group.empty()
+
+        # If there is a boss dictionary
+        # Note: The player could have decided to exit the current session, and this was called as a result of that
+        if hasattr(self, "bosses_dict") == True:
+            # Set the current boss to None
+            self.bosses_dict[self.bosses_dict["CurrentBoss"]] = None
+
+        # If there is a group for the stomp attack nodes
+        if hasattr(self, "stomp_attack_nodes_group"):
+            # Empty the group
+            self.stomp_attack_nodes_group.empty()
 
         # ------------------------------------------------------
         # Effect text and VFX

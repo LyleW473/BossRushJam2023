@@ -227,9 +227,9 @@ class GameStatesController():
             self.bar_transition_timer = self.bar_transition_time
 
     def detect_and_perform_game_over_reset(self):
-        
-        # If the player just played and died and has returned to the main menu
-        if self.game.game_over == True and self.menu.current_menu == "main_menu":
+
+        # If the player just played and died and has returned to the main menu OR the player left their current session
+        if (self.game.game_over == True and self.menu.current_menu == "main_menu") or self.menu.session_exit == True:
 
             # Reset the player's attributes
             self.game.player.reset_player()
@@ -237,8 +237,16 @@ class GameStatesController():
             # Empty the groups, reset the level, camera, etc.
             self.game.reset_level()
 
-            # Set game over back to False
-            self.game.game_over = False
+            # If the player died
+            if self.game.game_over == True:
+                # Set game over back to False
+                self.game.game_over = False
+
+            # If this was a session exit
+            if self.menu.session_exit == True:
+                # Set the menu session exit attribute back to False
+                self.menu.session_exit = False
+
 
     def perform_transition(self, delta_time):
 
