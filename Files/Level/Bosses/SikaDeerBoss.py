@@ -21,7 +21,7 @@ class SikaDeerBoss(Generic, AI):
     # Example: Stomp : [Image list]
 
     knockback_damage = 20
-    maximum_health = 12500
+    maximum_health = 25000
 
 
     def __init__(self, x, y, surface, scale_multiplier):

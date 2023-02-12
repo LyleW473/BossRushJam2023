@@ -787,7 +787,7 @@ class GameUI:
         if target == "Boss":
             
             # Random offset
-            random_x_offset = random_randrange(-15, 15)
+            random_x_offset = random_randrange(-25, 25)
 
             # Calculate the width of the boss health bar
             boss_health_bar_width = max((self.current_boss.extra_information_dict["CurrentHealth"] / self.current_boss.extra_information_dict["MaximumHealth"] ) * self.dimensions["boss_bar"]["width"], 0)
@@ -915,7 +915,21 @@ class GameUI:
                             from VFX.AngledPolygons import AngledPolygons
                             # Create an angled polygons controller
                             self.angled_polygons_controller = AngledPolygons(surface = self.angled_polygons_surface)
-                    
+
+                        # If this weapon is the bamboo assault rifle
+                        if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooAssaultRifle":
+                            # The settings for the polygons should be as follows
+                            distance_to_travel = 1 
+                            time_to_travel_distance = 0.05
+                            polygon_sides_angle_change = random_randrange(15, 40)
+                        
+                        # If this is the bamboo launcher
+                        elif self.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooLauncher":
+                            # The settings for the polygons should be as follows
+                            distance_to_travel = 10
+                            time_to_travel_distance = 0.05
+                            polygon_sides_angle_change = random_randrange(30, 60)
+
                         # Create 3 polygons, angled slightly
                         for i in range(-1, 2, 1):
 
@@ -935,13 +949,13 @@ class GameUI:
                                                         hypot_length = random_randrange(10, 14) + polygon_extension(i) ,
 
                                                         # The angle change between each side of the polygon
-                                                        polygon_sides_angle_change = random_randrange(15, 40),
+                                                        polygon_sides_angle_change = polygon_sides_angle_change,
                                                         
                                                         # The distance to travel
-                                                        distance_to_travel = 1,
+                                                        distance_to_travel = distance_to_travel,
 
                                                         # The time for the polygon to travel that distance
-                                                        time_to_travel_distance = 0.05,
+                                                        time_to_travel_distance = time_to_travel_distance,
 
                                                         # The selected colour palette
                                                         colour_palette = "Shooting",

@@ -663,8 +663,39 @@ class Game:
                 # --------------------------------
                 # World / building tiles
 
-                # Look for tile collisions between the bamboo projectile and world/ building tilesd
-                self.look_for_world_tile_collisions(item = bamboo_projectile, other_group = self.bamboo_projectiles_group)
+                # Check for a rect collision between the bamboo projectile and world / building tiles inside the world tiles dictionary
+                tile_collision_result = bamboo_projectile.rect.collidedict(self.world_tiles_dict)
+
+                # If the bamboo_projectile collided with a tile
+                if tile_collision_result != None:
+
+                    # Check for a pixel-perfect collision between the bamboo projectile and the world tile that the bamboo_projectile's rect collided with
+                    if pygame_sprite_collide_mask(bamboo_projectile, tile_collision_result[0]) != None:
+
+                        # If this bamboo projectile was shot from the bamboo launcher
+                        if bamboo_projectile.is_bamboo_launcher_projectile == True:
+                            
+                            # Create a bamboo projectiles explosion (shoots projectiles in a circle)
+                            self.player.create_bamboo_projectiles_explosion(projectile = bamboo_projectile)
+
+                            # Create many shattered bamboo pieces
+                            self.game_ui.create_angled_polygons_effects(
+                                                                        purpose = "ShatteredBambooPieces",
+                                                                        position = (bamboo_projectile.rect.centerx, bamboo_projectile.rect.centery),
+                                                                        specified_number_of_pieces = random_randrange(20, 30)
+                                                                        )
+                        # If this bamboo projectile was not shot from the bamboo launcher
+                        elif bamboo_projectile.is_bamboo_launcher_projectile == False:
+                            # Create a few shattered bamboo pieces
+                            self.game_ui.create_angled_polygons_effects(
+                                                                        purpose = "ShatteredBambooPieces",
+                                                                        position = (bamboo_projectile.rect.centerx, bamboo_projectile.rect.centery),
+                                                                        angle = bamboo_projectile.angle,
+                                                                        specified_number_of_pieces = random_randrange(2, 6)
+                                                                        )
+
+                        # If there is a pixel-perfect collision, remove the bamboo_projectile from the specified group
+                        self.bamboo_projectiles_group.remove(bamboo_projectile)
 
                 # --------------------------------
                 # Bosses
@@ -735,13 +766,26 @@ class Game:
                                                                 larger_font = False
                                                                 )
 
-                            # Create a few shattered bamboo pieces
-                            self.game_ui.create_angled_polygons_effects(
-                                                                        purpose = "ShatteredBambooPieces",
-                                                                        position = (self.boss_group.sprite.rect.centerx, self.boss_group.sprite.rect.centery),
-                                                                        angle = bamboo_projectile.angle,
-                                                                        specified_number_of_pieces = random_randrange(2, 6)
-                                                                        )
+                            # If this bamboo projectile was shot from the bamboo launcher
+                            if bamboo_projectile.is_bamboo_launcher_projectile == True:
+                                #  Always (even when the boss is dead) create a bamboo projectiles explosion (shoots projectiles in a circle)
+                                self.player.create_bamboo_projectiles_explosion(projectile = bamboo_projectile)
+
+                                # Create many shattered bamboo pieces
+                                self.game_ui.create_angled_polygons_effects(
+                                                                            purpose = "ShatteredBambooPieces",
+                                                                            position = (bamboo_projectile.rect.centerx, bamboo_projectile.rect.centery),
+                                                                            specified_number_of_pieces = random_randrange(20, 30)
+                                                                            )
+                            # If this bamboo projectile was not shot from the bamboo launcher
+                            elif bamboo_projectile.is_bamboo_launcher_projectile == False:
+                                # Create a few shattered bamboo pieces
+                                self.game_ui.create_angled_polygons_effects(
+                                                                            purpose = "ShatteredBambooPieces",
+                                                                            position = (self.boss_group.sprite.rect.centerx, self.boss_group.sprite.rect.centery),
+                                                                            angle = bamboo_projectile.angle,
+                                                                            specified_number_of_pieces = random_randrange(2, 6)
+                                                                            )
 
                             # Remove the bamboo projectile
                             self.bamboo_projectiles_group.remove(bamboo_projectile)

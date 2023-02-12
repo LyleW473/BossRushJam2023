@@ -22,6 +22,7 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.mask import from_surface as pygame_mask_from_surface
 from random import choice as random_choice
+from math import radians
 
 
 class Player(Generic):
@@ -107,10 +108,10 @@ class Player(Generic):
                                         "MaximumFrenzyModeValue": 100,
                                         
                                         # Values for increasing the current frenzy mode value depending on what the player did
-                                        "DealDamageFrenzyModeIncrement": 0.75, 
+                                        "DealDamageFrenzyModeIncrement": 0.5, 
                                         "TakeDamageFrenzyModeIncrement": 0.5,
                                         "BlockDamageFrenzyModeIncrement": 0.25,
-                                        "ReflectDamageFrenzyModeIncrement": 0.75, 
+                                        "ReflectDamageFrenzyModeIncrement": 1.25, 
                                         "StunEnemyFrenzyModeIncrement": 5,
                                         
                                         # Time 
@@ -200,7 +201,7 @@ class Player(Generic):
                                 "Down Left": pygame_transform_flip(surface = pygame_image_load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha(), flip_x = True, flip_y = False),
                                 "Down Right": pygame_image_load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
                                         },
-                            "ShootingCooldown": 150,
+                            "ShootingCooldown": 125,
                             "ShootingCooldownTimer": None, # 150 so that the player starts off being unable to shoot (after pressing the play button)
                             "BambooResourceDepletionAmount": 0.5,
                             "WeaponDamage": 25
@@ -208,12 +209,25 @@ class Player(Generic):
                                              },
                     
                         "BambooLauncher": {
-                                            "ShootingCooldown": 0, 
-                                            "ShootingCooldownTimer": None,
                                             "Images": {
-                                                "IconImage": pygame_image_load("graphics/Weapons/BambooAR/DownRight.png").convert_alpha()
-                                                      }
+                                                "IconImage": pygame_image_load("graphics/Weapons/BambooLauncher/DownRight.png").convert_alpha(),
+                                                "Left": pygame_transform_flip(surface = pygame_image_load(f"graphics/Weapons/BambooLauncher/Right.png").convert_alpha(), flip_x = True, flip_y = False),
+                                                "Right": pygame_image_load("graphics/Weapons/BambooLauncher/Right.png").convert_alpha(),
+                                                "Up": pygame_image_load("graphics/Weapons/BambooLauncher/Up.png").convert_alpha(),
+                                                "Up Left": pygame_transform_flip(surface = pygame_image_load("graphics/Weapons/BambooLauncher/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),"UpLeft": pygame_transform_flip(surface = pygame_image_load(f"graphics/Weapons/BambooLauncher/UpRight.png").convert_alpha(), flip_x = True, flip_y = False),
+                                                "Up Right": pygame_image_load("graphics/Weapons/BambooLauncher/UpRight.png").convert_alpha(),
+                                                "Down": pygame_transform_flip(surface = pygame_image_load("graphics/Weapons/BambooLauncher/Up.png").convert_alpha(), flip_x = False, flip_y = True),
+                                                "Down Left": pygame_transform_flip(surface = pygame_image_load("graphics/Weapons/BambooLauncher/DownRight.png").convert_alpha(), flip_x = True, flip_y = False),
+                                                "Down Right": pygame_image_load("graphics/Weapons/BambooLauncher/DownRight.png").convert_alpha()
+                                                      },
+                                            "ShootingCooldown": 700, 
+                                            "ShootingCooldownTimer": None,
+                                            "BambooResourceDepletionAmount": 25,
+                                            "WeaponDamage": 60,
+                                            "MiniProjectilesDamage": 10,
+                                            "NumberOfMiniProjectiles": 12
                                           },
+
                         }
 
     # ---------------------------------------------------------------------------------
@@ -1821,22 +1835,24 @@ class Player(Generic):
         # If the current tool equipped by the player is not the building tool
         if self.player_gameplay_info_dict["CurrentToolEquipped"] != "BuildingTool":       
 
-            # The current weapon selected (as a temp variable)
-            current_weapon = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]
+            # The dict of the current weapon selected (as a temp variable)
+            current_weapon_dict = self.tools[self.player_gameplay_info_dict["CurrentToolEquipped"]]
 
             # --------------------------------------
             # Updating shooting cooldown timers
-            self.update_shooting_cooldown_timer(current_weapon = current_weapon)
+            self.update_shooting_cooldown_timer(current_weapon_dict = current_weapon_dict)
 
             # If the left mouse button has been pressed and the player has enough resources to shoot
             if pygame_mouse_get_pressed()[0] == True and \
-                ((self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon["BambooResourceDepletionAmount"]) >= 0 or self.player_gameplay_info_dict["FrenzyModeTimer"] != None):
+                ((self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon_dict["BambooResourceDepletionAmount"]) >= 0 or self.player_gameplay_info_dict["FrenzyModeTimer"] != None):
 
-                # If the player's current weapon is the "BambooAssaultRifle"
-                if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooAssaultRifle":
+                # # If the player's current weapon is the "BambooAssaultRifle"
+                # if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooAssaultRifle":
+
+                    # current_weapon = self.player_gameplay_info_dict["CurrentToolEquipped"]
 
                     # If enough time has passed since the last time the player shot
-                    if self.tools["BambooAssaultRifle"]["ShootingCooldownTimer"] == None:
+                    if current_weapon_dict["ShootingCooldownTimer"] == None:
 
                         # --------------------------------------------------------------------------------------------------------------------
                         # Spawning the projectile 
@@ -1883,15 +1899,19 @@ class Player(Generic):
                             # Create a bamboo projectile, spawning it at the tip of the gun (Starts at the center of the player but has an added distance which displaces it to right in front of the gun)
                             # Note: The center of the bamboo projectile is placed at the co-ordinates
 
+                            is_bamboo_launcher_projectile = True if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooLauncher" else False
+
                             # If frenzy mode is not activated when shooting:
                             if self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                                
                                 # Set the "is_frenzy_mode_projectile" attribute to False
                                 bamboo_projectile = BambooProjectile(
                                                                     x = self.rect.centerx + distance_x,
                                                                     y = self.rect.centery + distance_y,
                                                                     angle = self.look_angle,
-                                                                    damage_amount = self.tools["BambooAssaultRifle"]["WeaponDamage"],
-                                                                    is_frenzy_mode_projectile = False
+                                                                    damage_amount = current_weapon_dict["WeaponDamage"],
+                                                                    is_frenzy_mode_projectile = False,
+                                                                    is_bamboo_launcher_projectile = is_bamboo_launcher_projectile
                                                                     )
                             
                             # If frenzy mode is not activated when shooting:
@@ -1901,8 +1921,9 @@ class Player(Generic):
                                                                     x = self.rect.centerx + distance_x,
                                                                     y = self.rect.centery + distance_y,
                                                                     angle = self.look_angle,
-                                                                    damage_amount = self.tools["BambooAssaultRifle"]["WeaponDamage"],
-                                                                    is_frenzy_mode_projectile = True
+                                                                    damage_amount = current_weapon_dict["WeaponDamage"],
+                                                                    is_frenzy_mode_projectile = False,
+                                                                    is_bamboo_launcher_projectile = is_bamboo_launcher_projectile
                                                                     )
                                 
                         
@@ -1910,12 +1931,35 @@ class Player(Generic):
                             self.sprite_groups["BambooProjectiles"].add(bamboo_projectile)
 
                             # Set the shooting cooldown timer to the shooting cooldown set
-                            self.tools["BambooAssaultRifle"]["ShootingCooldownTimer"] = self.tools["BambooAssaultRifle"]["ShootingCooldown"]
+                            current_weapon_dict["ShootingCooldownTimer"] = current_weapon_dict["ShootingCooldown"]
 
                             # If the player isn't in frenzy mode
                             if self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
-                                # Remove the amount of bamboo resource set for the bamboo assault rifle
-                                self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BambooAssaultRifle"]["BambooResourceDepletionAmount"]
+                                # Remove the amount of bamboo resource set for the weapon
+                                self.player_gameplay_info_dict["AmountOfBambooResource"] -= current_weapon_dict["BambooResourceDepletionAmount"]
+
+    def create_bamboo_projectiles_explosion(self, projectile):
+
+        # Additional functionality for the bamboo launcher when the launcher's projectile collides with a boss
+
+        # Create x mini projectiles
+        for i in range(0, self.tools["BambooLauncher"]["NumberOfMiniProjectiles"]):
+            
+            # Offset so that when spawned in an awkward position (e.g. inside a world tile, some projectiles will still not be removed)
+            offset_distance_x = 15 * cos(radians(i * (360 / self.tools["BambooLauncher"]["NumberOfMiniProjectiles"])))
+            offset_distance_y = -(15 * sin(radians(i * (360 / self.tools["BambooLauncher"]["NumberOfMiniProjectiles"])))) # "-" because pygame's y-axis is flipped
+            
+            # Create a new projectile with the damage of the mini projectiles damage under the bamboo launcher's dictionary
+            bamboo_projectile = BambooProjectile(
+                                                x = projectile.rect.centerx + offset_distance_x,
+                                                y = projectile.rect.centery + offset_distance_y,
+                                                angle = radians(i * (360 / self.tools["BambooLauncher"]["NumberOfMiniProjectiles"])),
+                                                damage_amount = self.tools["BambooLauncher"]["MiniProjectilesDamage"],
+                                                is_frenzy_mode_projectile = projectile.is_frenzy_mode_projectile,
+                                                is_bamboo_launcher_projectile = False # Make this a normal bamboo projectile
+                                                )
+            # Add the bamboo projectile to the bamboo projectiles group
+            self.sprite_groups["BambooProjectiles"].add(bamboo_projectile)
 
     def update_bamboo_projectiles(self):
 
@@ -1953,21 +1997,21 @@ class Player(Generic):
                 # Move the projectile
                 bamboo_projectile.move_projectile()
     
-    def update_shooting_cooldown_timer(self, current_weapon):
+    def update_shooting_cooldown_timer(self, current_weapon_dict):
 
         # Updates the shooting cooldown timer of the current weapon
 
         # If there is a timer that has been set to start counting
-        if current_weapon["ShootingCooldownTimer"] != None:
+        if current_weapon_dict["ShootingCooldownTimer"] != None:
             # If the timer is greater than 0 (counts down from the shooting cooldown)
-            if current_weapon["ShootingCooldownTimer"] > 0:
+            if current_weapon_dict["ShootingCooldownTimer"] > 0:
                 # Increase the timer
-                current_weapon["ShootingCooldownTimer"] -= 1000 * self.delta_time * self.player_gameplay_info_dict["FrenzyModeFireRateBoost"]
+                current_weapon_dict["ShootingCooldownTimer"] -= 1000 * self.delta_time * self.player_gameplay_info_dict["FrenzyModeFireRateBoost"]
 
             # If the timer is less than or equal to 0 (counts down from the shooting cooldown)
-            if current_weapon["ShootingCooldownTimer"] <= 0:
+            if current_weapon_dict["ShootingCooldownTimer"] <= 0:
                 # Set the shooting cooldown timer back to None
-                current_weapon["ShootingCooldownTimer"] = None
+                current_weapon_dict["ShootingCooldownTimer"] = None
 
     def run(self, delta_time):
 
