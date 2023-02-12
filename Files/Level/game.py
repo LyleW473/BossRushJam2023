@@ -654,7 +654,7 @@ class Game:
         # Bamboo projectiles 
 
         
-        # Look for collisions between bamboo projectiles and world tiles, delete the bamboo projectile if there is a collision
+        # If there are any bamboo projectiles
         if len(self.bamboo_projectiles_group) > 0:
 
             # For each bamboo projectile 
@@ -679,10 +679,32 @@ class Game:
                         if pygame_sprite_collide_mask(bamboo_projectile, self.boss_group.sprite) != None:
                             # If there is a pixel-perfect collision:
 
+                            # ------------------------------------------------------------------------------------------------------------------------------------------------
+                            # Damage
+
                             # Damage the current boss by the amount of damage that was passed into the bamboo projectile and a random additive damage amount (e.g. 25 - 3)
                             # Note: This allows for different damage values for e.g. different weapons
-                            randomised_damage_amount = bamboo_projectile.damage_amount + random_randrange(-3, 3)
-                            self.boss_group.sprite.extra_information_dict["CurrentHealth"] -= randomised_damage_amount
+                            randomised_damage_amount =  random_randrange(-3, 3)
+
+                            # If the current boss is the "SikaDeer"
+                            if self.bosses_dict["CurrentBoss"] == "SikaDeer":
+                                # If the deer boss is stunned
+                                if self.boss_group.sprite.current_action == "Stunned":
+                                    # Increase the base damage of the bamboo projectile by the damage multiplier dealt to the deer boss when stunned, plus a random damage amount
+                                    total_damage_dealt = (bamboo_projectile.damage_amount * self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["PlayerDamageMultiplierWhenStunned"]) + randomised_damage_amount
+
+
+                                # If the deer boss is not stunned
+                                elif self.boss_group.sprite.current_action != "Stunned":
+                                    # Set the total damage to be the base damage amount plus a random damage amount
+                                    total_damage_dealt = bamboo_projectile.damage_amount + randomised_damage_amount
+
+                            # Deal damage to the boss
+                            self.boss_group.sprite.extra_information_dict["CurrentHealth"] -= total_damage_dealt
+
+
+                            # ------------------------------------------------------------------------------------------------------------------------------------------------
+                            # Additional
 
                             # Play the boss' damaged flash effect
                             self.boss_group.sprite.extra_information_dict["DamagedFlashEffectTimer"] = self.boss_group.sprite.extra_information_dict["DamagedFlashEffectTime"]
@@ -694,6 +716,14 @@ class Game:
                                                                                                     self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["DealDamageFrenzyModeIncrement"],
                                                                                                     self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                     )
+                                # Create frenzy mode value increment effect text
+                                self.game_ui.create_effect_text(
+                                                                type_of_effect_text = "FrenzyModeValueIncrement",
+                                                                target = "Player",
+                                                                text = "+" + str(self.player.player_gameplay_info_dict["DealDamageFrenzyModeIncrement"]),
+                                                                larger_font = False
+                                                                )             
+                                
                             # If the current boss is alive
                             if self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
 
@@ -701,7 +731,8 @@ class Game:
                                 self.game_ui.create_effect_text(
                                                                 type_of_effect_text = "Damage",
                                                                 target = "Boss",
-                                                                text = "-" + str(randomised_damage_amount),
+                                                                text = "-" + str(total_damage_dealt),
+                                                                larger_font = False
                                                                 )
 
                             # Create a few shattered bamboo pieces
@@ -745,6 +776,7 @@ class Game:
                                             type_of_effect_text = "BambooResourceReplenishment",
                                             target = "Player",
                                             text = "+" + str(bamboo_resource_replenishment_amount),
+                                            larger_font = False
                                         )
 
             # Increase the amount of bamboo resource that the player has, limiting it to the maximum amount the player can hold at one time
@@ -771,6 +803,7 @@ class Game:
                                                     type_of_effect_text = "Heal",
                                                     target = "Player",
                                                     text = "+" + str(health_replenishment_amount),
+                                                    larger_font = False
                                                 )
 
 
@@ -857,6 +890,13 @@ class Game:
                                                                                                     self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["BlockDamageFrenzyModeIncrement"],
                                                                                                     self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                 )
+                                # Create frenzy mode value increment effect text
+                                self.game_ui.create_effect_text(
+                                                                type_of_effect_text = "FrenzyModeValueIncrement",
+                                                                target = "Player",
+                                                                text = "+" + str(self.player.player_gameplay_info_dict["BlockDamageFrenzyModeIncrement"]),
+                                                                larger_font = False
+                                                                )                                                        
                     # --------------------------------
                     # World tiles
 
@@ -895,6 +935,7 @@ class Game:
                                                             type_of_effect_text = "Damage",
                                                             target = "Player",
                                                             text = "-" + str(stomp_attack_node.damage_amount),
+                                                            larger_font = False
                                                         )
                                                         
                         # Set the damaged flash effect timer to the damage flash effect time set (damaged flashing effect)
@@ -907,7 +948,13 @@ class Game:
                                                                                                 self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["TakeDamageFrenzyModeIncrement"],
                                                                                                 self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                 )
-                
+                            # Create frenzy mode value increment effect text
+                            self.game_ui.create_effect_text(
+                                                            type_of_effect_text = "FrenzyModeValueIncrement",
+                                                            target = "Player",
+                                                            text = "+" + str(self.player.player_gameplay_info_dict["TakeDamageFrenzyModeIncrement"]),
+                                                            larger_font = False
+                                                            )
                 # --------------------------------
                 # Boss
 
@@ -939,6 +986,7 @@ class Game:
                                                             type_of_effect_text = "Damage",
                                                             target = "Boss",
                                                             text = "-" + str(stomp_attack_node.damage_amount * self.player.tools["BuildingTool"]["ReflectionDamageMultiplier"]),
+                                                            larger_font = False
                                                         )
 
                         # Set the damaged flash effect timer to the damage flash effect time set (damaged flashing effect)
@@ -951,7 +999,13 @@ class Game:
                                                                                                 self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["ReflectDamageFrenzyModeIncrement"],
                                                                                                 self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                 )
-
+                            # Create frenzy mode value increment effect text
+                            self.game_ui.create_effect_text(
+                                                            type_of_effect_text = "FrenzyModeValueIncrement",
+                                                            target = "Player",
+                                                            text = "+" + str(self.player.player_gameplay_info_dict["ReflectDamageFrenzyModeIncrement"]),
+                                                            larger_font = False
+                                                            )
         # -------------------------------------------------------------------------------------- 
         # Bosses
 
@@ -1031,8 +1085,9 @@ class Game:
                                                             type_of_effect_text = "Damage",
                                                             target = "Boss",
                                                             text = "-" + str(self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["StunnedDamageAmount"]),
+                                                            larger_font = True
                                                             )
-                                
+                            
                             # If the player's frenzy mode is not activated
                             if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
                                 # Increase the player's frenzy mode meter by the stun enemy increment amount, limiting it to the maximum frenzy mode value
@@ -1041,6 +1096,14 @@ class Game:
                                                                                                     self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
                                                                                                     )
 
+                                # Create frenzy mode value increment effect text
+                                self.game_ui.create_effect_text(
+                                                                type_of_effect_text = "FrenzyModeValueIncrement",
+                                                                target = "Player",
+                                                                text = "+" + str(self.player.player_gameplay_info_dict["StunEnemyFrenzyModeIncrement"]),
+                                                                larger_font = True
+                                                                )
+                                        
                             # Create a camera shake effect for when the boss collides with a tile
                             self.camera_shake_info_dict["EventsList"].append("BossTileCollide")
 
@@ -1051,8 +1114,15 @@ class Game:
             if self.bosses_dict["CurrentBoss"] == "SikaDeer" and self.boss_group.sprite.current_action == "Charge":
                     # If there is an x or y world tile collision
                     if self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsX"] == True or self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsY"] == True:
-                        # Set the "Charge" duration timer to 0 (to end the charge attack)
+
+                        # Set the player to change into the "Stunned" state (this will be done inside the SikaDeer class)
+                        self.boss_group.sprite.behaviour_patterns_dict["Charge"]["EnterStunnedStateBoolean"] = True
+
+                        # Set the "Charge" duration timer to 0, to end the charge attack
                         self.boss_group.sprite.behaviour_patterns_dict["Charge"]["DurationTimer"] = 0
+
+                        # Set the "Stunned" duration timer to start counting down from half the duration (should be shorter as the player did not block them)
+                        self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["DurationTimer"] = (self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["Duration"] / 2)
 
                         # Create a camera shake effect for when the boss collides with a tile
                         self.camera_shake_info_dict["EventsList"].append("BossTileCollide")
@@ -1095,6 +1165,7 @@ class Game:
                                                         type_of_effect_text = "Damage",
                                                         target = "Player",
                                                         text = "-" + str(self.boss_group.sprite.extra_information_dict["KnockbackDamage"]),
+                                                        larger_font = False
                                                     )
                     
                     # If the boss is the "SikaDeer" and collided with the player whilst charge attacking
@@ -1185,13 +1256,17 @@ class Game:
         - If the player is pressing the "f" key and the player has not tried to spawn a boss yet (i.e. this is the player's first session)
         - If the boss is currently spawning
         - If a boss dict has been created and the player has not tried to spawn a boss yet (i.e. the player has restarted the game)
+
+        The final condition is that there shouldn't already be a boss
         """
         if (pygame_key_get_pressed()[pygame_K_f] and hasattr(self, "bosses_dict") == False) or \
             (pygame_key_get_pressed()[pygame_K_f] and hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] == None) or \
             hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] != None:
 
-            # Find a valid boss spawning position, and continue spawning them
-            self.find_valid_boss_spawning_position(delta_time = delta_time)
+            # If a boss has not been spawned yet
+            if len(self.boss_group) == 0:
+                # Find a valid boss spawning position, and continue spawning them
+                self.find_valid_boss_spawning_position(delta_time = delta_time)
 
     def find_valid_boss_spawning_position(self, delta_time):
         
@@ -1628,7 +1703,6 @@ class Game:
         # ------------------------------------------------------
         # Boss dictionary
         if hasattr(self, "bosses_dict"):
-            print("RESET")
             self.bosses_dict["TimeToSpawnTimer"] = None
             self.bosses_dict["SpawningEffectTimer"] = None
             self.bosses_dict["SpawningEffectCounter"] = self.bosses_dict["OriginalSpawningEffectCounter"]

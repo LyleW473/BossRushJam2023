@@ -5,14 +5,18 @@ from math import sin, radians
 
 def draw_text(text, text_colour, font, x, y, surface, scale_multiplier = None):
 
-    # Render the text as an image
-    text_image = font.render(text, True, text_colour)
-
     # If a scale multiplier has not been passed in
     if scale_multiplier == None:
+        # Render the text as an image without anti-aliasing
+        text_image = font.render(text, False, text_colour)
+        # Blit the image onto the surface
         surface.blit(text_image, (x, y))
+
     # If a scale multiplier has been passed in
     elif scale_multiplier != None:
+        # Render the text as an image with anti-aliasing
+        text_image = font.render(text, True, text_colour)
+        # Smoothscale and blit the image onto the surface
         surface.blit(smoothscale(text_image, (text_image.get_width() / scale_multiplier, text_image.get_height() / scale_multiplier)), (x, y))
 
 def change_image_colour(current_animation_image, desired_colour = (255, 255, 255)): # Default colour is white

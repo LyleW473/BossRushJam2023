@@ -126,7 +126,8 @@ class SikaDeerBoss(Generic, AI):
                                             "Duration": 4000,
                                             "DurationTimer": None,
                                             "FullAnimationDuration": 1000,
-                                            "StunnedDamageAmount": 350
+                                            "StunnedDamageAmount": 350,
+                                            "PlayerDamageMultiplierWhenStunned": 2
                                             },
 
                                     "Death": {
@@ -806,7 +807,7 @@ class SikaDeerBoss(Generic, AI):
                 # Update the knockback collision idle timer
                 self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
 
-                # Update the no action timer
+                # Update the no action timer (meaning the boss cannot perform any other actions other than chasing)
                 self.update_no_action_timer(delta_time = self.delta_time)
 
                 # TEMPORARY

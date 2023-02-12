@@ -114,6 +114,7 @@ class GameUI:
 
                                         "Damage": {
                                                         "Font": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 16),
+                                                        "LargerFont": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 18),
                                                         "DisplayTime": 2000,
                                                         "Colour": (170, 4, 4)
 
@@ -130,6 +131,12 @@ class GameUI:
                                                         "DisplayTime": 2500,
                                                         "Colour": (247, 127, 0)
 
+                                                        },
+                                        "FrenzyModeValueIncrement":{
+                                                        "Font": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 12), # 14
+                                                        "LargerFont": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 24),
+                                                        "DisplayTime": 500,
+                                                        "Colour": (235, 199, 230) #,(191, 172, 226)
                                                         },
                         }
      
@@ -729,20 +736,43 @@ class GameUI:
         # Draw the guidelines surface onto the main surface
         main_surface.blit(guidelines_surface, (0, 0))
 
-    def create_effect_text(self, type_of_effect_text, target, text):
+    def create_effect_text(self, type_of_effect_text, target, text, larger_font = False):
         
         # Creates effect text
 
-        # Find the font size for positioning the text properly
-        font_size = self.effect_text_info_dict[type_of_effect_text]["Font"].size(text)
+        # --------------------------------------------------------------------------------------------------------
+        # Assigning font selected and calculating the font size
+
+        # If this effect text should not be larger
+        if larger_font == False:
+            # Find the font size for positioning the text properly
+            font_size = self.effect_text_info_dict[type_of_effect_text]["Font"].size(text)
+
+            # Set the font selected to be the default font
+            font_selected = self.effect_text_info_dict[type_of_effect_text]["Font"]
+
+        # If this effect text should be larger
+        elif larger_font == True:
+            # Find the font size for positioning the text properly
+            font_size = self.effect_text_info_dict[type_of_effect_text]["LargerFont"].size(text)
+
+            # Set the font selected to be the larger font
+            font_selected = self.effect_text_info_dict[type_of_effect_text]["LargerFont"]
+
+        # --------------------------------------------------------------------------------------------------------
+        # Assigning text position
 
         # If the target is the boss
         if target == "Boss":
+            
+            # Random offset
+            random_x_offset = random_randrange(-15, 15)
+
             # Calculate the width of the boss health bar
             boss_health_bar_width = max((self.current_boss.extra_information_dict["CurrentHealth"] / self.current_boss.extra_information_dict["MaximumHealth"] ) * self.dimensions["boss_bar"]["width"], 0)
 
-            # Calculate the text position so that the text is centered
-            text_position_x = (self.dimensions["boss_bar"]["x"] + boss_health_bar_width) - (font_size[0] / 2)
+            # Calculate the text position so that the text is centered, and then add random offsets
+            text_position_x = ((self.dimensions["boss_bar"]["x"] + boss_health_bar_width) - (font_size[0] / 2)) + random_x_offset
             text_position_y = (self.dimensions["boss_bar"]["y"] + (self.dimensions["boss_bar"]["height"] / 2)) - (font_size[1] / 2)
 
         # If the target is the player
@@ -770,6 +800,19 @@ class GameUI:
                     random_randrange(0, (bamboo_resource_text_size[0] / self.scale_multiplier)))
                 text_position_y = ((player_stats_display_card.rect.y + (DisplayCard.border_thickness  / 2) + player_stats_display_card.extra_information_dict["starting_position_from_inner_rect"][1] + player_stats_display_card.images_size[1][1] + player_stats_display_card.extra_information_dict["spacing_y_between_stats"]) - (font_size[1] / 2))
 
+            # If this is a frenzy mode value increment 
+            elif type_of_effect_text == "FrenzyModeValueIncrement":
+
+                # Offsets
+                random_x_offset = random_randrange(0, self.dimensions["player_stats"]["frenzy_mode_bar_width"])
+                random_y_offset = random_randrange(0, 35)
+
+                # Anywhere between the starting width and ending width of the bar
+                text_position_x = (self.dimensions["player_stats"]["frenzy_mode_bar_x"] - (font_size[0] / 2)) + random_x_offset
+
+                # Positioned from the bottom of the bar with a random y offset
+                text_position_y = ((self.dimensions["player_stats"]["frenzy_mode_bar_y"] + self.dimensions["player_stats"]["frenzy_mode_bar_height"]) - (font_size[1])) - random_y_offset
+
         # Alpha surface
         new_alpha_surface = pygame_Surface(font_size)
         new_alpha_surface.set_colorkey("black")
@@ -783,7 +826,7 @@ class GameUI:
                     colour = self.effect_text_info_dict[type_of_effect_text]["Colour"],
                     display_time = self.effect_text_info_dict[type_of_effect_text]["DisplayTime"], 
                     text = text,
-                    font = self.effect_text_info_dict[type_of_effect_text]["Font"],
+                    font = font_selected,
                     alpha_surface = new_alpha_surface,
                     alpha_level = self.effect_text_info_dict["DefaultAlphaLevel"]
                     )
