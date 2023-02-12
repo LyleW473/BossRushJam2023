@@ -1177,6 +1177,22 @@ class Game:
     # -------------------------------------------
     # Bosses
 
+    def look_for_input_to_spawn_boss(self, delta_time):
+
+        # Spawns the boss given the conditions are met
+
+        """Conditions:
+        - If the player is pressing the "f" key and the player has not tried to spawn a boss yet (i.e. this is the player's first session)
+        - If the boss is currently spawning
+        - If a boss dict has been created and the player has not tried to spawn a boss yet (i.e. the player has restarted the game)
+        """
+        if (pygame_key_get_pressed()[pygame_K_f] and hasattr(self, "bosses_dict") == False) or \
+            (pygame_key_get_pressed()[pygame_K_f] and hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] == None) or \
+            hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] != None:
+
+            # Find a valid boss spawning position, and continue spawning them
+            self.find_valid_boss_spawning_position(delta_time = delta_time)
+
     def find_valid_boss_spawning_position(self, delta_time):
         
         # Method used to spawn the boss (Spawn the boss once the player presses the button at the top of the screen (add a button at the top of the screen that goes to the next boss))
@@ -1195,7 +1211,7 @@ class Game:
             self.bosses_dict = { 
                         "CurrentBoss": "SikaDeer",
                         "NumOfTilesForChecking": number_of_tiles_for_checking, # The number of tiles to the left / right / up, down of the randomly chosen empty tile for the spawning position to be valid
-                        "RandomSpawningPosition" : random_choice(list(self.empty_tiles_dict.keys())), # Choose a random spawning position
+                        "RandomSpawningPosition" : [self.player.rect.centerx + 5, self.player.rect.centery + 5, TILE_SIZE, TILE_SIZE], #random_choice(list(self.empty_tiles_dict.keys())), # Choose a random spawning position
                         "ValidSpawningPosition": None, 
                         "SpawningPositionTilesList": [],
                         "TimeToSpawn": time_to_spawn, # The time for the boss to spawn
@@ -1207,14 +1223,29 @@ class Game:
                         "SpawningEffectTimer": None,
                         "OriginalSpawningEffectCounter": spawning_effect_counter,
                         "SpawningEffectCounter": spawning_effect_counter, # If the NumOfTilesForChecking is 3, and SpawningEffectCounter is 0, then each cycle would consist of 4 changes
-                        
+
                                 }
+
+        # pygame_draw_circle(surface = self.scaled_surface, color = "green", center = (self.player.rect.centerx - self.camera_position[0], self.player.rect.centery - self.camera_position[1]), radius = 13 * TILE_SIZE, width = 2)
+        # pygame_draw_circle(surface = self.scaled_surface, color = "blue", center = (self.player.rect.centerx - self.camera_position[0], self.player.rect.centery - self.camera_position[1]), radius = 25 * TILE_SIZE, width = 2)
+
+        # If the distance between the player and the boss is not within a minimum and maximum range
+        if ((13 * TILE_SIZE) <= dist(self.player.rect.center, (self.bosses_dict["RandomSpawningPosition"][0], self.bosses_dict["RandomSpawningPosition"][1])) <= (25 * TILE_SIZE)) == False:
+
+            # Until we find a valid spawning position:
+            for i in range(0, 200, 1):
+                # Generate a new spawning position
+                self.bosses_dict["RandomSpawningPosition"] = random_choice(list(self.empty_tiles_dict.keys()))
+
+                # Check if the distance between the player and the boss is within a minimum and maximum range
+                if ((13 * TILE_SIZE) <= dist(self.player.rect.center, (self.bosses_dict["RandomSpawningPosition"][0], self.bosses_dict["RandomSpawningPosition"][1])) <= (25 * TILE_SIZE)) == True:
+                    # If it is, exit the loop
+                    # Set the spawning boss variable to True
+                    self.bosses_dict["SpawningBoss"] = True
+                    break
 
         # If a valid spawning position has not been found
         if self.bosses_dict["ValidSpawningPosition"] == None:
-
-            # Choose a random empty tile
-            self.bosses_dict["RandomSpawningPosition"] = self.bosses_dict["RandomSpawningPosition"]
 
             # For each empty tile inside the empty tiles dictionary
             for empty_tile in self.empty_tiles_dict.keys():
@@ -1443,7 +1474,7 @@ class Game:
             case "AsiaticBlackBear":
                 pass
 
-        # Set the valid spawning position back to None (that way when the game restarts, the boss can be spawned)
+        # Set the valid spawning position back to None (that way when the game restarts or the player goes to the next boss, the boss can be spawned)
         self.bosses_dict["ValidSpawningPosition"] = None
 
     def update_and_run_boss(self, delta_time):
@@ -1603,7 +1634,7 @@ class Game:
             self.bosses_dict["SpawningEffectCounter"] = self.bosses_dict["OriginalSpawningEffectCounter"]
             self.bosses_dict["SpawningPositionTilesList"] = []
             self.bosses_dict["ValidSpawningPosition"] = None
-            # Generate a new spawning position
+            # Generate a new spawning position (even if it is valid, the boss should spawn in a different location)
             self.bosses_dict["RandomSpawningPosition"] = random_choice(list(self.empty_tiles_dict.keys()))
 
         # ------------------------------------------------------
@@ -1621,7 +1652,7 @@ class Game:
         # Reset the pan time and boss pan lock time (which were altered as part of the final camera pan when the player died)
         self.camera_pan_information_dict["PanTime"] = 1500
         self.camera_pan_information_dict["BossPanLockTime"] = 2500 
-        
+
         # Reset pan and pan lock timers
         self.camera_pan_information_dict["BossPanLockTimer"] = None
         self.camera_pan_information_dict["PlayerPanLockTimer"] = None
@@ -1699,6 +1730,9 @@ class Game:
 
     def run(self, delta_time):
 
+        # Fill the scaled surface with a colour
+        self.scaled_surface.fill("cornsilk4")
+
         # Check if the player has just "died"
         if self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
             
@@ -1737,19 +1771,17 @@ class Game:
         # If the game is not over
         if self.game_over == False:
 
-            # Fill the scaled surface with a colour
-            self.scaled_surface.fill("cornsilk4")
-
+            # If the player is alive
             if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
 
                 # Update the camera position depending on who the focus subject is
                 self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = self.update_focus_subject())
 
+                # Look for input to spawn the boss
+                self.look_for_input_to_spawn_boss(delta_time = delta_time)
+
                 # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
                 self.spawn_bamboo_pile(delta_time = delta_time)
-
-                if (pygame_key_get_pressed()[pygame_K_f] or (hasattr(self, "bosses_dict") == True and self.bosses_dict["TimeToSpawnTimer"] != None)) and len(self.boss_group) == 0:
-                    self.find_valid_boss_spawning_position(delta_time = delta_time)
 
                 # Handle collisions between all objects in the level
                 self.handle_collisions()

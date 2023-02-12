@@ -42,8 +42,8 @@ class GameStatesController():
         # The height of the black bars
         self.bar_height = 0
 
-        self.bar_height_change_time = 300
-        self.bar_lock_in_time = 350
+        self.bar_height_change_time = 125
+        self.bar_lock_in_time = 225 
 
         # The total transition time should be: The time it takes to increase and decrease the black bar height, and the lock in time
         self.bar_transition_time = (self.bar_height_change_time * 2) + self.bar_lock_in_time
@@ -352,10 +352,10 @@ class GameStatesController():
             # Load the level (Has conditions which will only perform this if the level hasn't been loaded into the game yet)
             self.load_level(chosen_level_number = 1)
 
+            # If the player has not died
             if self.game.game_over == False:
                 # Run the game
                 self.game.run(delta_time)
-
 
         # If any menus are being shown
         elif self.menu.current_menu != "game":
