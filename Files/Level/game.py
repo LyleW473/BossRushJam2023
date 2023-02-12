@@ -1805,7 +1805,7 @@ class Game:
     def run(self, delta_time):
 
         # Fill the scaled surface with a colour
-        self.scaled_surface.fill("cornsilk4")
+        self.scaled_surface.fill("gray21")
 
         # Check if the player has just "died"
         if self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:

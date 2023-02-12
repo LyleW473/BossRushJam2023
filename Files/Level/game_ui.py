@@ -42,12 +42,13 @@ class GameUI:
 
         # A dictionary containing information for each element of the game UI
         self.dimensions = {
-                            "player_tools": { "x": round(25 / scale_multiplier),
-                                                            "y": round(140 / scale_multiplier),
-                                                            "width": round(125 / scale_multiplier),
-                                                            "height": round(125 / scale_multiplier),
-                                                            "spacing_y": round(20 / scale_multiplier),
-                                                            },
+                            "player_tools": { 
+                                            "x": round(25 / scale_multiplier),
+                                            "y": round(140 / scale_multiplier),
+                                            "width": round(138 / scale_multiplier),
+                                            "height": round(138 / scale_multiplier),
+                                            "spacing_y": round(20 / scale_multiplier),
+                                            },
                             "player_stats": {
                                 "x": round(25 / scale_multiplier),
                                 "y": 0,
@@ -243,6 +244,9 @@ class GameUI:
 
         # Creates the players' tools' display cards
 
+        # Set the font for the display card numbers
+        DisplayCard.tools_display_card_number_text_font = pygame_font_Font("graphics/Fonts/player_stats_font.ttf", 16)
+
         # If the length of the inventory display cards dict is not the same as the length of the amount of tools 
         if len(self.display_cards_dict["player_tools"]) != len(self.player_tools):
             
@@ -251,7 +255,7 @@ class GameUI:
                 # The spacing on the y-axis between each card
                 spacing_y = self.dimensions["player_tools"]["spacing_y"]
 
-                # Create a display card, passing in: The rect, main surface, an alpha surface for the display card and icon image.
+                # Create a display card, passing in: The rect, main surface, an alpha surface for the display card, icon image, the purpose and the display card number
                 self.display_cards_dict["player_tools"].append(DisplayCard(
                                             rect = pygame_Rect(
                                                             self.dimensions["player_tools"]["x"], 
@@ -262,6 +266,8 @@ class GameUI:
                                             alpha_surface = pygame_Surface((self.dimensions["player_tools"]["width"], self.dimensions["player_tools"]["height"])),
                                             images = self.player_tools[tool]["Images"]["IconImage"],
                                             purpose = "PlayerTools",
+                                            display_card_number = len(self.display_cards_dict["player_tools"]) + 1,
+                                            which_tool = tool
                                                                 )
                                                             )
                 
@@ -576,6 +582,21 @@ class GameUI:
 
         # For each tool display card
         for tool_display_card in self.display_cards_dict["player_tools"]:
+
+            # If this tool card is for the tool the player currently has equipped
+            if tool_display_card.which_tool == self.player_gameplay_info_dict["CurrentToolEquipped"]:
+                # Set the alpha level of the display card's surfaces to its maximum alpha level
+                if tool_display_card.alpha_surface.get_alpha() != DisplayCard.tools_maximum_alpha_surface_alpha_level:
+                    tool_display_card.alpha_surface.set_alpha(DisplayCard.tools_maximum_alpha_surface_alpha_level)
+                    tool_display_card.second_alpha_surface.set_alpha(DisplayCard.tools_maximum_second_alpha_surface_alpha_level)
+            
+            # If this tool card is not for the tool the player currently has equipped
+            elif tool_display_card.which_tool != self.player_gameplay_info_dict["CurrentToolEquipped"]:
+                # Set the alpha level of the display card's surfaces to its minimum alpha level
+                if tool_display_card.alpha_surface.get_alpha() != DisplayCard.tools_minimum_alpha_surface_alpha_level:
+                    tool_display_card.alpha_surface.set_alpha(DisplayCard.tools_minimum_alpha_surface_alpha_level)
+                    tool_display_card.second_alpha_surface.set_alpha(DisplayCard.tools_minimum_second_alpha_surface_alpha_level)
+
             # Draw the card
             tool_display_card.draw()
 

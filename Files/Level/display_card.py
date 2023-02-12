@@ -5,26 +5,35 @@ from Global.functions import draw_text
 from pygame import Surface as pygame_Surface
 from Global.settings import BAR_ALPHA_LEVEL
 
-
 class DisplayCard:
     
     # Default attributes of all display cards
-    alpha_surface_alpha_level = 125
+
+    # Alpha surface of the player stats display card at all times
+    player_stats_alpha_surface_alpha_level = 125
+
+    # Alpha surface for the inner and outer body
+    tools_maximum_alpha_surface_alpha_level = 125
+    tools_minimum_alpha_surface_alpha_level = 30
+
+    # Alpha surface for the outlines, icon image and text
+    tools_maximum_second_alpha_surface_alpha_level = 255 
+    tools_minimum_second_alpha_surface_alpha_level = 125 
+    
+    # Thicknesses for all display cards
     border_thickness = 12
     inner_outline_thickness = 1
     outer_outline_thickness = 2
 
-    def __init__(self, rect, surface, alpha_surface, images, purpose, text_font = None, extra_information_dict = None):
+    # tools_display_card_number_text_font = ?? # This will be set when the display cards for the tools are created
+
+    def __init__(self, rect, surface, alpha_surface, images, purpose, display_card_number = None, which_tool = None, text_font = None, extra_information_dict = None):
         
         # Main surface that the display card alpha surface is drawn onto
         self.surface = surface
         
         # The surface that the display card is drawn onto
         self.alpha_surface = alpha_surface
-
-        # Set a colorkey and alpha level for the alpha surface
-        self.alpha_surface.set_colorkey("black")
-        self.alpha_surface.set_alpha(DisplayCard.alpha_surface_alpha_level)
 
         # Display card's rect
         self.rect = rect
@@ -51,10 +60,30 @@ class DisplayCard:
             # Font used for the stats text
             self.text_font = text_font
 
+            # Set a colorkey and alpha level for the alpha surface
+            self.alpha_surface.set_colorkey("black")
+            self.alpha_surface.set_alpha(DisplayCard.player_stats_alpha_surface_alpha_level)
+
         # If the purpose of this display card is for the players' tools
         elif purpose == "PlayerTools":
+            # Set the image to be the icon image
             self.image = images
-    
+
+            # The tool this display card represents
+            self.which_tool = which_tool
+
+            # Set the display card number
+            self.display_card_number = display_card_number
+
+            # Alpha surface for the inner body and outer body
+            self.alpha_surface.set_colorkey("black")
+            self.alpha_surface.set_alpha(DisplayCard.tools_maximum_alpha_surface_alpha_level)
+
+            # Second alpha surface for the outlines, icon image and text
+            self.second_alpha_surface = pygame_Surface((self.rect.width + (DisplayCard.outer_outline_thickness * 2), self.rect.height + (DisplayCard.outer_outline_thickness * 2)))
+            self.second_alpha_surface.set_colorkey("blue")
+            self.second_alpha_surface.set_alpha(DisplayCard.tools_maximum_second_alpha_surface_alpha_level)
+
     # --------------------------------------------
     # Common methods
 
@@ -64,7 +93,7 @@ class DisplayCard:
         # Drawing the outer body
         pygame_draw_rect(
                         surface = self.alpha_surface, 
-                        color = "darkgreen", 
+                        color = (78, 159, 61),
                         rect = pygame_Rect(0, 0, self.rect.width, self.rect.height), 
                         width = 0)
 
@@ -78,39 +107,72 @@ class DisplayCard:
                                 )
         
         # Drawing the inner body
-        pygame_draw_rect(surface = self.alpha_surface, color = (120, 120, 120), rect = inner_body_rect, width = 0)
+        pygame_draw_rect(surface = self.alpha_surface, color = (168, 232, 144), rect = inner_body_rect, width = 0) #(168, 232, 144)
 
         # Return the inner body rect
         return inner_body_rect
 
     def draw_outlines(self, inner_body_rect):
 
-        # Inner border outline (Other approach would be creating a new rect and inflating it in place with 2 * the inner outline thickness)
-        # Note: This uses the inner body rect's starting position on the screen and moves back by the inner outline thickness, increasing the height and width of the entire rect by the (inner outline thickness * 2).
-        pygame_draw_rect(
-                        surface = self.surface, 
-                        color = "white", 
-                        rect = pygame_Rect(
-                                            (self.rect.x + inner_body_rect.x) - DisplayCard.inner_outline_thickness,
-                                            (self.rect.y + inner_body_rect.y) - DisplayCard.inner_outline_thickness, 
-                                            inner_body_rect.width + (DisplayCard.inner_outline_thickness * 2), 
-                                            inner_body_rect.height + (DisplayCard.inner_outline_thickness * 2)),
-                        width = DisplayCard.inner_outline_thickness
-                    )
+        # If this is a player stats display card
+        if self.purpose == "PlayerStats":
 
-        # Outer body outline
-        pygame_draw_rect(
-                        surface = self.surface, 
-                        color = "black", 
-                        rect = (
-                                self.rect.x - DisplayCard.outer_outline_thickness,
-                                self.rect.y - DisplayCard.outer_outline_thickness,
-                                self.rect.width + (DisplayCard.outer_outline_thickness * 2),
-                                self.rect.height + (DisplayCard.outer_outline_thickness * 2),
-                               ),
-                        width = DisplayCard.outer_outline_thickness
+            # Inner body outline (Other approach would be creating a new rect and inflating it in place with 2 * the inner outline thickness)
+            # Note: This uses the inner body rect's starting position on the screen and moves back by the inner outline thickness, increasing the height and width of the entire rect by the (inner outline thickness * 2).
+            pygame_draw_rect(
+                            surface = self.surface,
+                            color = "white", 
+                            rect = pygame_Rect(
+                                                (self.rect.x + inner_body_rect.x) - DisplayCard.inner_outline_thickness,
+                                                (self.rect.y + inner_body_rect.y) - DisplayCard.inner_outline_thickness, 
+                                                inner_body_rect.width + (DisplayCard.inner_outline_thickness * 2), 
+                                                inner_body_rect.height + (DisplayCard.inner_outline_thickness * 2)),
+                            width = DisplayCard.inner_outline_thickness 
                         )
-    
+
+            # Outer body outline
+            pygame_draw_rect(
+                            surface = self.surface,
+                            color = "black", 
+                            rect = (
+                                    self.rect.x - DisplayCard.outer_outline_thickness,
+                                    self.rect.y - DisplayCard.outer_outline_thickness,
+                                    self.rect.width + (DisplayCard.outer_outline_thickness * 2),
+                                    self.rect.height + (DisplayCard.outer_outline_thickness * 2),
+                                ),
+                            width = DisplayCard.outer_outline_thickness
+                            )
+        
+        # If this is a player tools display card
+        elif self.purpose == "PlayerTools":
+
+            # Inner body outline
+            pygame_draw_rect(
+                            surface = self.second_alpha_surface,
+                            color = "white", 
+                            rect = pygame_Rect(
+                                                ((inner_body_rect.x) - DisplayCard.inner_outline_thickness) + DisplayCard.outer_outline_thickness, # Outer outline thickness the second alpha surface includes the outer outlines
+                                                ((inner_body_rect.y) - DisplayCard.inner_outline_thickness) + DisplayCard.outer_outline_thickness,
+                                                inner_body_rect.width + (DisplayCard.inner_outline_thickness * 2), 
+                                                inner_body_rect.height + (DisplayCard.inner_outline_thickness * 2)
+                                                ),
+                            width = DisplayCard.inner_outline_thickness
+                        )
+            # pygame_draw_rect(surface = self.second_alpha_surface, color = "purple", rect = inner_body_rect, width = 0) #colour (120, 120, 120)
+
+            # Outer body outline
+            pygame_draw_rect(
+                            surface = self.second_alpha_surface,
+                            color = "black", 
+                            rect = (
+                                    0,
+                                    0,
+                                    self.rect.width + (DisplayCard.outer_outline_thickness * 2),
+                                    self.rect.height + (DisplayCard.outer_outline_thickness * 2),
+                                ),
+                            width = DisplayCard.outer_outline_thickness,
+
+                            )
     # --------------------------------------------
     # Specific methods for different purposes
 
@@ -123,11 +185,23 @@ class DisplayCard:
         dx = inner_body_rect.centerx - (self.image.get_width() / 2)
         dy = inner_body_rect.centery - (self.image.get_height() / 2)
 
-        # Blit the icon image at the center of the inner body rect
-        self.surface.blit(
+        # Blit the icon image at the center of the second alpha surface
+        self.second_alpha_surface.blit(
                         self.image, 
-                        ((self.rect.x + dx, self.rect.y + dy))
+                        ((dx, dy))
                         )
+        
+        # Draw the display card number
+        draw_text(
+                text = str(self.display_card_number),
+                font = DisplayCard.tools_display_card_number_text_font,
+                text_colour = "white", 
+                x = (inner_body_rect.width) - 2, # -2 is an offset
+                y = (DisplayCard.border_thickness / 2) + 2, # + 2 is an offset
+                surface = self.second_alpha_surface,
+                )
+
+        
 
     def draw_stats_display_card_contents(self, inner_body_rect, player_tools, player_gameplay_info_dict):
 
@@ -333,14 +407,24 @@ class DisplayCard:
 
         # If this display card is for the players' tools
         if self.purpose == "PlayerTools":
+            
+            # Fill the second alpha surface with blue
+            self.second_alpha_surface.fill("blue")
+
+            # Draw the outlines onto the second alpha surface
+            self.draw_outlines(inner_body_rect = inner_body_rect)
+
             # Draw the contents of the tool display card
             self.draw_tool_display_card_contents(inner_body_rect = inner_body_rect)
 
+            # Blit the second alpha surface onto the main surface
+            self.surface.blit(self.second_alpha_surface, (self.rect.x - DisplayCard.outer_outline_thickness, self.rect.y - DisplayCard.outer_outline_thickness))
+
         # If this display card is for the players' stats
-        if self.purpose == "PlayerStats":
+        elif self.purpose == "PlayerStats":
             # Draw the contents of the stats display card
             self.draw_stats_display_card_contents(inner_body_rect = inner_body_rect, player_tools = player_tools, player_gameplay_info_dict = player_gameplay_info_dict)
 
-        # --------------------------------------------
-        # Outlines
-        self.draw_outlines(inner_body_rect = inner_body_rect)
+            # --------------------------------------------
+            # Outlines
+            self.draw_outlines(inner_body_rect = inner_body_rect)
