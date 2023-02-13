@@ -14,6 +14,7 @@ from pygame import K_w as pygame_K_w
 from pygame import K_a as pygame_K_a
 from pygame import K_s as pygame_K_s
 from pygame import K_d as pygame_K_d
+from pygame import K_r as pygame_K_r
 from pygame import K_SPACE as pygame_K_SPACE
 from pygame import Rect as pygame_Rect
 from pygame.mouse import get_pressed as pygame_mouse_get_pressed
@@ -95,8 +96,8 @@ class Player(Generic):
                                         "CurrentToolEquipped": "BambooAssaultRifle",
 
                                         # Bamboo resource
-                                        "AmountOfBambooResource": 150,
-                                        "MaximumAmountOfBambooResource": 150,
+                                        "AmountOfBambooResource": 90,
+                                        "MaximumAmountOfBambooResource": 90,
 
                                         # Health
                                         "CurrentHealth": 100,
@@ -176,7 +177,7 @@ class Player(Generic):
                                             "TileImage": pygame_image_load("graphics/Weapons/BuildingTool/BuildingTile.png").convert()
                                                   },
                                         "MaximumBuildingTileHP": 100,
-                                        "MaximumPlacingDistance": 7 * TILE_SIZE , #25 * TILE_SIZE, #7 * TILE_SIZE,
+                                        "MaximumPlacingAndRemovingDistance": 7 * TILE_SIZE , #25 * TILE_SIZE, #7 * TILE_SIZE,
                                         "MinimumPlacingDistance": 1.5 * TILE_SIZE,
                                         "ExistingBuildingTilesList": [],
                                         "MaximumNumberOfTilesAtOneTime": 5,
@@ -1701,11 +1702,23 @@ class Player(Generic):
             # If the player is hovering over an existing building tile
             if collision_result_index != -1:
                 
-                # Highlight the building tile
+                # Find any building tiles that are being hovered over
                 building_tile_to_highlight = self.tools["BuildingTool"]["ExistingBuildingTilesList"][collision_result_index]
+
+                # If the distance between this tile and the player is within the maximum removing distance
+                if dist(self.rect.center, building_tile_to_highlight.rect.center) <= self.tools["BuildingTool"]["MaximumPlacingAndRemovingDistance"]:
+                    # Set the highlight colour as orange
+                    highlight_colour = "orange"
+                
+                # If the distance between this tile and the player is not within the maximum removing distance
+                elif dist(self.rect.center, building_tile_to_highlight.rect.center) > self.tools["BuildingTool"]["MaximumPlacingAndRemovingDistance"]:
+                    # Set the highlight colour as red
+                    highlight_colour = "red"
+
+                # Highlight the building tile
                 pygame_draw_rect(
                                 surface = self.surface,
-                                color = "orange",
+                                color = highlight_colour,
                                 rect = pygame_Rect(
                                                     building_tile_to_highlight.rect.x - self.camera_position[0],
                                                     building_tile_to_highlight.rect.y  - self.camera_position[1],
@@ -1718,42 +1731,78 @@ class Player(Generic):
             # --------------------------------------
             # Checking for input to remove building tiles
 
-            # If the player pressed the right mouse button and there is an existing building tile
-            if pygame_mouse_get_pressed()[2] and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0:
-                
-                # If enough time has passed since the player last removed a building tile
-                if self.tools["BuildingTool"]["RemovalCooldownTimer"] == None:
+            # If there are existing building tiles
+            if len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0:
 
-                    # Return the building tile at this collision index 
-                    """ Note: If there is no collision, index -1 will be returned, which is perfect because then we should remove the last building tile placed down """
-                    building_tile_to_remove = self.tools["BuildingTool"]["ExistingBuildingTilesList"][collision_result_index]
+                # If the player pressed the right mouse button and there is an existing building tile
+                if pygame_mouse_get_pressed()[2]:
+                    
+                    # If enough time has passed since the player last removed a building tile
+                    if self.tools["BuildingTool"]["RemovalCooldownTimer"] == None:
 
-                    # Remove the building tile from the world tiles group
-                    self.sprite_groups["WorldTiles"].remove(building_tile_to_remove)
+                        # Return the building tile at this collision index 
+                        """ Note: If there is no collision, index -1 will be returned, which is perfect because then we should remove the last building tile placed down """
+                        building_tile_to_remove = self.tools["BuildingTool"]["ExistingBuildingTilesList"][collision_result_index]
 
-                    # Remove the building tile from the world tiles list
-                    self.world_tiles_dict.pop(building_tile_to_remove)
+                        # If the distance between this tile and the player is within the maximum removing distance
+                        if dist(self.rect.center, building_tile_to_remove.rect.center) <= self.tools["BuildingTool"]["MaximumPlacingAndRemovingDistance"]:
 
-                    # "Create" an empty tile where the building tile was
-                    self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
+                            # Remove the building tile from the world tiles group
+                            self.sprite_groups["WorldTiles"].remove(building_tile_to_remove)
 
-                    # Remove the building tile at the collision result index from the existing building tiles list
-                    self.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(collision_result_index)
+                            # Remove the building tile from the world tiles list
+                            self.world_tiles_dict.pop(building_tile_to_remove)
 
-                    # Start the last tile removed timer, so that the player has to wait "self.tools["BuildingTool"]["RemovalCooldown"]" before removing another tile
-                    self.tools["BuildingTool"]["RemovalCooldownTimer"] = 0
+                            # "Create" an empty tile where the building tile was
+                            self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
 
-                    # If the building tile to remove is in the neighbouring tiles dictionary (keys)
-                    if building_tile_to_remove in self.neighbouring_tiles_dict.keys():
-                        # Remove the building tile
-                        self.neighbouring_tiles_dict.pop(building_tile_to_remove)
+                            # Remove the building tile at the collision result index from the existing building tiles list
+                            self.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(collision_result_index)
+
+                            # Start the last tile removed timer, so that the player has to wait "self.tools["BuildingTool"]["RemovalCooldown"]" before removing another tile
+                            self.tools["BuildingTool"]["RemovalCooldownTimer"] = 0
+
+                            # If the building tile to remove is in the neighbouring tiles dictionary (keys)
+                            if building_tile_to_remove in self.neighbouring_tiles_dict.keys():
+                                # Remove the building tile
+                                self.neighbouring_tiles_dict.pop(building_tile_to_remove)
             
+                # If the player pressed the "r" key and there are existing building tiles placed down
+                if pygame_key_get_pressed()[pygame_K_r]:
+                
+                    # For each building tile inside the existing building tiles list
+                    for list_index, building_tile_to_remove in enumerate(self.tools["BuildingTool"]["ExistingBuildingTilesList"]):
+
+                        # If the distance between this tile and the player is within the maximum removing distance
+                        if dist(self.rect.center, building_tile_to_remove.rect.center) <= self.tools["BuildingTool"]["MaximumPlacingAndRemovingDistance"]:
+
+                            # Remove the building tile from the world tiles group
+                            self.sprite_groups["WorldTiles"].remove(building_tile_to_remove)
+
+                            # Remove the building tile from the world tiles list
+                            self.world_tiles_dict.pop(building_tile_to_remove)
+
+                            # "Create" an empty tile where the building tile was
+                            self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
+
+                            # Remove the building tile at the list index
+                            self.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(list_index)
+
+                            # Start the last tile removed timer, so that the player has to wait "self.tools["BuildingTool"]["RemovalCooldown"]" before removing tiles again
+                            self.tools["BuildingTool"]["RemovalCooldownTimer"] = 0
+
+                            # If the building tile to remove is in the neighbouring tiles dictionary (keys)
+                            if building_tile_to_remove in self.neighbouring_tiles_dict.keys():
+                                # Remove the building tile
+                                self.neighbouring_tiles_dict.pop(building_tile_to_remove)
+
+
             # --------------------------------------
             # Checking for placement of building tiles
 
             # Draw a guide circles to show the minimum and maximum distances the player can place building tiles (MAY REMOVE)
             pygame_draw_circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MinimumPlacingDistance"], 1)
-            pygame_draw_circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MaximumPlacingDistance"], 2)
+            pygame_draw_circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MaximumPlacingAndRemovingDistance"], 2)
 
             # Find collisions between the mouse rect and empty tiles inside the tile map
             empty_tile_collision = pygame_Rect(self.mouse_position[0] , self.mouse_position[1] , 1, 1).collidedict(self.empty_tiles_dict)
@@ -1771,7 +1820,7 @@ class Player(Generic):
                                     )   
 
                 # If the distance between the center of the player and the center of the empty tile at the mouse position less than the maximum distance
-                if self.tools["BuildingTool"]["MinimumPlacingDistance"] < dist(self.rect.center, empty_tile_center) < self.tools["BuildingTool"]["MaximumPlacingDistance"]:
+                if self.tools["BuildingTool"]["MinimumPlacingDistance"] < dist(self.rect.center, empty_tile_center) < self.tools["BuildingTool"]["MaximumPlacingAndRemovingDistance"]:
                     # Highlight the empty tile as green
                     pygame_draw_rect(
                                     surface = self.surface,
@@ -1809,14 +1858,17 @@ class Player(Generic):
                                 # Add the building tile to the existing building tiles list
                                 self.tools["BuildingTool"]["ExistingBuildingTilesList"].append(building_tile)
 
-                                # Remove bamboo resource by the depletion amount set
-                                self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BuildingTool"]["BambooResourceDepletionAmount"]
+                                # If a boss has been spawned and the boss rect is not set to None
+                                # Note: Second check is so that when the current boss dies, the boss rect can be set to None, until the next boss is spawned
+                                if hasattr(self, "boss_rect") == True and self.boss_rect != None:
+                                    # Remove bamboo resource by the depletion amount set
+                                    self.player_gameplay_info_dict["AmountOfBambooResource"] -= self.tools["BuildingTool"]["BambooResourceDepletionAmount"]
 
                 # If the distance between the center of the player and the center of the empty tile at the mouse position:
                 # - Less than or equal to the minimum distance
                 # - Greater than or equal to the maximum distance
                 elif dist(self.rect.center, empty_tile_center) <= self.tools["BuildingTool"]["MinimumPlacingDistance"] or \
-                     dist(self.rect.center, empty_tile_center) >= self.tools["BuildingTool"]["MaximumPlacingDistance"]:
+                     dist(self.rect.center, empty_tile_center) >= self.tools["BuildingTool"]["MaximumPlacingAndRemovingDistance"]:
 
                     # Highlight the empty tile as red
                     pygame_draw_rect(
@@ -1945,8 +1997,11 @@ class Player(Generic):
 
                             # If the player isn't in frenzy mode
                             if self.player_gameplay_info_dict["FrenzyModeTimer"] == None:
-                                # Remove the amount of bamboo resource set for the weapon
-                                self.player_gameplay_info_dict["AmountOfBambooResource"] -= current_weapon_dict["BambooResourceDepletionAmount"]
+                                # If a boss has been spawned and the boss rect is not set to None
+                                # Note: Second check is so that when the current boss dies, the boss rect can be set to None, until the next boss is spawned
+                                if hasattr(self, "boss_rect") == True and self.boss_rect != None:
+                                    # Remove the amount of bamboo resource set for the weapon 
+                                    self.player_gameplay_info_dict["AmountOfBambooResource"] -= current_weapon_dict["BambooResourceDepletionAmount"]
 
     def create_bamboo_projectiles_explosion(self, projectile):
 

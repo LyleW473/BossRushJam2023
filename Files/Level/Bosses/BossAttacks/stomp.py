@@ -148,7 +148,7 @@ class StompNode(pygame_sprite_Sprite):
         self.reflected = False
 
         # The additive colour added on top of the default colours for the stomp attack node
-        self.reflected_additive_colour = [120, 120] # 1st item is the original, 2nd item is the one that changes
+        self.reflected_additive_colour = [200, 200] # 1st item is the original, 2nd item is the one that changes
 
         # The rate of change of the angle over time (time in seconds)
         self.reflected_angle_time_gradient = (360 - 0) / 2

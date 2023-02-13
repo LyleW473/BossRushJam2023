@@ -589,13 +589,17 @@ class SikaDeerBoss(Generic, AI):
                 if stomp_attack_node.reflected == False:
                     
                     # Set the circle colours to be the default colours
-                    circle_colours = ((63, 42, 39), (40, 32, 30), (93, 72, 67)) 
+                    circle_colours = ((111, 26, 182), (61, 23, 102), ((255, 0, 50)))
 
                 # If the stomp attack node has not been reflected
                 elif stomp_attack_node.reflected == True:
                     
                      # Set the circle colours to be the reflected colours
-                    circle_colours = ((63 + stomp_attack_node.reflected_additive_colour[1], 42, 39), (40 + stomp_attack_node.reflected_additive_colour[1], 32, 30), (93 + stomp_attack_node.reflected_additive_colour[1], 72, 67)) 
+                    circle_colours = (
+                        (min(111 + stomp_attack_node.reflected_additive_colour[1], 255), 26, 182), 
+                        (min(61 + stomp_attack_node.reflected_additive_colour[1], 255), 23, 102), 
+                        (min(255 + stomp_attack_node.reflected_additive_colour[1], 255), 0, 50)
+                        ) 
 
                     # Change the value of the reflected colour
                     stomp_attack_node.change_reflected_colour_value(delta_time = self.delta_time)
@@ -610,7 +614,7 @@ class SikaDeerBoss(Generic, AI):
                 pygame_draw_circle(surface = self.surface, color = 	circle_colours[1], center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius, width = int(stomp_attack_node.radius / 3))
 
                 # Second circle (Middle colour)
-                pygame_draw_circle(surface = self.surface, color = 	circle_colours[2], center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius * (0.45), width = 0)
+                pygame_draw_circle(surface = self.surface, color = circle_colours[2], center = (stomp_attack_node.rect.centerx - self.camera_position[0], stomp_attack_node.rect.centery - self.camera_position[1]), radius = stomp_attack_node.radius * (0.45), width = 0)
                 
 
                 # # The center of the rectangle is at the position calculated when the node was created
