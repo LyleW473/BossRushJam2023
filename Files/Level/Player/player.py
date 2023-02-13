@@ -1750,11 +1750,14 @@ class Player(Generic):
                             # Remove the building tile from the world tiles group
                             self.sprite_groups["WorldTiles"].remove(building_tile_to_remove)
 
+                            # "Create" an empty tile where the building tile was
+                            self.empty_tiles_dict[self.sprite_groups["ReplacedEmptyTiles"][building_tile_to_remove]] = 0
+                            
+                            # Remove the building tile from the replaced empty tiles dict
+                            self.sprite_groups["ReplacedEmptyTiles"].pop(building_tile_to_remove)
+
                             # Remove the building tile from the world tiles list
                             self.world_tiles_dict.pop(building_tile_to_remove)
-
-                            # "Create" an empty tile where the building tile was
-                            self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
 
                             # Remove the building tile at the collision result index from the existing building tiles list
                             self.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(collision_result_index)
@@ -1783,7 +1786,10 @@ class Player(Generic):
                             self.world_tiles_dict.pop(building_tile_to_remove)
 
                             # "Create" an empty tile where the building tile was
-                            self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
+                            self.empty_tiles_dict[self.sprite_groups["ReplacedEmptyTiles"][building_tile_to_remove]] = 0
+
+                            # Remove the building tile from the replaced empty tiles dict
+                            self.sprite_groups["ReplacedEmptyTiles"].pop(building_tile_to_remove)
 
                             # Remove the building tile at the list index
                             self.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(list_index)
@@ -1805,18 +1811,18 @@ class Player(Generic):
             pygame_draw_circle(self.surface, "red", (self.rect.centerx - self.camera_position[0], self.rect.centery - self.camera_position[1]), self.tools["BuildingTool"]["MaximumPlacingAndRemovingDistance"], 2)
 
             # Find collisions between the mouse rect and empty tiles inside the tile map
-            empty_tile_collision = pygame_Rect(self.mouse_position[0] , self.mouse_position[1] , 1, 1).collidedict(self.empty_tiles_dict)
+            empty_tile_collision = pygame_Rect(self.mouse_position[0], self.mouse_position[1] , 1, 1).collidedict(self.empty_tiles_dict)
 
             # If there is a collision between the mouse rect and an empty tile 
             if empty_tile_collision != None:
 
                 # The tile rect will be the key of the returned value from the collide dict
-                empty_tile_rect_info = empty_tile_collision[0]
+                empty_tile = empty_tile_collision[0]
                 
                 # The center of the empty tile
                 empty_tile_center = (
-                                    empty_tile_collision[0][0] + (empty_tile_collision[0][2] / 2),
-                                    empty_tile_collision[0][1] + (empty_tile_collision[0][3] / 2)
+                                    empty_tile.rect.x + (empty_tile.rect.width / 2),
+                                    empty_tile.rect.y + (empty_tile.rect.height / 2)
                                     )   
 
                 # If the distance between the center of the player and the center of the empty tile at the mouse position less than the maximum distance
@@ -1826,10 +1832,10 @@ class Player(Generic):
                                     surface = self.surface,
                                     color = "green", 
                                     rect = pygame_Rect(
-                                                        empty_tile_rect_info[0] - self.camera_position[0], 
-                                                        empty_tile_rect_info[1] - self.camera_position[1],
-                                                        empty_tile_rect_info[2],
-                                                        empty_tile_rect_info[3]),
+                                                        empty_tile.rect.x - self.camera_position[0], 
+                                                        empty_tile.rect.y - self.camera_position[1],
+                                                        empty_tile.rect.width,
+                                                        empty_tile.rect.height),
                                     width = 2                
                                     )   
 
@@ -1844,7 +1850,7 @@ class Player(Generic):
                             if hasattr(self, "boss_rect") == False or (hasattr(self, "boss_rect") == True and self.mouse_rect.colliderect(self.boss_rect) == False):
 
                                 # Create a building tile
-                                building_tile = BuildingTile(x = empty_tile_rect_info[0], y = empty_tile_rect_info[1], image = self.tools["BuildingTool"]["Images"]["TileImage"])
+                                building_tile = BuildingTile(x = empty_tile.rect.x, y = empty_tile.rect.y, image = self.tools["BuildingTool"]["Images"]["TileImage"])
 
                                 # Add the building tile to the building tiles sprite group
                                 self.sprite_groups["WorldTiles"].add(building_tile)
@@ -1852,8 +1858,11 @@ class Player(Generic):
                                 # Add the building tile to the world tiles dictionary with the key as the building tile and the value as the type of world tile
                                 self.world_tiles_dict[building_tile] = "BuildingTile"
 
+                                # Save the empty tile in the replaced empty tiles dict so that we do not need to create a new empty tile every time a building tile is placed / removed
+                                self.sprite_groups["ReplacedEmptyTiles"][building_tile] = empty_tile
+
                                 # Remove the empty tile from the empty tiles dictionary
-                                self.empty_tiles_dict.pop(empty_tile_rect_info)
+                                self.empty_tiles_dict.pop(empty_tile)
                                 
                                 # Add the building tile to the existing building tiles list
                                 self.tools["BuildingTool"]["ExistingBuildingTilesList"].append(building_tile)
@@ -1875,10 +1884,10 @@ class Player(Generic):
                                     surface = self.surface,
                                     color = "red", 
                                     rect = pygame_Rect(
-                                                        empty_tile_rect_info[0] - self.camera_position[0], 
-                                                        empty_tile_rect_info[1] - self.camera_position[1],
-                                                        empty_tile_rect_info[2],
-                                                        empty_tile_rect_info[3]),
+                                                        empty_tile.rect.x - self.camera_position[0], 
+                                                        empty_tile.rect.y - self.camera_position[1],
+                                                        empty_tile.rect.width,
+                                                        empty_tile.rect.height),
                                     width = 2                
                                     )   
     

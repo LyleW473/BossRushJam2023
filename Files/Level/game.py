@@ -144,6 +144,13 @@ class Game:
         # Note: number of segments depends on how many number of piles there can be at one time
         self.bamboo_piles_segments_taken_dict = {i: i for i in range(0, BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"])}
 
+        # Dictionary to hold replaced empty tiles 
+        """Format:
+        self.replaced_empty_tiles_dict[bamboo_pile] = empty_tile
+        self.player.sprite_groups[ReplacedEmptyTiles][building_tile] = empty_tile
+        """
+        self.replaced_empty_tiles_dict = {}
+
     # --------------------------------------------------------------------------------------
     # Camera methods
 
@@ -186,8 +193,8 @@ class Game:
             
             # Calculate the horizontal and vertical distance time gradients for the panning movement
             # Note: TILE_SIZE / 2 so that the center of the camera is aligned with the center of the spawning tile
-            self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] = ((self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2)) - middle_camera_position[0]) / (self.camera_pan_information_dict["PanTime"] / 1000)
-            self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] = ((self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)) - middle_camera_position[1]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+            self.camera_pan_information_dict["PanHorizontalDistanceTimeGradient"] = (self.bosses_dict["ValidSpawningPosition"].rect.centerx - middle_camera_position[0]) / (self.camera_pan_information_dict["PanTime"] / 1000)
+            self.camera_pan_information_dict["PanVerticalDistanceTimeGradient"] = (self.bosses_dict["ValidSpawningPosition"].rect.centery - middle_camera_position[1]) / (self.camera_pan_information_dict["PanTime"] / 1000)
 
             # Set the new camera position X and Y to be the current camera position
             self.camera_pan_information_dict["NewCameraPositionX"] = self.camera_position[0]
@@ -493,8 +500,7 @@ class Game:
         # Loads the images of all the world tiles
 
         # Create a dictionary filled with all of the tiles' images
-        # Note: Start at index 1 because the "0" tile represents nothing. 
-        self.tile_images = {i + 1: pygame_image_load(f"graphics/Tiles/{i + 1}.png").convert() for i in range(0, len(os_listdir("graphics/Tiles")))} 
+        self.tile_images = {int(os_listdir("graphics/Tiles")[i].strip(".png")): pygame_image_load(f"graphics/Tiles/{os_listdir('graphics/Tiles')[i]}").convert() for i in range(0, len(os_listdir("graphics/Tiles")))} 
 
     def create_objects_tile_map(self, non_transformed_tile_map):
 
@@ -512,34 +518,37 @@ class Game:
                     # Set this to be the middle tile position
                     self.middle_tile_position = (column_index * TILE_SIZE, row_index * TILE_SIZE)
 
+                    # Create the player
+                    self.player = Player(
+                                        x = (column_index * TILE_SIZE), 
+                                        y = (row_index * TILE_SIZE), 
+                                        surface = self.scaled_surface, 
+                                        sprite_groups = {"WorldTiles": self.world_tiles_group, "BambooProjectiles": self.bamboo_projectiles_group, "ReplacedEmptyTiles": self.replaced_empty_tiles_dict}
+                                        )
+
+                    # Add the player to its group
+                    self.player_group = pygame_sprite_GroupSingle(self.player)
+
+        
+                    # Create an empty tile where the player spawned (so that the player can place a building tile on that tile)
+                    empty_tile = WorldTile(x = (column_index * TILE_SIZE), y = (row_index * TILE_SIZE), image = self.tile_images[0])
+                    self.empty_tiles_dict[empty_tile] = 0
+
                 # Identify the tile map object
                 match tile_map_object:
                     
                     # Empty tiles
-                    case 0:
-                        # Add the empty tile to the empty tiles dictionary (For player building and changing tiles, etc.)
-                        self.empty_tiles_dict[((column_index * TILE_SIZE), (row_index * TILE_SIZE), TILE_SIZE, TILE_SIZE)] = 0
-
-                    # Player
-                    case 1:
-                        # Create the player
-                        self.player = Player(
-                                            x = (column_index * TILE_SIZE), 
-                                            y = (row_index * TILE_SIZE), 
-                                            surface = self.scaled_surface, 
-                                            sprite_groups = {"WorldTiles": self.world_tiles_group, "BambooProjectiles": self.bamboo_projectiles_group}
-                                            )
-
-                        # Add the player to its group
-                        self.player_group = pygame_sprite_GroupSingle(self.player)
-
+                    case 0:     
+                        
                         # Create an empty tile where the player spawned (so that the player can place a building tile on that tile)
-                        self.empty_tiles_dict[((column_index * TILE_SIZE), (row_index * TILE_SIZE), TILE_SIZE, TILE_SIZE)] = 0
-
+                        empty_tile = WorldTile(x = (column_index * TILE_SIZE), y = (row_index * TILE_SIZE), image = self.tile_images[0])
+                        self.empty_tiles_dict[empty_tile] = 0
+                        
                     # World tile 1
-                    case 2:
+                    case _ if tile_map_object == 1 or tile_map_object == 2 or tile_map_object == 3:
+
                         # Create a world tile
-                        world_tile = WorldTile(x = (column_index * TILE_SIZE), y = (row_index * TILE_SIZE), image = pygame_transform_smoothscale(self.tile_images[1], (TILE_SIZE, TILE_SIZE)))
+                        world_tile = WorldTile(x = (column_index * TILE_SIZE), y = (row_index * TILE_SIZE), image = self.tile_images[tile_map_object])
 
                         # Add the world tile to the world tiles dictionary
                         # The key is the world tile because we use pygame.rect.collidedict in other areas of the code, the value is the type of world tile (The other type is building tiles)
@@ -571,13 +580,12 @@ class Game:
                             camera_pan_information_dict = self.camera_pan_information_dict
                             )
 
-    def draw_world_and_building_tiles(self):
+    def draw_tiles(self):
         
-        # Draws the world and building tiles
+        # Draws the world tiles, building tiles and "empty" tiles
         # Note: This is separated so that when the player dies, the world tiles and building tiles are still drawn
 
         for tile in self.world_tiles_dict.keys():
-
             # If the tile object is within view of the camera (i.e. on the screen)
             if self.camera_position[0] - TILE_SIZE <= tile.rect.x <= (self.camera_position[0] + (self.scaled_surface.get_width())) + TILE_SIZE and \
                 self.camera_position[1] - TILE_SIZE <= tile.rect.y <= (self.camera_position[1] + (self.scaled_surface.get_height())) + TILE_SIZE:
@@ -585,14 +593,22 @@ class Game:
                 # Draw the world / building tile onto the screen
                 tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))         
 
+        for empty_tile in self.empty_tiles_dict.keys():
+            # If the empty tile is within view of the camera (i.e. on the screen)
+            if self.camera_position[0] - TILE_SIZE <= empty_tile.rect.x <= (self.camera_position[0] + (self.scaled_surface.get_width())) + TILE_SIZE and \
+                self.camera_position[1] - TILE_SIZE <= empty_tile.rect.y <= (self.camera_position[1] + (self.scaled_surface.get_height())) + TILE_SIZE:
+                
+                # Draw the empty tile onto the screen
+                empty_tile.draw(surface = self.scaled_surface, x = (empty_tile.rect.x - self.camera_position[0]), y = (empty_tile.rect.y - self.camera_position[1]))         
+
     def draw_tile_map_objects(self):
 
         # Calls the draw methods of all objects in the level
 
         # ---------------------------------------------
-        # World tiles and building tiles
+        # World tiles, building tiles and "empty" tiles
 
-        self.draw_world_and_building_tiles()  
+        self.draw_tiles()
 
         # ---------------------------------------------
         # Bamboo projectiles
@@ -834,7 +850,11 @@ class Game:
             self.bamboo_piles_group.remove(player_and_bamboo_piles_collision_list)
 
             # Add the empty tile back to the empty tiles dictionary so other items can spawn in the tile
-            self.empty_tiles_dict[(player_and_bamboo_piles_collision_list[0].rect.x, player_and_bamboo_piles_collision_list[0].rect.y, player_and_bamboo_piles_collision_list[0].rect.width, player_and_bamboo_piles_collision_list[0].rect.height)] = 0
+            empty_tile = self.replaced_empty_tiles_dict[player_and_bamboo_piles_collision_list[0]]
+            self.empty_tiles_dict[empty_tile] = 0
+
+            # Remove the bamboo pile from the replaced empty tiles dict
+            self.replaced_empty_tiles_dict.pop(player_and_bamboo_piles_collision_list[0])
 
             # If adding the bamboo pile's replenishment amount exceeds the player's maximum amount of bamboo resource
             if self.player.player_gameplay_info_dict["AmountOfBambooResource"] + BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"] > self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]:
@@ -935,14 +955,17 @@ class Game:
                             # If the building tile has run out of lives
                             if collision_result[0].lives <= 0:
 
+                                # "Create" an empty tile where the building tile was
+                                self.empty_tiles_dict[self.player.sprite_groups["ReplacedEmptyTiles"][collision_result[0]]] = 0
+                                
+                                # Remove the building tile from the player's replaced empty tiles dict
+                                self.player.sprite_groups["ReplacedEmptyTiles"].pop(collision_result[0])
+
                                 # Remove the building tile from the world tiles group
                                 self.world_tiles_group.remove(collision_result[0])
 
                                 # Remove the building tile from the world tiles dictionary
                                 self.world_tiles_dict.pop(collision_result[0])
-
-                                # "Create" an empty tile where the building tile was
-                                self.empty_tiles_dict[(collision_result[0].rect.x, collision_result[0].rect.y, collision_result[0].rect.width, collision_result[0].rect.height)] = len(self.empty_tiles_dict)
 
                                 # Remove the building tile from the existing building tiles list
                                 self.player.tools["BuildingTool"]["ExistingBuildingTilesList"].remove(collision_result[0])
@@ -1106,14 +1129,17 @@ class Game:
                         # Temporary variable for the building tile to remove
                         building_tile_to_remove = self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]
 
+                        # "Create" an empty tile where the building tile was
+                        self.empty_tiles_dict[self.player.sprite_groups["ReplacedEmptyTiles"][building_tile_to_remove]] = 0
+                        
+                        # Remove the building tile from the player's replaced empty tiles dict
+                        self.player.sprite_groups["ReplacedEmptyTiles"].pop(building_tile_to_remove)
+
                         # Remove the building tile from the world tiles group
                         self.world_tiles_group.remove(building_tile_to_remove)
 
                         # Remove the building tile from the world tiles dictionary
                         self.world_tiles_dict.pop(building_tile_to_remove)
-
-                        # "Create" an empty tile where the building tile was
-                        self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
 
                         # Remove the building tile from the existing building tiles list
                         self.player.tools["BuildingTool"]["ExistingBuildingTilesList"].pop(building_collision_result_index)
@@ -1312,7 +1338,7 @@ class Game:
                 # Generate a list of empty tiles inside the empty tiles dict that are a minimum and maximum distance away from the middle of the tile map
                 valid_distance_away_from_player_tiles_list = tuple(empty_tile for empty_tile in self.empty_tiles_dict.keys() 
                                                                     if BambooPile.bamboo_pile_info_dict["MinimumSpawningDistanceFromMiddle"] <= 
-                                                                    dist(self.middle_tile_position, (empty_tile[0] + (empty_tile[2] / 2) , empty_tile[1] + (empty_tile[3] / 2))) <= 
+                                                                    dist(self.middle_tile_position, (empty_tile.rect.x + (empty_tile.rect.width / 2) , empty_tile.rect.x + (empty_tile.rect.height / 2))) <= 
                                                                     BambooPile.bamboo_pile_info_dict["MaximumSpawningDistanceFromMiddle"]
                                                                     )
 
@@ -1325,21 +1351,23 @@ class Game:
 
                     # Find the angle
                     degrees_depending_on_num_of_segments = 360 / BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"]
-                    angle = degrees(atan2(-(valid_tile[1] - self.middle_tile_position[1]), (valid_tile[0] - self.middle_tile_position[0])) % (2 * pi))
+                    angle = degrees(atan2(-(valid_tile.rect.y - self.middle_tile_position[1]), (valid_tile.rect.x - self.middle_tile_position[0])) % (2 * pi))
                     segment = (angle - (angle % degrees_depending_on_num_of_segments)) / degrees_depending_on_num_of_segments
 
-                    # Remove the empty tile from the empty tiles dict
-                    self.empty_tiles_dict.pop(valid_tile)
-
-                    # Create a new bamboo pile
-                    new_bamboo_pile = BambooPile(x = valid_tile[0], y = valid_tile[1])
+                    # Create a new bamboo pile  
+                    new_bamboo_pile = BambooPile(x = valid_tile.rect.x, y = valid_tile.rect.y)
                     self.bamboo_piles_group.add(new_bamboo_pile)
-
                     # Set the spawning cooldown timer to start counting down
                     BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] = BambooPile.bamboo_pile_info_dict["SpawningCooldown"]
                     
                     # Set the current segment chosen to be taken
                     self.bamboo_piles_segments_taken_dict[segment] = new_bamboo_pile
+
+                    # Save the empty tile in the replaced empty tiles dict so that we do not need to create a new empty tile every time a bamboo pile is spawned / removed
+                    self.replaced_empty_tiles_dict[new_bamboo_pile] = valid_tile
+
+                    # Remove the empty tile from the empty tiles dict
+                    self.empty_tiles_dict.pop(valid_tile)
 
                 # If there are any existing bamboo piles
                 elif len(self.bamboo_piles_group) > 0:
@@ -1382,8 +1410,8 @@ class Game:
                 
                         # If this empty tile is in the same segment as the selected segment, add it to the list
                         if 
-                        ((degrees(atan2(-(empty_tile[1] - self.middle_tile_position[1]), (empty_tile[0] - self.middle_tile_position[0])) % (2 * pi)) - 
-                        degrees(atan2(-(empty_tile[1] - self.middle_tile_position[1]), (empty_tile[0] - self.middle_tile_position[0])) % (2 * pi)) % degrees_depending_on_num_of_segments) / degrees_depending_on_num_of_segments) == random_segment
+                        ((degrees(atan2(-(empty_tile.rect.y - self.middle_tile_position[1]), (empty_tile.rect.x - self.middle_tile_position[0])) % (2 * pi)) - 
+                        degrees(atan2(-(empty_tile.rect.y - self.middle_tile_position[1]), (empty_tile.rect.x - self.middle_tile_position[0])) % (2 * pi)) % degrees_depending_on_num_of_segments) / degrees_depending_on_num_of_segments) == random_segment
                             
                                         )
 
@@ -1409,11 +1437,9 @@ class Game:
                     # --------------------------------------------------------------------------------------------------------  
                     # Creating the bamboo pile and setting up segments
 
-                    # Remove the empty tile from the empty tiles dict
-                    self.empty_tiles_dict.pop(random_spawning_tile)
 
                     # Create a new bamboo pile
-                    new_bamboo_pile = BambooPile(x = random_spawning_tile[0], y = random_spawning_tile[1])
+                    new_bamboo_pile = BambooPile(x = random_spawning_tile.rect.x, y = random_spawning_tile.rect.y)
 
                     # Add it to the bamboo piles group
                     self.bamboo_piles_group.add(new_bamboo_pile)
@@ -1423,6 +1449,12 @@ class Game:
 
                     # Set the current segment selected as taken
                     self.bamboo_piles_segments_taken_dict[random_segment] = new_bamboo_pile
+
+                    # Save the empty tile in the replaced empty tiles dict so that we do not need to create a new empty tile every time a bamboo pile is spawned / removed
+                    self.replaced_empty_tiles_dict[new_bamboo_pile] = random_spawning_tile
+
+                    # Remove the empty tile from the empty tiles dict
+                    self.empty_tiles_dict.pop(random_spawning_tile)
 
     # -------------------------------------------
     # Bosses
@@ -1465,7 +1497,7 @@ class Game:
             self.bosses_dict = { 
                         "CurrentBoss": "SikaDeer",
                         "NumOfTilesForChecking": number_of_tiles_for_checking, # The number of tiles to the left / right / up, down of the randomly chosen empty tile for the spawning position to be valid
-                        "RandomSpawningPosition" : [self.player.rect.centerx + 5, self.player.rect.centery + 5, TILE_SIZE, TILE_SIZE], #random_choice(list(self.empty_tiles_dict.keys())), # Choose a random spawning position
+                        "RandomSpawningPosition" : random_choice(list(self.empty_tiles_dict.keys())), # Choose a random spawning position
                         "ValidSpawningPosition": None, 
                         "SpawningPositionTilesList": [],
                         "TimeToSpawn": time_to_spawn, # The time for the boss to spawn
@@ -1484,7 +1516,7 @@ class Game:
         # pygame_draw_circle(surface = self.scaled_surface, color = "blue", center = (self.player.rect.centerx - self.camera_position[0], self.player.rect.centery - self.camera_position[1]), radius = 25 * TILE_SIZE, width = 2)
 
         # If the distance between the player and the boss is not within a minimum and maximum range
-        if ((13 * TILE_SIZE) <= dist(self.player.rect.center, (self.bosses_dict["RandomSpawningPosition"][0], self.bosses_dict["RandomSpawningPosition"][1])) <= (25 * TILE_SIZE)) == False:
+        if ((13 * TILE_SIZE) <= dist(self.player.rect.center, self.bosses_dict["RandomSpawningPosition"].rect.center) <= (25 * TILE_SIZE)) == False:
 
             # Until we find a valid spawning position:
             for i in range(0, 200, 1):
@@ -1492,7 +1524,7 @@ class Game:
                 self.bosses_dict["RandomSpawningPosition"] = random_choice(list(self.empty_tiles_dict.keys()))
 
                 # Check if the distance between the player and the boss is within a minimum and maximum range
-                if ((13 * TILE_SIZE) <= dist(self.player.rect.center, (self.bosses_dict["RandomSpawningPosition"][0], self.bosses_dict["RandomSpawningPosition"][1])) <= (25 * TILE_SIZE)) == True:
+                if ((13 * TILE_SIZE) <= dist(self.player.rect.center, self.bosses_dict["RandomSpawningPosition"].rect.center) <= (25 * TILE_SIZE)) == True:
                     # If it is, exit the loop
                     # Set the spawning boss variable to True
                     self.bosses_dict["SpawningBoss"] = True
@@ -1513,8 +1545,8 @@ class Game:
                 else:
                     # If the empty tile is not the same as the random empty tile and the tile is a certain distance from the selected random empty tile
                     if empty_tile != self.bosses_dict["RandomSpawningPosition"] and \
-                        self.bosses_dict["RandomSpawningPosition"][0]  - (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE) <= empty_tile[0] <= self.bosses_dict["RandomSpawningPosition"][0] + (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE) and \
-                                self.bosses_dict["RandomSpawningPosition"][1] - (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE) <= empty_tile[1] <= self.bosses_dict["RandomSpawningPosition"][1] + (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE):
+                        self.bosses_dict["RandomSpawningPosition"].rect.x  - (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE) <= empty_tile.rect.x <= self.bosses_dict["RandomSpawningPosition"].rect.x + (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE) and \
+                                self.bosses_dict["RandomSpawningPosition"].rect.y - (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE) <= empty_tile.rect.y <= self.bosses_dict["RandomSpawningPosition"].rect.y + (self.bosses_dict["NumOfTilesForChecking"] * TILE_SIZE):
 
                                 # Add the empty tile to the spawning position tiles list
                                 self.bosses_dict["SpawningPositionTilesList"].append(empty_tile)
@@ -1545,22 +1577,22 @@ class Game:
                     for empty_tile in self.bosses_dict["SpawningPositionTilesList"]:
 
                             # If the empty tile is the required distance away from the selected spawning tile
-                            if self.bosses_dict["ValidSpawningPosition"][0] - (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) <= empty_tile[0] <= self.bosses_dict["ValidSpawningPosition"][0] + (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) and \
-                                self.bosses_dict["ValidSpawningPosition"][1] - (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) <= empty_tile[1] <= self.bosses_dict["ValidSpawningPosition"][1] + (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE):
+                            if self.bosses_dict["ValidSpawningPosition"].rect.x - (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) <= empty_tile.rect.x <= self.bosses_dict["ValidSpawningPosition"].rect.x + (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) and \
+                                self.bosses_dict["ValidSpawningPosition"].rect.y - (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) <= empty_tile.rect.y <= self.bosses_dict["ValidSpawningPosition"].rect.y + (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE):
                                 
                                 # Highlight the empty tile
                                 pygame_draw_rect(
                                     surface = self.scaled_surface, 
-                                    color = (40, 40, 40), 
-                                    rect = (empty_tile[0] - self.camera_position[0], empty_tile[1] - self.camera_position[1], empty_tile[2], empty_tile[3]), 
+                                    color = (255, 0, 50), 
+                                    rect = (empty_tile.rect.x - self.camera_position[0], empty_tile.rect.y - self.camera_position[1], empty_tile.rect.width, empty_tile.rect.height), 
                                     width = 1,
                                     border_radius = 5
                                     )
                                 # Draw a circle which grows with the spawning effect counter (inner circle)
                                 pygame_draw_circle(
                                                 surface = self.scaled_surface, 
-                                                color = (60, 60, 60),
-                                                center = ((self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2)) - self.camera_position[0], (self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)) - self.camera_position[1]), 
+                                                color = (160, 160, 160),
+                                                center = (self.bosses_dict["ValidSpawningPosition"].rect.centerx - self.camera_position[0], self.bosses_dict["ValidSpawningPosition"].rect.centery - self.camera_position[1]), 
                                                 radius = ((self.bosses_dict["SpawningEffectCounter"] - 1) * TILE_SIZE),
                                                 width = 1
                                                 )
@@ -1568,8 +1600,8 @@ class Game:
                                 # Draw a circle which grows with the spawning effect counter (outer circle)
                                 pygame_draw_circle(
                                                 surface = self.scaled_surface, 
-                                                color = (80, 80, 80), 
-                                                center = ((self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2)) - self.camera_position[0], (self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)) - self.camera_position[1]), 
+                                                color = (180, 180, 180), 
+                                                center = (self.bosses_dict["ValidSpawningPosition"].rect.centerx - self.camera_position[0], self.bosses_dict["ValidSpawningPosition"].rect.centery - self.camera_position[1]), 
                                                 radius = (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE),
                                                 width = 1
                                                 )
@@ -1580,9 +1612,10 @@ class Game:
                                     color = "firebrick1", 
                                     rect = (
                                         
-                                            self.bosses_dict["ValidSpawningPosition"][0] - self.camera_position[0],
-                                            self.bosses_dict["ValidSpawningPosition"][1] - self.camera_position[1], 
-                                            self.bosses_dict["ValidSpawningPosition"][2], self.bosses_dict["ValidSpawningPosition"][3]
+                                            self.bosses_dict["ValidSpawningPosition"].rect.x - self.camera_position[0],
+                                            self.bosses_dict["ValidSpawningPosition"].rect.y - self.camera_position[1], 
+                                            self.bosses_dict["ValidSpawningPosition"].rect.width, 
+                                            self.bosses_dict["ValidSpawningPosition"].rect.height
                                            ),
                                     width = 0, 
                                     border_radius = 5
@@ -1594,9 +1627,10 @@ class Game:
                                     color = "black", 
                                     rect = (
                                         
-                                            self.bosses_dict["ValidSpawningPosition"][0] - self.camera_position[0],
-                                            self.bosses_dict["ValidSpawningPosition"][1] - self.camera_position[1], 
-                                            self.bosses_dict["ValidSpawningPosition"][2], self.bosses_dict["ValidSpawningPosition"][3]
+                                            self.bosses_dict["ValidSpawningPosition"].rect.x - self.camera_position[0],
+                                            self.bosses_dict["ValidSpawningPosition"].rect.y - self.camera_position[1], 
+                                            self.bosses_dict["ValidSpawningPosition"].rect.width,
+                                            self.bosses_dict["ValidSpawningPosition"].rect.height
                                            ),
                                     width = 2, 
                                     border_radius = 5
@@ -1700,8 +1734,8 @@ class Game:
                 
                 # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
                 self.bosses_dict["SikaDeer"] = SikaDeerBoss(
-                                                            x = self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), 
-                                                            y = self.bosses_dict["ValidSpawningPosition"][1] + TILE_SIZE,
+                                                            x = self.bosses_dict["ValidSpawningPosition"].rect.centerx, 
+                                                            y = self.bosses_dict["ValidSpawningPosition"].rect.centery,
                                                             surface = self.scaled_surface,
                                                             scale_multiplier = self.scale_multiplier
                                                             )
@@ -1869,17 +1903,6 @@ class Game:
         # Once the player has returned back to the main menu after dying, the following need to be reset / added back
 
         # ------------------------------------------------------
-        # Groups
-        self.bamboo_projectiles_group.empty()
-        self.bamboo_piles_group.empty()
-        self.boss_group.empty()
-
-        # If there is a group for the stomp attack nodes
-        if hasattr(self, "stomp_attack_nodes_group"):
-            # Empty the group
-            self.stomp_attack_nodes_group.empty()
-
-        # ------------------------------------------------------
         # Boss dictionary
         if hasattr(self, "bosses_dict"):
             self.bosses_dict["TimeToSpawnTimer"] = None
@@ -1964,14 +1987,16 @@ class Game:
             for building_tile_to_remove in self.player.tools["BuildingTool"]["ExistingBuildingTilesList"]:
 
                 # Replace the building tile with an empty tile
-                self.empty_tiles_dict[(building_tile_to_remove.rect.x, building_tile_to_remove.rect.y, building_tile_to_remove.rect.width, building_tile_to_remove.rect.height)] = len(self.empty_tiles_dict)
+                self.empty_tiles_dict[self.player.sprite_groups["ReplacedEmptyTiles"][building_tile_to_remove]] = 0
+
+                # Remove the building tile from the replaced empty tiles dict
+                self.player.sprite_groups["ReplacedEmptyTiles"].pop(building_tile_to_remove)
 
                 # Remove the building tile from the world tiles group
                 self.world_tiles_group.remove(building_tile_to_remove)
 
                 # Remove the building tile from the world tiles list
                 self.world_tiles_dict.pop(building_tile_to_remove)
-
 
             # Empty the player's existing building tiles list
             self.player.tools["BuildingTool"]["ExistingBuildingTilesList"] = []
@@ -1982,14 +2007,36 @@ class Game:
         self.player.rect.x, self.player.rect.y = self.player.original_player_position[0], self.player.original_player_position[1]
 
         # ------------------------------------------------------
-        # Bamboo piles segments dict
+        # More on bamboo piles
 
         self.bamboo_piles_segments_taken_dict = {i: i for i in range(0, BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"])}
+        """ Note:
+        self.replaced_empty_tiles_dict and self.player.replaced_empty_tiles_dict will both be reset as the bamboo piles and existing building tiles will be replaced with empty tiles"""
+        # If there are any bamboo piles (meaning that there must be bamboo piles inside self.replaced_empty_tiles_dict)
+        if len(self.bamboo_piles_group) > 0:
+            # For all bamboo piles
+            for bamboo_pile in self.bamboo_piles_group:
+                # Replace the bamboo pile with an empty tile
+                self.empty_tiles_dict[self.replaced_empty_tiles_dict[bamboo_pile]] = 0
+
+                # Remove the bamboo pile from the bamboo piles group
+                self.bamboo_piles_group.remove(bamboo_pile)
+
+        # ------------------------------------------------------
+        # Groups
+        self.bamboo_projectiles_group.empty()
+        self.boss_group.empty()
+
+        # If there is a group for the stomp attack nodes
+        if hasattr(self, "stomp_attack_nodes_group"):
+            # Empty the group
+            self.stomp_attack_nodes_group.empty()
+
 
     def run(self, delta_time):
 
         # Fill the scaled surface with a colour
-        self.scaled_surface.fill("gray21")
+        self.scaled_surface.fill((7, 10, 17))
 
         # Check if the player has just "died"
         if self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
@@ -2035,9 +2082,6 @@ class Game:
                 # Update the camera position depending on who the focus subject is
                 self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = self.update_focus_subject())
 
-                # Look for input to spawn the boss
-                self.look_for_input_to_spawn_boss(delta_time = delta_time)
-
                 # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
                 self.spawn_bamboo_pile(delta_time = delta_time)
 
@@ -2055,7 +2099,10 @@ class Game:
 
                 # Draw all objects inside the tile map / level
                 self.draw_tile_map_objects()
-                
+
+                # Look for input to spawn the boss
+                self.look_for_input_to_spawn_boss(delta_time = delta_time)
+
                 # Draw the angled polygon visual effects
                 self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
 
@@ -2066,7 +2113,7 @@ class Game:
                 if self.boss_group.sprite == None and hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] != None:
                     # Draw guidelines between the player and the boss' spawning location
                     self.game_ui.draw_guidelines_between_a_and_b(
-                                                                a = (self.bosses_dict["ValidSpawningPosition"][0] + (TILE_SIZE / 2), self.bosses_dict["ValidSpawningPosition"][1] + (TILE_SIZE / 2)), 
+                                                                a = self.bosses_dict["ValidSpawningPosition"].rect.center, 
                                                                 b = self.player.rect.center,
                                                                 colour = "white",
                                                                 camera_position = self.camera_position,
@@ -2129,11 +2176,11 @@ class Game:
 
                 """ Draws the player over the skull """
 
-                # Update and run the boss
-                self.update_and_run_boss(delta_time = delta_time)
-
                 # Draw all objects inside the tile map / level
                 self.draw_tile_map_objects()
+
+                # Update and run the boss
+                self.update_and_run_boss(delta_time = delta_time)
 
                 # Draw the angled polygon visual
                 self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)

@@ -747,7 +747,7 @@ class SikaDeerBoss(Generic, AI):
             # Draw a shadow ellipse underneath the boss
             pygame_draw_ellipse(
                 surface = self.surface, 
-                color = (35, 35, 35), 
+                color = (20, 20, 20), 
                 rect = ((self.rect.centerx - self.camera_position[0]) - 20, 
                 ((self.rect.centery + 20) - self.camera_position[1]) - 20, 40, 40), 
                 width = 0)
