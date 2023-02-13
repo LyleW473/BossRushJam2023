@@ -6,7 +6,7 @@ from Level.bamboo_pile import BambooPile
 from random import choice as random_choice
 from random import randrange as random_randrange
 from random import uniform as random_uniform
-from math import sin, cos, dist
+from math import sin, cos, dist, atan2, degrees, pi
 from os import listdir as os_listdir
 
 from pygame.display import get_surface as pygame_display_get_surface
@@ -25,6 +25,8 @@ from pygame import K_f as pygame_K_f
 from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.draw import line as pygame_draw_line
+
+from pygame import Rect as pygame_Rect
 
 class Game:
     def __init__(self):
@@ -54,6 +56,8 @@ class Game:
         # --------------------------------------------------------------------------------------
         # Camera
         self.last_tile_position = [0, 0] # Stores the position of the last tile in the tile (This is changed inside the create_objects_tile_map method)
+
+        # self.middle_tile_position # Used for spawning bamboo piles
 
         # Camera modes
         self.camera_mode = None # Can either be: Static, Follow, Pan
@@ -132,6 +136,14 @@ class Game:
         # Cursor images
 
         self.default_cursor_image = pygame_image_load("graphics/Cursors/Default.png").convert_alpha()
+
+        # --------------------------------------------------------------------------------------
+        # Bamboo piles
+
+        # Create a dictionary for the segments taken by the bamboo piles
+        # Note: number of segments depends on how many number of piles there can be at one time
+        self.bamboo_piles_segments_taken_dict = {i: i for i in range(0, BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"])}
+
     # --------------------------------------------------------------------------------------
     # Camera methods
 
@@ -493,6 +505,12 @@ class Game:
         for row_index, row in enumerate(non_transformed_tile_map):
             # For each item in each row
             for column_index, tile_map_object in enumerate(row):
+                
+                # If this is the tile in the middle of the tile map
+                """ Note: This is used for calculating the spawning locations of the bamboo piles"""
+                if row_index == int(len(non_transformed_tile_map) / 2) and column_index == int(len(non_transformed_tile_map[row_index]) / 2):
+                    # Set this to be the middle tile position
+                    self.middle_tile_position = (column_index * TILE_SIZE, row_index * TILE_SIZE)
 
                 # Identify the tile map object
                 match tile_map_object:
@@ -797,7 +815,21 @@ class Game:
         player_and_bamboo_piles_collision_list = pygame_sprite_spritecollide(self.player, self.bamboo_piles_group, dokill = False, collided = pygame_sprite_collide_rect)
         if len(player_and_bamboo_piles_collision_list) > 0 and \
             ((self.player.player_gameplay_info_dict["AmountOfBambooResource"] != self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]) or (self.player.player_gameplay_info_dict["CurrentHealth"] != self.player.player_gameplay_info_dict["MaximumHealth"])):
+
+            # -------------------------------------------------------------------------------------
+            # Bamboo piles and segments
             
+            # Find the bamboo pile to remove
+            bamboo_pile_to_remove = player_and_bamboo_piles_collision_list[0]
+
+            # Find the segment that the bamboo pile was taking up
+            segment_key = tuple(segment_number for segment_number, bamboo_pile in self.bamboo_piles_segments_taken_dict.items() if bamboo_pile == bamboo_pile_to_remove)
+
+            # Set this segment to be untaken
+            self.bamboo_piles_segments_taken_dict[segment_key[0]] = segment_key[0]
+
+            # -------------------------------------------------------------------------------------
+
             # Remove the bamboo pile from the bamboo piles group
             self.bamboo_piles_group.remove(player_and_bamboo_piles_collision_list)
 
@@ -1270,24 +1302,127 @@ class Game:
         # If there is no timer, spawn a bamboo pile
         elif BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] == None:
             
-            # Choose a random empty tile
-            random_empty_tile = random_choice(list(self.empty_tiles_dict.keys()))
-            
-            # Center of the random empty tile
-            random_empty_tile_center = (random_empty_tile[0] + (random_empty_tile[2] / 2), random_empty_tile[1] + (random_empty_tile[3] / 2))
+            # If there are not the maximum number of piles at one time 
+            if len(self.bamboo_piles_group) < BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"]:
+                """ Note:
+                - A spawning position is only considered to be "valid" if it is a minimum and maximum distance away from the middle of the map and is within an untaken "segment". (Explanation below)
+                
+                """
+                
+                # Generate a list of empty tiles inside the empty tiles dict that are a minimum and maximum distance away from the middle of the tile map
+                valid_distance_away_from_player_tiles_list = tuple(empty_tile for empty_tile in self.empty_tiles_dict.keys() 
+                                                                    if BambooPile.bamboo_pile_info_dict["MinimumSpawningDistanceFromMiddle"] <= 
+                                                                    dist(self.middle_tile_position, (empty_tile[0] + (empty_tile[2] / 2) , empty_tile[1] + (empty_tile[3] / 2))) <= 
+                                                                    BambooPile.bamboo_pile_info_dict["MaximumSpawningDistanceFromMiddle"]
+                                                                    )
 
-            # If the empty tile's center is within the minimum and maximum spawning distance from the player and and there are less bamboo piles than the maximum number of bamboo piles that should be in the map at one time
-            if BambooPile.bamboo_pile_info_dict["MinimumSpawningDistanceFromPlayer"] <= dist(self.player.rect.center, random_empty_tile_center) <= BambooPile.bamboo_pile_info_dict["MaximumSpawningDistanceFromPlayer"] and \
-                len(self.bamboo_piles_group) < BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"]:
+                # If there are no bamboo piles already
+                if len(self.bamboo_piles_group) == 0:
+                        
 
-                    # Remove the empty tile from the empty tiles dictionary (so that another item does not spawn in the same tile)
-                    self.empty_tiles_dict.pop(random_empty_tile)
+                    # Choose a random tile from list of empty tiles that are a valid distance away from the player
+                    valid_tile = random_choice(valid_distance_away_from_player_tiles_list)
 
-                    # Create a new bamboo pile and add it to the bamboo piles group
-                    self.bamboo_piles_group.add(BambooPile(x = random_empty_tile[0], y = random_empty_tile[1]))
+                    # Find the angle
+                    degrees_depending_on_num_of_segments = 360 / BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"]
+                    angle = degrees(atan2(-(valid_tile[1] - self.middle_tile_position[1]), (valid_tile[0] - self.middle_tile_position[0])) % (2 * pi))
+                    segment = (angle - (angle % degrees_depending_on_num_of_segments)) / degrees_depending_on_num_of_segments
 
-                    # Set the timer to start counting from the spawning cooldown timer set
-                    BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] = BambooPile.bamboo_pile_info_dict["SpawningCooldown"] 
+                    # Remove the empty tile from the empty tiles dict
+                    self.empty_tiles_dict.pop(valid_tile)
+
+                    # Create a new bamboo pile
+                    new_bamboo_pile = BambooPile(x = valid_tile[0], y = valid_tile[1])
+                    self.bamboo_piles_group.add(new_bamboo_pile)
+
+                    # Set the spawning cooldown timer to start counting down
+                    BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] = BambooPile.bamboo_pile_info_dict["SpawningCooldown"]
+                    
+                    # Set the current segment chosen to be taken
+                    self.bamboo_piles_segments_taken_dict[segment] = new_bamboo_pile
+
+                # If there are any existing bamboo piles
+                elif len(self.bamboo_piles_group) > 0:
+
+                    """ Segments: There will be x segments (if there were 8, the segment angle would be 360 / 8 == 45)
+
+                    0 <= ? <= 45
+                    45 <= ? <= 90
+                    135 <= ? < 180
+                    and so on.
+
+                    This works by separating the tile map into 8 segments, and spawning a bamboo pile in any segment at random. 
+                    The segment is then saved so that the next time a bamboo pile is about to be spawned, we can ensure that it will never be in the same segment as other bamboo piles
+                    """
+
+                    # --------------------------------------------------------------------------------------------------------
+                    # Create a list of the possible segments that the bamboo pile can spawn in
+
+                    # segments_taken_dict = {i : i}
+                    possible_segments_tuple = tuple(segment_untaken for potential_bamboo_pile_key, segment_untaken in self.bamboo_piles_segments_taken_dict.items() if potential_bamboo_pile_key == segment_untaken)
+
+                    # If there are more than one possible segment that the bamboo pile can spawn in
+                    if len(possible_segments_tuple) > 0:
+                        # Generate a random untaken segment for the pile to spawn in
+                        random_segment = random_choice(possible_segments_tuple)
+
+                    # If there is only one possible segment that the bamboo pile can spawn in
+                    elif len(possible_segments_tuple) == 0:
+                        # Set the segment as that possible segment
+                        random_segment = possible_segments_tuple[0]
+                    
+                    # --------------------------------------------------------------------------------------------------------
+                    # Create a list of empty tiles which are in the segment as the selected segment (i.e. an untaken segment)
+
+                    degrees_depending_on_num_of_segments = 360 / BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"]
+
+                    possible_tiles = tuple( 
+                    
+                    empty_tile for empty_tile in valid_distance_away_from_player_tiles_list 
+                
+                        # If this empty tile is in the same segment as the selected segment, add it to the list
+                        if 
+                        ((degrees(atan2(-(empty_tile[1] - self.middle_tile_position[1]), (empty_tile[0] - self.middle_tile_position[0])) % (2 * pi)) - 
+                        degrees(atan2(-(empty_tile[1] - self.middle_tile_position[1]), (empty_tile[0] - self.middle_tile_position[0])) % (2 * pi)) % degrees_depending_on_num_of_segments) / degrees_depending_on_num_of_segments) == random_segment
+                            
+                                        )
+
+                    """ Long version: (using 45 degrees with 8 segments as an example)
+
+                    possible_tiles = []
+
+                    # Finding tiles within the chosen random segment
+                    for empty_tile in valid_distance_away_from_player_tiles_list:
+                        angle = degrees(atan2(-(empty_tile[1] - self.middle_tile_position[1]), (empty_tile[0] - self.middle_tile_position[0])) % (2 * pi))
+                        segment = (angle - (angle % 45)) / 45
+
+                        if segment == random_segment: 
+                            possible_tiles.append(empty_tile)
+
+                    """
+    
+                    # --------------------------------------------------------------------------------------------------------
+                    # Select a random tile from this new segment 
+
+                    random_spawning_tile = random_choice(possible_tiles)
+
+                    # --------------------------------------------------------------------------------------------------------  
+                    # Creating the bamboo pile and setting up segments
+
+                    # Remove the empty tile from the empty tiles dict
+                    self.empty_tiles_dict.pop(random_spawning_tile)
+
+                    # Create a new bamboo pile
+                    new_bamboo_pile = BambooPile(x = random_spawning_tile[0], y = random_spawning_tile[1])
+
+                    # Add it to the bamboo piles group
+                    self.bamboo_piles_group.add(new_bamboo_pile)
+
+                    # Set the spawning cooldown timer to start counting down
+                    BambooPile.bamboo_pile_info_dict["SpawningCooldownTimer"] = BambooPile.bamboo_pile_info_dict["SpawningCooldown"]
+
+                    # Set the current segment selected as taken
+                    self.bamboo_piles_segments_taken_dict[random_segment] = new_bamboo_pile
 
     # -------------------------------------------
     # Bosses
@@ -1845,6 +1980,11 @@ class Game:
         # Resetting player position
         
         self.player.rect.x, self.player.rect.y = self.player.original_player_position[0], self.player.original_player_position[1]
+
+        # ------------------------------------------------------
+        # Bamboo piles segments dict
+
+        self.bamboo_piles_segments_taken_dict = {i: i for i in range(0, BambooPile.bamboo_pile_info_dict["MaximumNumberOfPilesAtOneTime"])}
 
     def run(self, delta_time):
 

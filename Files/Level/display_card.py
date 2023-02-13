@@ -200,9 +200,7 @@ class DisplayCard:
                 y = (DisplayCard.border_thickness / 2) + 2, # + 2 is an offset
                 surface = self.second_alpha_surface,
                 )
-
-        
-
+ 
     def draw_stats_display_card_contents(self, inner_body_rect, player_tools, player_gameplay_info_dict):
 
         # -----------------------------------------------------------------
@@ -218,7 +216,7 @@ class DisplayCard:
         self.surface.blit(self.images[0], building_tile_image_position)
 
         # The text that displays how many building tiles exist inside the map currently
-        existing_building_tiles_text = f'Number of tiles: {len(player_tools["BuildingTool"]["ExistingBuildingTilesList"])}'
+        existing_building_tiles_text = f'Number of tiles: {len(player_tools["BuildingTool"]["ExistingBuildingTilesList"])}/{player_tools["BuildingTool"]["MaximumNumberOfTilesAtOneTime"]}'
 
         # Draw the text displaying the number of building tiles that exist inside the map currently
         draw_text(

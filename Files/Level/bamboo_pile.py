@@ -9,13 +9,13 @@ class BambooPile(Generic):
     
     # Dictionary containing information relating to bamboo piles
     bamboo_pile_info_dict = {
-                            "BambooResourceReplenishAmount": 25,
-                            "HealthReplenishmentAmount": 30,
+                            "BambooResourceReplenishAmount": 15,
+                            "HealthReplenishmentAmount": 10,
                             "SpawningCooldown": 2500, 
                             "SpawningCooldownTimer": 2500,
-                            "MinimumSpawningDistanceFromPlayer": 10 * TILE_SIZE,
-                            "MaximumSpawningDistanceFromPlayer": 25 * TILE_SIZE,
-                            "MaximumNumberOfPilesAtOneTime": 8
+                            "MinimumSpawningDistanceFromMiddle": 5 * TILE_SIZE,
+                            "MaximumSpawningDistanceFromMiddle": 25 * TILE_SIZE,
+                            "MaximumNumberOfPilesAtOneTime": 6,
                             }
 
     def __init__(self, x, y):

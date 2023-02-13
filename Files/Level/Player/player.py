@@ -99,7 +99,7 @@ class Player(Generic):
                                         "MaximumAmountOfBambooResource": 150,
 
                                         # Health
-                                        "CurrentHealth": 10,
+                                        "CurrentHealth": 100,
                                         "MaximumHealth": 100,
 
                                         # ------------------------------------------------
@@ -176,16 +176,17 @@ class Player(Generic):
                                             "TileImage": pygame_image_load("graphics/Weapons/BuildingTool/BuildingTile.png").convert()
                                                   },
                                         "MaximumBuildingTileHP": 100,
-                                        "MaximumPlacingDistance": 7 * TILE_SIZE,
+                                        "MaximumPlacingDistance": 7 * TILE_SIZE , #25 * TILE_SIZE, #7 * TILE_SIZE,
                                         "MinimumPlacingDistance": 1.5 * TILE_SIZE,
                                         "ExistingBuildingTilesList": [],
+                                        "MaximumNumberOfTilesAtOneTime": 5,
 
                                         # Timers
                                         "RemovalCooldown": 150,
                                         "RemovalCooldownTimer": None,
                                         
                                         # Additional
-                                        "BambooResourceDepletionAmount": 2.5,
+                                        "BambooResourceDepletionAmount": 2,
                                         "ReflectionDamageMultiplier": 5
                                         },
 
@@ -222,7 +223,7 @@ class Player(Generic):
                                                       },
                                             "ShootingCooldown": 700, 
                                             "ShootingCooldownTimer": None,
-                                            "BambooResourceDepletionAmount": 25,
+                                            "BambooResourceDepletionAmount": 15,
                                             "WeaponDamage": 60,
                                             "MiniProjectilesDamage": 10,
                                             "NumberOfMiniProjectiles": 12
@@ -353,22 +354,22 @@ class Player(Generic):
                 if hasattr(self, "direction_collisions") == False:
                     # Create a dictionary that holds the collisions in the direction that the player is facing
                     self.direction_collisions = {
-                                                "Left": pygame_Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height),
-                                                "Right": pygame_Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height),
-                                                "Up": pygame_Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height),
-                                                "Down": pygame_Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
+                                                "Left": pygame_Rect(self.rect.x - 3, self.rect.y, self.rect.width, self.rect.height),
+                                                "Right": pygame_Rect(self.rect.x + 3, self.rect.y, self.rect.width, self.rect.height),
+                                                "Up": pygame_Rect(self.rect.x, self.rect.y - 3, self.rect.width, self.rect.height),
+                                                "Down": pygame_Rect(self.rect.x, self.rect.y + 3, self.rect.width, self.rect.height)
                                                 }
                 # If this dictionary already exists
                 else:
                     # Update the dictionary's rect values
-                    self.direction_collisions["Left"]  = pygame_Rect(self.rect.x - 5, self.rect.y, self.rect.width, self.rect.height)
-                    self.direction_collisions["Right"] = pygame_Rect(self.rect.x + 5, self.rect.y, self.rect.width, self.rect.height)
-                    self.direction_collisions["Up"] = pygame_Rect(self.rect.x, self.rect.y - 5, self.rect.width, self.rect.height)
-                    self.direction_collisions["Down"]  = pygame_Rect(self.rect.x, self.rect.y + 5, self.rect.width, self.rect.height)
+                    self.direction_collisions["Left"]  = pygame_Rect(self.rect.x - 3, self.rect.y, self.rect.width, self.rect.height)
+                    self.direction_collisions["Right"] = pygame_Rect(self.rect.x + 3, self.rect.y, self.rect.width, self.rect.height)
+                    self.direction_collisions["Up"] = pygame_Rect(self.rect.x, self.rect.y - 3, self.rect.width, self.rect.height)
+                    self.direction_collisions["Down"]  = pygame_Rect(self.rect.x, self.rect.y + 3, self.rect.width, self.rect.height)
 
                 # Create a tuple of the directions the player is currently moving in
                 current_directions = [key for key in self.direction_variables_dict.keys() if self.direction_variables_dict[key] == True]
-
+    
                 if (self.rect.x == 0 or self.rect.right == self.last_tile_position[0]) or \
                     len(current_directions) == 1 and self.direction_collisions[current_directions[0]] != None and self.direction_collisions[current_directions[0]].collidedict(self.neighbouring_tiles_dict) != None or \
                     len(current_directions) == 2 and (self.direction_collisions[current_directions[0]] != None and self.direction_collisions[current_directions[1]] != None) and \
@@ -399,12 +400,11 @@ class Player(Generic):
 
                 # If the current animation state has not been set to "Idle" yet
                 if self.current_animation_state != "Idle":
-                    
-                    # # If the player has stopped running
-                    # if self.current_animation_state == "Run":
                     # Set the current animation state to "Idle"
                     self.current_animation_state = "Idle"
 
+                # If the animation index is not 0
+                if self.animation_index != 0:
                     # Reset the animation frame counter and index
                     self.animation_frame_counter = 0
                     self.animation_index = 0
@@ -474,7 +474,17 @@ class Player(Generic):
                 # If there is only one direction the player is going in (i.e. Left, Right, Up or Down)
                 if len(self.player_direction) == 1:
                     current_player_state_animation_list = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]]
-                    current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
+
+                    # Note: There is a bug with animations when running into building tiles (not quite sure on the reason for the bug)
+                    try:
+                        # If the follow command results in a "tuple index "out of range" error
+                        current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
+
+                    # Reset the animation index and assign the image again
+                    except:
+                        self.animation_index = 0
+                        current_animation_image = self.animations_dict[self.current_player_element][self.current_animation_state][self.player_direction[0]][self.animation_index]
+
                 
                 # If there are two directions the player is going in (i.e Up Left, Up Right, Down Left, Down Right)
                 elif len(self.player_direction) > 1:
@@ -1775,7 +1785,7 @@ class Player(Generic):
                                     )   
 
                     # If the left mouse button is pressed and there are less than 3 existing building tiles
-                    if pygame_mouse_get_pressed()[0] == True and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) < 3:
+                    if pygame_mouse_get_pressed()[0] == True and len(self.tools["BuildingTool"]["ExistingBuildingTilesList"]) < self.tools["BuildingTool"]["MaximumNumberOfTilesAtOneTime"]:
                         
                         # If the player has enough bamboo resource to place down another building tile
                         if self.player_gameplay_info_dict["AmountOfBambooResource"] - self.tools["BuildingTool"]["BambooResourceDepletionAmount"] > 0:
