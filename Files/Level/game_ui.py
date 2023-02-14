@@ -684,6 +684,9 @@ class GameUI:
                     if self.current_boss_name == "SikaDeer":
                         self.boss_text = "Sika Deer"
 
+                    elif self.current_boss_name == "GoldenMonkey":
+                        self.boss_text = "Golden Monkey"
+
                     # Calculae the text font size for positioning the text correctly
                     self.boss_text_font_size = self.boss_text_font.size(self.boss_text)
 

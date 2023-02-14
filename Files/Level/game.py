@@ -764,9 +764,13 @@ class Game:
                                     # Set the total damage to be the base damage amount plus a random damage amount
                                     total_damage_dealt = bamboo_projectile.damage_amount + randomised_damage_amount
 
+                            # If the current boss is the "GoldenMonkey"
+                            elif self.bosses_dict["CurrentBoss"] == "GoldenMonkey":
+                                # Set the total damage to be the base damage amount plus a random damage amount
+                                total_damage_dealt = bamboo_projectile.damage_amount + randomised_damage_amount
+
                             # Deal damage to the boss
                             self.boss_group.sprite.extra_information_dict["CurrentHealth"] -= total_damage_dealt
-
 
                             # ------------------------------------------------------------------------------------------------------------------------------------------------
                             # Additional
@@ -1495,7 +1499,7 @@ class Game:
             
             # Create a dictionary to hold information regarding bosses
             self.bosses_dict = { 
-                        "CurrentBoss": "SikaDeer",
+                        "CurrentBoss": "GoldenMonkey",
                         "NumOfTilesForChecking": number_of_tiles_for_checking, # The number of tiles to the left / right / up, down of the randomly chosen empty tile for the spawning position to be valid
                         "RandomSpawningPosition" : random_choice(list(self.empty_tiles_dict.keys())), # Choose a random spawning position
                         "ValidSpawningPosition": None, 
@@ -1733,12 +1737,13 @@ class Game:
                                             }
                 
                 # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
-                self.bosses_dict["SikaDeer"] = SikaDeerBoss(
-                                                            x = self.bosses_dict["ValidSpawningPosition"].rect.centerx, 
-                                                            y = self.bosses_dict["ValidSpawningPosition"].rect.centery,
-                                                            surface = self.scaled_surface,
-                                                            scale_multiplier = self.scale_multiplier
-                                                            )
+                sika_deer_boss = SikaDeerBoss(
+                                            x = self.bosses_dict["ValidSpawningPosition"].rect.centerx, 
+                                            y = self.bosses_dict["ValidSpawningPosition"].rect.centery,
+                                            surface = self.scaled_surface,
+                                            scale_multiplier = self.scale_multiplier
+                                            )
+                
                 # ----------------------------------------
                 # Preparing groups 
 
@@ -1748,7 +1753,7 @@ class Game:
                 StompController.nodes_group = self.stomp_attack_nodes_group
 
                 # Add the boss into the boss group
-                self.boss_group.add(self.bosses_dict["SikaDeer"])
+                self.boss_group.add(sika_deer_boss)
 
                 # Update the game UI with this information
                 self.game_ui.current_boss = self.boss_group.sprite
@@ -1757,8 +1762,47 @@ class Game:
                 self.boss_group.sprite.last_tile_position = self.last_tile_position
 
             case "GoldenMonkey":
-                pass
+                # Import the GoldenMonkey boss
+                from Level.Bosses.GoldenMonkeyBoss import GoldenMonkeyBoss
 
+                # If the images for the deer boss have not been loaded already
+                if hasattr(GoldenMonkeyBoss, "ImagesDict") == False:
+
+                    # Create a class attribute for the GoldenMonkeyBoss, which is an image dictionary holding all the images for each action that the boss has
+                    GoldenMonkeyBoss.ImagesDict = {
+
+                        "Chase": {
+                                "Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/Right/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/Right")))),
+                                "Right": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/Right/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/Right")))),
+                                "Up": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/Up/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/Up")))),
+                                "Up Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/UpRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/UpRight")))),
+                                "Up Right": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/UpRight/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/UpRight")))),
+                                "Down": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/Down/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/Down")))),
+                                "Down Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/DownRight")))),
+                                "Down Right": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/DownRight/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/Downright")))),
+                                }
+                                                }
+
+                # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
+                golden_monkey_boss = GoldenMonkeyBoss(
+                                                    x = self.bosses_dict["ValidSpawningPosition"].rect.centerx, 
+                                                    y = self.bosses_dict["ValidSpawningPosition"].rect.centery,
+                                                    surface = self.scaled_surface,
+                                                    scale_multiplier = self.scale_multiplier
+                                                    )
+                # ----------------------------------------
+                # Preparing groups 
+
+                # Add the boss into the boss group
+                self.boss_group.add(golden_monkey_boss)
+
+                # Update the game UI with this information
+                self.game_ui.current_boss = self.boss_group.sprite
+
+                # Set the current boss' last tile position to be the last tile position found (for collisions)
+                self.boss_group.sprite.last_tile_position = self.last_tile_position
+
+                                           
             case "AsiaticBlackBear":
                 pass
 

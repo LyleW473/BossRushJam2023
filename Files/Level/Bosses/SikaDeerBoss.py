@@ -36,7 +36,10 @@ class SikaDeerBoss(Generic, AI):
 
                 # Time to reach / accelerate to the final horizontal/vertical velocity
                 "DefaultHorizontalTimeToReachFinalVelocity": 0.3,
-                "DefaultVerticalTimeToReachFinalVelocity": 0.3
+                "DefaultVerticalTimeToReachFinalVelocity": 0.3,
+
+                # The distance the AI has to be away from the player to stop chasing them
+                "DistanceThreshold": 0
 
                 }
 
@@ -229,42 +232,6 @@ class SikaDeerBoss(Generic, AI):
         # Set the animation frame timer to start as the time between animation frames
         self.behaviour_patterns_dict["Stunned"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["Stunned"]["TimeBetweenAnimFrames"]
 
-    def find_look_direction(self):
-
-        # Finds the look direction of the boss
-        
-        # The offset should be 360 divided by 8 (because of 8 directional movement), divided by 2
-        segment_offset = (360 / 8) / 2
-
-        match self.movement_information_dict["Angle"]:
-            # Right
-            case _ if (0 <= degrees(self.movement_information_dict["Angle"]) < segment_offset) or ((360 - segment_offset) <= degrees(self.movement_information_dict["Angle"]) < 360):
-                current_look_direction = "Right"
-            # UpRight
-            case _ if (segment_offset <= degrees(self.movement_information_dict["Angle"]) < segment_offset + 45):
-                current_look_direction = "Up Right"
-            # Up
-            case _ if (90 - segment_offset) <= degrees(self.movement_information_dict["Angle"]) < (90 + segment_offset):
-                current_look_direction = "Up"
-            # UpLeft
-            case _ if (90 + segment_offset) <= degrees(self.movement_information_dict["Angle"]) < (90 + segment_offset + 45):
-                current_look_direction = "Up Left"
-            # Left
-            case _ if (180 - segment_offset) <= degrees(self.movement_information_dict["Angle"]) < (180 + segment_offset):
-                current_look_direction = "Left"
-            # DownLeft
-            case _ if (180 + segment_offset) <= degrees(self.movement_information_dict["Angle"]) < (180 + segment_offset + 45):
-                current_look_direction = "Down Left"
-            # Down
-            case _ if (270 - segment_offset) <= degrees(self.movement_information_dict["Angle"]) < (270 + segment_offset):
-                current_look_direction = "Down" 
-            # DownRight
-            case _ if (270 + segment_offset) <= degrees(self.movement_information_dict["Angle"]) < (270 + segment_offset + 45):
-                current_look_direction = "Down Right"
-
-        # Return the current look direction
-        return current_look_direction
-
     def play_animations(self):
 
         # -----------------------------------
@@ -453,23 +420,6 @@ class SikaDeerBoss(Generic, AI):
 
     # ----------------------------------------------------------------------------------
     # Timer updating
-
-    def update_damage_flash_effect_timer(self):
-        
-        # Updates the damage flash effect timer
-
-        # If there has been a timer set for the damage flash effect
-        if self.extra_information_dict["DamagedFlashEffectTimer"] != None:
-
-            # If the timer has not finished counting
-            if self.extra_information_dict["DamagedFlashEffectTimer"] > 0:
-                # Decrease the timer
-                self.extra_information_dict["DamagedFlashEffectTimer"] -= 1000 * self.delta_time
-            
-            # If the timer has finished counting
-            if self.extra_information_dict["DamagedFlashEffectTimer"] <= 0:
-                # Set the damage flash effect timer back to None
-                self.extra_information_dict["DamagedFlashEffectTimer"] = None
 
     def update_duration_timers(self):
 
