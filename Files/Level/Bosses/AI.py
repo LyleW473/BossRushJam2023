@@ -5,21 +5,7 @@ from pygame import Rect as pygame_Rect
 
 class AI:
 
-    # The default distance travelled
-    default_distance_travelled = 4 * TILE_SIZE
-    # Time to travel the horizontal/vertical distance at the final veloctiy
-    default_horizontal_time_to_travel_distance_at_final_velocity = 0.42
-    default_vertical_time_to_travel_distance_at_final_velocity = 0.42
-    
-    # Time to reach / accelerate to the final horizontal/vertical velocity
-    default_horizontal_time_to_reach_final_velocity = 0.3
-    default_vertical_time_to_reach_final_velocity = 0.3
-
-
-    # Reminder: If adding more bosses, you can have these class attributes set as instance attributes
-
-
-    def __init__(self, max_health, knockback_damage ):
+    def __init__(self, max_health, knockback_damage, suvat_dict):
         
         # Dictionary containing information involving the movement of the AI
         self.movement_information_dict = {
@@ -60,7 +46,7 @@ class AI:
                                         
                                         }
         
-        # A dictionary containing extra information about the Sika deer boss
+        # A dictionary containing extra information about the bosses
         self.extra_information_dict = {    
                                         # Health
                                         "CurrentHealth": max_health,
@@ -82,6 +68,8 @@ class AI:
                                         "CanStartOperating": False
                                       }
 
+        # Update the extra movement information dict with SUVAT variables, which will determine how fast this AI is
+        self.movement_information_dict.update(suvat_dict)
 
         # Dictionary used to hold the neighbouring tiles near the AI(i.e. within 1 tile of the AI, movemently and vertically)
         self.neighbouring_tiles_dict = {}
@@ -247,25 +235,25 @@ class AI:
         # Horizontal
 
         # Set the horizontal distance travelled based on the current angle that the player is to the AI
-        horizontal_distance_travelled_at_final_velocity = (AI.default_distance_travelled * cos(self.movement_information_dict["Angle"]))
+        horizontal_distance_travelled_at_final_velocity = (self.movement_information_dict["DefaultDistanceTravelled"] * cos(self.movement_information_dict["Angle"]))
 
         # Equation = (2s - at^2) / 2t
-        self.movement_information_dict["HorizontalSuvatV"] = (2 * horizontal_distance_travelled_at_final_velocity) / (2 * AI.default_horizontal_time_to_travel_distance_at_final_velocity)
+        self.movement_information_dict["HorizontalSuvatV"] = (2 * horizontal_distance_travelled_at_final_velocity) / (2 * self.movement_information_dict["DefaultHorizontalTimeToTravelDistanceAtFinalVelocity"])
 
         # Set the current acceleration of the AI depending on the current velocity of the player
-        self.movement_information_dict["HorizontalSuvatA"] = (self.movement_information_dict["HorizontalSuvatV"] - self.movement_information_dict["HorizontalSuvatU"]) / AI.default_horizontal_time_to_reach_final_velocity
+        self.movement_information_dict["HorizontalSuvatA"] = (self.movement_information_dict["HorizontalSuvatV"] - self.movement_information_dict["HorizontalSuvatU"]) / self.movement_information_dict["DefaultHorizontalTimeToReachFinalVelocity"]
 
         # ----------------------------------------
         # Vertical
 
         # Set the vertical distance travelled based on the current angle that the player is to the AI
-        vertical_distance_travelled_at_final_velocity = (AI.default_distance_travelled * sin(self.movement_information_dict["Angle"]))
+        vertical_distance_travelled_at_final_velocity = (self.movement_information_dict["DefaultDistanceTravelled"] * sin(self.movement_information_dict["Angle"]))
 
         # Equation = (2s - at^2) / 2t
-        self.movement_information_dict["VerticalSuvatV"] = (2 * vertical_distance_travelled_at_final_velocity) / (2 * AI.default_vertical_time_to_travel_distance_at_final_velocity)
+        self.movement_information_dict["VerticalSuvatV"] = (2 * vertical_distance_travelled_at_final_velocity) / (2 * self.movement_information_dict["DefaultVerticalTimeToTravelDistanceAtFinalVelocity"])
 
         # Set the current acceleration of the AI depending on the current velocity of the player
-        self.movement_information_dict["VerticalSuvatA"] = (self.movement_information_dict["VerticalSuvatV"] - self.movement_information_dict["VerticalSuvatU"]) / AI.default_vertical_time_to_reach_final_velocity
+        self.movement_information_dict["VerticalSuvatA"] = (self.movement_information_dict["VerticalSuvatV"] - self.movement_information_dict["VerticalSuvatU"]) / self.movement_information_dict["DefaultVerticalTimeToReachFinalVelocity"]
 
     def reset_movement_acceleration(self, vertical_reset = True, horizontal_reset = True):
 
@@ -275,14 +263,14 @@ class AI:
         if horizontal_reset == True and vertical_reset == False:
             self.movement_information_dict["Dx"] = 0
             self.movement_information_dict["HorizontalSuvatU"] = 0
-            self.movement_information_dict["HorizontalSuvatA"] = (self.movement_information_dict["HorizontalSuvatV"] - self.movement_information_dict["HorizontalSuvatU"]) / AI.default_horizontal_time_to_reach_final_velocity
+            self.movement_information_dict["HorizontalSuvatA"] = (self.movement_information_dict["HorizontalSuvatV"] - self.movement_information_dict["HorizontalSuvatU"]) / self.movement_information_dict["DefaultHorizontalTimeToReachFinalVelocity"]
             self.movement_information_dict["HorizontalSuvatS"] = ((self.movement_information_dict["HorizontalSuvatU"] * self.movement_information_dict["DeltaTime"]) + (0.5 * self.movement_information_dict["HorizontalSuvatA"] * (self.movement_information_dict["DeltaTime"] ** 2)))
         
         # Only resetting the vertical movement acceleration
         elif vertical_reset == True and horizontal_reset == False:
             self.movement_information_dict["Dy"] = 0
             self.movement_information_dict["VerticalSuvatU"] = 0
-            self.movement_information_dict["VerticalSuvatA"] = (self.movement_information_dict["VerticalSuvatV"] - self.movement_information_dict["VerticalSuvatU"]) / AI.default_vertical_time_to_reach_final_velocity
+            self.movement_information_dict["VerticalSuvatA"] = (self.movement_information_dict["VerticalSuvatV"] - self.movement_information_dict["VerticalSuvatU"]) / self.movement_information_dict["DefaultVerticalTimeToReachFinalVelocity"]
             self.movement_information_dict["VerticalSuvatS"] = ((self.movement_information_dict["VerticalSuvatU"] * self.movement_information_dict["DeltaTime"]) + (0.5 * self.movement_information_dict["VerticalSuvatA"] * (self.movement_information_dict["DeltaTime"] ** 2)))
 
         # Resetting both the horizontal and vertical movement acceleration
@@ -296,10 +284,10 @@ class AI:
             self.movement_information_dict["VerticalSuvatU"] = 0
 
             # Set the current acceleration of the AI depending on the current velocity of the player again
-            self.movement_information_dict["HorizontalSuvatA"] = (self.movement_information_dict["HorizontalSuvatV"] - self.movement_information_dict["HorizontalSuvatU"]) / AI.default_horizontal_time_to_reach_final_velocity
+            self.movement_information_dict["HorizontalSuvatA"] = (self.movement_information_dict["HorizontalSuvatV"] - self.movement_information_dict["HorizontalSuvatU"]) / self.movement_information_dict["DefaultHorizontalTimeToReachFinalVelocity"]
 
             # Set the current acceleration of the AI depending on the current velocity of the player again
-            self.movement_information_dict["VerticalSuvatA"] = (self.movement_information_dict["VerticalSuvatV"] - self.movement_information_dict["VerticalSuvatU"]) / AI.default_vertical_time_to_reach_final_velocity
+            self.movement_information_dict["VerticalSuvatA"] = (self.movement_information_dict["VerticalSuvatV"] - self.movement_information_dict["VerticalSuvatU"]) / self.movement_information_dict["DefaultVerticalTimeToReachFinalVelocity"]
 
             # Set the horizontal distance travelled based on the current velocity of the boss
             self.movement_information_dict["HorizontalSuvatS"] = ((self.movement_information_dict["HorizontalSuvatU"] * self.movement_information_dict["DeltaTime"]) + (0.5 * self.movement_information_dict["HorizontalSuvatA"] * (self.movement_information_dict["DeltaTime"] ** 2)))

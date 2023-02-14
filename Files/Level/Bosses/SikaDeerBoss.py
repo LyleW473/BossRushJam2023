@@ -19,10 +19,26 @@ class SikaDeerBoss(Generic, AI):
 
     # ImagesDict = ?? (This is set when the boss is instantiated)
     # Example: Stomp : [Image list]
-
+    
+    # Characteristics
     knockback_damage = 20
     maximum_health = 25000
+    
 
+    # SUVAT variables
+    suvat_dict = { 
+                # The default distance travelled
+                "DefaultDistanceTravelled": 4 * TILE_SIZE,
+
+                # Time to travel the horizontal/vertical distance at the final veloctiy
+                "DefaultHorizontalTimeToTravelDistanceAtFinalVelocity": 0.42,
+                "DefaultVerticalTimeToTravelDistanceAtFinalVelocity": 0.42,
+
+                # Time to reach / accelerate to the final horizontal/vertical velocity
+                "DefaultHorizontalTimeToReachFinalVelocity": 0.3,
+                "DefaultVerticalTimeToReachFinalVelocity": 0.3
+
+                }
 
     def __init__(self, x, y, surface, scale_multiplier):
 
@@ -40,7 +56,7 @@ class SikaDeerBoss(Generic, AI):
         self.rect.midbottom = (x, y)
 
         # Inherit from the AI class
-        AI.__init__(self, max_health = SikaDeerBoss.maximum_health, knockback_damage = SikaDeerBoss.knockback_damage)
+        AI.__init__(self, max_health = SikaDeerBoss.maximum_health, knockback_damage = SikaDeerBoss.knockback_damage, suvat_dict = SikaDeerBoss.suvat_dict)
 
         """ List of "hidden" added attributes
         self.delta_time
