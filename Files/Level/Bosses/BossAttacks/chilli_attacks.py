@@ -6,7 +6,7 @@ from pygame.transform import rotozoom as pygame_transform_rotozoom
 
 class ChilliProjectileController:
 
-    # projectiles_group = self.chilli_projectiles_group (Set when the Golden Monkey boss is spawned)
+    # projectiles_dict self.chilli_projectiles_dict (Set when the Golden Monkey boss is spawned)
 
 
     # spiral_attack_angle_time_gradient = ?? (Set to be synced with the duration of the monkey)
@@ -53,7 +53,7 @@ class ChilliProjectileController:
     def update_chilli_projectiles(self, delta_time, camera_position, surface):
         
         # For each chilli projectile
-        for chilli_projectile in ChilliProjectileController.projectiles_group:
+        for chilli_projectile in ChilliProjectileController.projectiles_dict.keys():
 
             # Update the chilli projectile's delta time
             chilli_projectile.delta_time = delta_time
@@ -135,7 +135,7 @@ class ChilliProjectile(Generic):
         # --------------------------------------------------------------------------------
         # Adding to chilli projectiles group
 
-        ChilliProjectileController.projectiles_group.add(self)
+        ChilliProjectileController.projectiles_dict[self] = 0
 
 
     def move_projectile(self):

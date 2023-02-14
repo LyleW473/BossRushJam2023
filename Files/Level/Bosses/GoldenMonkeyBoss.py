@@ -82,7 +82,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                     "SpiralAttack": {
                                                     "Duration": 6000,
                                                     "DurationTimer": None,
-                                                    "SpiralChilliSpawningCooldown": 40, # Cooldown between each chilli spawned in the spiral attack (50 chillis)
+                                                    "SpiralChilliSpawningCooldown": 60, # Cooldown between each chilli spawned in the spiral attack (50 chillis)
                                                     "SpiralChilliSpawningCooldownTimer": None, 
 
                                                     "Cooldown": 10000,

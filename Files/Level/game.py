@@ -827,20 +827,23 @@ class Game:
                             # Remove the bamboo projectile
                             self.bamboo_projectiles_group.remove(bamboo_projectile)
            
-            # --------------------------------
-            # Chilli projectiles and bamboo projectiles
-            
-            if hasattr(self, "chilli_projectiles_group"):
-                # Key = sprites from first group, Value = sprites from second group
-                dict_of_collided_sprites = pygame_sprite_group_collide(groupa = self.bamboo_projectiles_group, groupb = self.chilli_projectiles_group, dokilla = False, dokillb = False, collided = pygame_sprite_collide_rect)
 
-                for bamboo_projectile, list_of_collided_chilli_projectiles in dict_of_collided_sprites.items():
-                    # For each chilli projectile inside the list of chilli projectiles that collided with the bamboo projectile
-                    for chilli_projectile in list_of_collided_chilli_projectiles:
-                        
-                        # Check for pixel perfect collision
-                        if pygame_sprite_collide_mask(chilli_projectile, bamboo_projectile) != None:
 
+                # --------------------------------
+                # Chilli projectiles and bamboo projectiles
+
+                # If there is a chilli projectiles dict
+                if hasattr(self, "chilli_projectiles_dict"):
+
+                    # Check for a rect collision between the bamboo projectile and world / chilli projectiles inside the chilli projectiles dictionary
+                    chilli_bamboo_collision_result = bamboo_projectile.rect.collidedict(self.chilli_projectiles_dict)
+                
+                    # If the bamboo_projectile collided with a chilli projectile
+                    if chilli_bamboo_collision_result != None:
+
+                        # Check for a pixel-perfect collision between the bamboo projectile and the chilli projectile that the bamboo_projectile's rect collided with
+                        if pygame_sprite_collide_mask(bamboo_projectile, chilli_bamboo_collision_result[0]) != None:
+                            
                             # Take away a life from the bamboo projectile
                             bamboo_projectile.lives -= 1
 
@@ -873,13 +876,13 @@ class Game:
                             # Create chilli pieces
                             self.game_ui.create_angled_polygons_effects(
                                                                         purpose = "ChilliPieces",
-                                                                        position = (chilli_projectile.rect.centerx, chilli_projectile.rect.centery),
-                                                                        angle = chilli_projectile.angle,
+                                                                        position = (chilli_bamboo_collision_result[0].rect.centerx, chilli_bamboo_collision_result[0].rect.centery),
+                                                                        angle = chilli_bamboo_collision_result[0].angle,
                                                                         specified_number_of_pieces = 5
                                                                         )                 
 
-                            # Remove the chilli projecitle from the chilli projectiles group
-                            self.chilli_projectiles_group.remove(chilli_projectile)
+                            # Remove the chilli projecitle from the chilli projectiles dict
+                            self.chilli_projectiles_dict.pop(chilli_bamboo_collision_result[0])
 
         # --------------------------------------------------------------------------------------
         # Bamboo piles
@@ -1166,10 +1169,10 @@ class Game:
         # --------------------------------------------------------------------------------------
         # Chilli projectiles
 
-        if hasattr(self, "chilli_projectiles_group") and len(self.chilli_projectiles_group) > 0:
+        if hasattr(self, "chilli_projectiles_dict") and len(self.chilli_projectiles_dict) > 0:
 
             # For each chilli projectile
-            for chilli_projectile in self.chilli_projectiles_group:
+            for chilli_projectile in self.chilli_projectiles_dict.copy().keys():
 
                 # --------------------------------
                 # World / building tiles
@@ -1238,15 +1241,15 @@ class Game:
                                                                 )       
 
                             # Remove the chilli projectile from the group if there is a collision
-                            self.chilli_projectiles_group.remove(chilli_projectile)
+                            self.chilli_projectiles_dict.pop(chilli_projectile)
 
                     # --------------------------------
                     # World tiles
 
                         # If the collided tile was a world tile
                         elif collision_result[1]  == "WorldTile":
-                            # Remove the chilli projectile from the group if there is a collision
-                            self.chilli_projectiles_group.remove(chilli_projectile)
+                            # Remove the chilli projectile from the dict if there is a collision
+                            self.chilli_projectiles_dict.pop(chilli_projectile)
                     
                 # --------------------------------
                 # Player
@@ -1257,8 +1260,8 @@ class Game:
                     # Check for a pixel-perfect collision between the chilli projectile and the player
                     if pygame_sprite_collide_mask(chilli_projectile, self.player) != None:
 
-                        # Remove the chilli projectile from the group if there is a collision
-                        self.chilli_projectiles_group.remove(chilli_projectile)
+                        # Remove the chilli projectile from the dict if there is a collision
+                        self.chilli_projectiles_dict.pop(chilli_projectile)
                         
                         # Damage the player by the stomp attack node damage
                         self.player.player_gameplay_info_dict["CurrentHealth"] -= chilli_projectile.damage_amount
@@ -1981,10 +1984,10 @@ class Game:
                 # ----------------------------------------
                 # Preparing groups 
 
-                # Create a sprite group for the chilli projectiles created by the Golden Monkey boss`1`
+                # Create a dict for the chilli projectiles created by the Golden Monkey boss
                 from Level.Bosses.BossAttacks.chilli_attacks import ChilliProjectileController
-                self.chilli_projectiles_group = pygame_sprite_Group()
-                ChilliProjectileController.projectiles_group = self.chilli_projectiles_group
+                self.chilli_projectiles_dict = {}
+                ChilliProjectileController.projectiles_dict = self.chilli_projectiles_dict
 
                 # Add the boss into the boss group
                 self.boss_group.add(golden_monkey_boss)
@@ -2279,14 +2282,14 @@ class Game:
         self.boss_group.empty()
 
         # If there is a group for the stomp attack nodes
-        if hasattr(self, "stomp_attack_nodes_group"):
+        if hasattr(self, "stomp_attack_nodes_group") and len(self.stomp_attack_nodes_group) > 0:
             # Empty the group
             self.stomp_attack_nodes_group.empty()
 
         # If there is a group for the chilli projectiles
-        if hasattr(self, "chilli_projectiles_group"):
-            # Empty the group
-            self.chilli_projectiles_group.empty()
+        if hasattr(self, "chilli_projectiles_dict") and len(self.chilli_projectiles_dict) > 0:
+            # Empty the dict
+            self.chilli_projectiles_dict = {}
 
     def run(self, delta_time):
 
