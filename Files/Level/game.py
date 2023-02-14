@@ -969,7 +969,7 @@ class Game:
         # --------------------------------------------------------------------------------------
         # Stomp attack nodes
 
-        # Additional check because this group does note exist until the Sika Deer boss has spawned and started stomping
+        # Additional check because this group does not exist until the Sika Deer boss has spawned and started stomping
         if hasattr(self, "stomp_attack_nodes_group") and len(self.stomp_attack_nodes_group) > 0:
 
             # For each stomp attack node
@@ -1169,6 +1169,7 @@ class Game:
         # --------------------------------------------------------------------------------------
         # Chilli projectiles
 
+        # Additional check because this group does not exist until the Golden Monkey boss has spawned
         if hasattr(self, "chilli_projectiles_dict") and len(self.chilli_projectiles_dict) > 0:
 
             # For each chilli projectile
@@ -1243,13 +1244,25 @@ class Game:
                             # Remove the chilli projectile from the group if there is a collision
                             self.chilli_projectiles_dict.pop(chilli_projectile)
 
+                            # Go to the next chilli projectile
+                            """ Note: This is because a copy of the chilli projectiles dictionary was made, and collisions with the player are checked straight after, 
+                            which would output an error if there was a collision with a bamboo projectile and the player.
+                            """
+                            continue
+
                     # --------------------------------
                     # World tiles
 
-                        # If the collided tile was a world tile
+                        # If the collided tile was a world tiles
                         elif collision_result[1]  == "WorldTile":
                             # Remove the chilli projectile from the dict if there is a collision
                             self.chilli_projectiles_dict.pop(chilli_projectile)
+
+                            # Go to the next chilli projectile
+                            """ Note: This is because a copy of the chilli projectiles dictionary was made, and collisions with the player are checked straight after, 
+                            which would output an error if there was a collision with a bamboo projectile and the player.
+                            """
+                            continue
                     
                 # --------------------------------
                 # Player

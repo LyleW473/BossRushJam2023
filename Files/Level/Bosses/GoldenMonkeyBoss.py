@@ -8,6 +8,7 @@ from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from os import listdir as os_listdir
 from Level.Bosses.BossAttacks.chilli_attacks import ChilliProjectileController
+from math import sin, cos
 
 
 class GoldenMonkeyBoss(Generic, AI):
@@ -76,7 +77,10 @@ class GoldenMonkeyBoss(Generic, AI):
         self.behaviour_patterns_dict = {
 
                                     "Chase": { 
-                                            "FullAnimationDuration": 600
+                                            "FullAnimationDuration": 600,
+
+                                            "ChilliThrowingCooldown": 260,
+                                            "ChilliThrowingCooldownTimer": None
                                               },
                                     
                                     "SpiralAttack": {
@@ -302,8 +306,29 @@ class GoldenMonkeyBoss(Generic, AI):
 
             # If there are no possible actions that the boss can perform or the boss has performed an action recently
             elif len(action_list) == 0 or self.extra_information_dict["NoActionTimer"] != None: 
+                
                 # Move the boss (i.e. Chase the player)
                 self.move()
+
+                # If the boss has not thrown a chilli recently
+                if self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] == None:
+                    
+                    # The angle the projectile will travel at
+                    projectile_angle = self.movement_information_dict["Angle"]
+                    
+                    # Create a chilli projectile and throw it at the player
+                    self.chilli_projectile_controller.create_chilli_projectile(
+                                    x_pos = self.rect.centerx + (ChilliProjectileController.displacement_from_center_position * cos(projectile_angle)),
+                                    y_pos = (self.rect.centery - (ChilliProjectileController.displacement_from_center_position * sin(projectile_angle))) + ChilliProjectileController.additional_y_displacement_to_position_under_boss,
+                                    angle = projectile_angle,
+                                    damage_amount = ChilliProjectileController.base_damage
+                                                                                )
+
+                    # Set the cooldown timer to start counting down
+                    self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] = self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldown"] 
+
+                # Update the cooldown for throwing chillis whilst chasing the player
+                self.update_chilli_throwing_cooldown_timer()
 
         # If the current action is "SpiralAttack"
         if self.current_action == "SpiralAttack":
@@ -362,6 +387,9 @@ class GoldenMonkeyBoss(Generic, AI):
 
     def update_spiral_chilli_spawning_cooldown_timer(self):
 
+        # Timer for the spawning of chillis during the spiral attack
+
+        # If there is a timer set for the chilli spawning for the spiral attack
         if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] != None:
 
             # If the spawning cooldown timer has not finished counting down
@@ -373,6 +401,23 @@ class GoldenMonkeyBoss(Generic, AI):
             if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] <= 0:
                 # Reset the timer back to None
                 self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] = None
+
+    def update_chilli_throwing_cooldown_timer(self):
+
+        # Timer for the spawning of chillis whilst chasing the plyaer
+
+        # If there is a timer set for the chilli spawning for the spiral attack
+        if self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] != None:
+
+            # If the spawning cooldown timer has not finished counting down
+            if self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] > 0:
+                # Decrease the timer
+                self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] -= 1000 * self.delta_time
+            
+            # If the spawning cooldown timer has finished counting down
+            if self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] <= 0:
+                # Reset the timer back to None
+                self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] = None
 
     def run(self):
 

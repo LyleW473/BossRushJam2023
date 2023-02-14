@@ -12,10 +12,13 @@ class ChilliProjectileController:
     # spiral_attack_angle_time_gradient = ?? (Set to be synced with the duration of the monkey)
     
     # Displacement so that the chillis spawn a small distance from the center of the boss
-    displacement_from_center_position = 30
+    displacement_from_center_position = 20
 
     # An additional y displacement so that the chillis are spawned a little bit further down from the center of the boss (looks better)
     additional_y_displacement_to_position_under_boss = 15
+
+    # Base damage for each chilli projectile
+    base_damage = 15
 
     def __init__(self):
         # The starting angle of the spiral attack
@@ -39,16 +42,18 @@ class ChilliProjectileController:
         
         # For each spiral line
         for i in range(0, self.number_of_spiral_lines):
-
+            
+            # The projectile angle
             projectile_angle = radians(self.spiral_attack_starting_angle + (i * (360 / self.number_of_spiral_lines)))
 
-            # Create a chilli projectile (automatically added to the chilli projectiles group)
-            ChilliProjectile(
-                            x = self.boss_center_position[0] + (ChilliProjectileController.displacement_from_center_position * cos(projectile_angle)),
-                            y = (self.boss_center_position[1] - (ChilliProjectileController.displacement_from_center_position * sin(projectile_angle))) + ChilliProjectileController.additional_y_displacement_to_position_under_boss,
-                            angle = projectile_angle,
-                            damage_amount = ChilliProjectile.base_damage
-                            )
+            # Create a chilli projectile (automatically added to the chilli projectiles dict)
+            self.create_chilli_projectile(
+
+                                    x_pos = self.boss_center_position[0] + (ChilliProjectileController.displacement_from_center_position * cos(projectile_angle)),
+                                    y_pos = (self.boss_center_position[1] - (ChilliProjectileController.displacement_from_center_position * sin(projectile_angle))) + ChilliProjectileController.additional_y_displacement_to_position_under_boss,
+                                    angle = projectile_angle,
+                                    damage_amount = ChilliProjectileController.base_damage
+            )
 
     def update_chilli_projectiles(self, delta_time, camera_position, surface):
         
@@ -68,6 +73,17 @@ class ChilliProjectileController:
                                 y = chilli_projectile.rect.y - camera_position[1],
                                 )
 
+    def create_chilli_projectile(self, x_pos, y_pos, angle, damage_amount):
+
+        # Creates a single chilli projectile (automatically added to the chilli projectiles dict)
+
+        ChilliProjectile(
+                        x = x_pos,
+                        y = y_pos,
+                        angle = angle,
+                        damage_amount = damage_amount
+                        )
+
 class ChilliProjectile(Generic):
 
     # Image for all chillis
@@ -75,9 +91,6 @@ class ChilliProjectile(Generic):
 
     # Default time to cover the distance travelled
     default_time_to_travel_distance_at_final_velocity = 0.22
-
-    # Base damage for each chilli projectile
-    base_damage = 15
 
     def __init__(self, x, y, angle, damage_amount):
 
