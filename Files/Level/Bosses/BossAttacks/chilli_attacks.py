@@ -12,7 +12,7 @@ class ChilliProjectileController:
     # spiral_attack_angle_time_gradient = ?? (Set to be synced with the duration of the monkey)
     
     # Displacement so that the chillis spawn a small distance from the center of the boss
-    displacement_from_center_position = 15
+    displacement_from_center_position = 30
 
     # An additional y displacement so that the chillis are spawned a little bit further down from the center of the boss (looks better)
     additional_y_displacement_to_position_under_boss = 15
@@ -20,9 +20,6 @@ class ChilliProjectileController:
     def __init__(self):
         # The starting angle of the spiral attack
         self.spiral_attack_starting_angle = 0
-    
-        # The angle time gradient of the spiral attack
-        self.spiral_attack_angle_time_gradient =  360 / 3.4 # Time in seconds
 
         # (Will be set when the boss starts attacking)
         self.boss_center_position = None
@@ -77,7 +74,7 @@ class ChilliProjectile(Generic):
     chilli_image = pygame_image_load("graphics/Projectiles/ChilliProjectile.png")
 
     # Default time to cover the distance travelled
-    default_time_to_travel_distance_at_final_velocity = 0.28
+    default_time_to_travel_distance_at_final_velocity = 0.22
 
     # Base damage for each chilli projectile
     base_damage = 15

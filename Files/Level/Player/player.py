@@ -256,6 +256,9 @@ class Player(Generic):
         self.player_gameplay_info_dict["CurrentFrenzyModeValue"] = 0
         self.player_gameplay_info_dict["AmountOfBambooResource"] = self.player_gameplay_info_dict["MaximumAmountOfBambooResource"]
         self.player_gameplay_info_dict["CurrentHealth"] = self.player_gameplay_info_dict["MaximumHealth"]
+
+        # Reset boss rect back to None, so that the player does not lose bamboo when shooting or building before a boss has been spawned
+        self.boss_rect = None
         
         # -----------------------------------------------------------------------------------------
         # Movement
@@ -1917,11 +1920,6 @@ class Player(Generic):
             if pygame_mouse_get_pressed()[0] == True and \
                 ((self.player_gameplay_info_dict["AmountOfBambooResource"] - current_weapon_dict["BambooResourceDepletionAmount"]) >= 0 or self.player_gameplay_info_dict["FrenzyModeTimer"] != None):
 
-                # # If the player's current weapon is the "BambooAssaultRifle"
-                # if self.player_gameplay_info_dict["CurrentToolEquipped"] == "BambooAssaultRifle":
-
-                    # current_weapon = self.player_gameplay_info_dict["CurrentToolEquipped"]
-
                     # If enough time has passed since the last time the player shot
                     if current_weapon_dict["ShootingCooldownTimer"] == None:
 
@@ -1985,7 +1983,7 @@ class Player(Generic):
                                                                     is_bamboo_launcher_projectile = is_bamboo_launcher_projectile
                                                                     )
                             
-                            # If frenzy mode is not activated when shooting:
+                            # If frenzy mode is activated when shooting:
                             elif self.player_gameplay_info_dict["FrenzyModeTimer"] != None:
                                 # Set the "is_frenzy_mode_projectile" attribute to True
                                 bamboo_projectile = BambooProjectile(
@@ -1993,7 +1991,7 @@ class Player(Generic):
                                                                     y = self.rect.centery + distance_y,
                                                                     angle = self.look_angle,
                                                                     damage_amount = current_weapon_dict["WeaponDamage"],
-                                                                    is_frenzy_mode_projectile = False,
+                                                                    is_frenzy_mode_projectile = True,
                                                                     is_bamboo_launcher_projectile = is_bamboo_launcher_projectile
                                                                     )
                                 

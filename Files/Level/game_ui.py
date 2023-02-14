@@ -1045,6 +1045,45 @@ class GameUI:
 
                                                     )
             
+            case "ChilliPieces":
+
+                # If an angled polygons controller has not been created yet
+                if hasattr(self, "angled_polygons_controller") == False:
+                    # Import the angled polygons VFX
+                    from VFX.AngledPolygons import AngledPolygons
+                    # Create an angled polygons controller
+                    self.angled_polygons_controller = AngledPolygons(surface = self.angled_polygons_surface)
+
+                for i in range(0, specified_number_of_pieces):
+                    # Create angled polygons at the boss
+                    self.angled_polygons_controller.create_polygons(
+
+                                                # The spawning position of the angled polygons
+                                                origin_point = [position[0] + random_randrange(-15, 15), position[1] + random_randrange(-15, 15)],
+                                                
+                                                # Angle that increases as i increases
+                                                look_angle = i * (360 / specified_number_of_pieces),
+
+                                                # The length of each polygon
+                                                hypot_length = random_randrange(2, 5), 
+
+                                                # The angle change between each side of the polygon
+                                                polygon_sides_angle_change = 20,
+                                                
+                                                # The distance to travel
+                                                distance_to_travel = random_randrange(50, 75),
+
+                                                # The time for the polygon to travel that distance
+                                                time_to_travel_distance = 0.5,
+
+                                                # The selected colour palette
+                                                colour_palette = "ChilliPieces",
+
+                                                # Boolean to use BLEND_RGB_ADD
+                                                blend_rgb_add_boolean = True
+
+                                                )
+
     def draw_angled_polygons_effects(self, camera_position, delta_time):
         
         # Fill the angled polygons surface as black

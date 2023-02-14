@@ -82,10 +82,10 @@ class GoldenMonkeyBoss(Generic, AI):
                                     "SpiralAttack": {
                                                     "Duration": 6000,
                                                     "DurationTimer": None,
-                                                    "SpiralChilliSpawningCooldown": 60, # Cooldown between each chilli spawned in the spiral attack (50 chillis)
+                                                    "SpiralChilliSpawningCooldown": 40, # Cooldown between each chilli spawned in the spiral attack (50 chillis)
                                                     "SpiralChilliSpawningCooldownTimer": None, 
 
-                                                    "Cooldown": 12000,
+                                                    "Cooldown": 10000,
                                                     "CooldownTimer": 100,
 
                                                     # Animation
@@ -109,7 +109,7 @@ class GoldenMonkeyBoss(Generic, AI):
         # If the chilli projectile controller does not have this attribute
         if hasattr(ChilliProjectileController, "spiral_attack_angle_time_gradient") == False:
             # Set the time it takes for the attack to do one full rotation to be the half the duration of the attack
-            ChilliProjectileController.spiral_attack_angle_time_gradient = 360 /( (self.behaviour_patterns_dict["SpiralAttack"]["Duration"] / 1000) / 2)
+            ChilliProjectileController.spiral_attack_angle_time_gradient = 360 /( (self.behaviour_patterns_dict["SpiralAttack"]["Duration"] / 1000) / 3)
         
         # ----------------------------------------------------------------------------------
         # Declare the animation attributes

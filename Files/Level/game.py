@@ -14,6 +14,7 @@ from pygame import Surface as pygame_Surface
 from pygame.sprite import Group as pygame_sprite_Group
 from pygame.sprite import GroupSingle as pygame_sprite_GroupSingle
 from pygame.sprite import collide_mask as pygame_sprite_collide_mask
+from pygame.sprite import groupcollide as pygame_sprite_group_collide
 from pygame.image import load as pygame_image_load
 from pygame.transform import smoothscale as pygame_transform_smoothscale
 from pygame.transform import scale as pygame_transform_scale
@@ -825,6 +826,60 @@ class Game:
 
                             # Remove the bamboo projectile
                             self.bamboo_projectiles_group.remove(bamboo_projectile)
+           
+            # --------------------------------
+            # Chilli projectiles and bamboo projectiles
+            
+            if hasattr(self, "chilli_projectiles_group"):
+                # Key = sprites from first group, Value = sprites from second group
+                dict_of_collided_sprites = pygame_sprite_group_collide(groupa = self.bamboo_projectiles_group, groupb = self.chilli_projectiles_group, dokilla = False, dokillb = False, collided = pygame_sprite_collide_rect)
+
+                for bamboo_projectile, list_of_collided_chilli_projectiles in dict_of_collided_sprites.items():
+                    # For each chilli projectile inside the list of chilli projectiles that collided with the bamboo projectile
+                    for chilli_projectile in list_of_collided_chilli_projectiles:
+                        
+                        # Check for pixel perfect collision
+                        if pygame_sprite_collide_mask(chilli_projectile, bamboo_projectile) != None:
+
+                            # Take away a life from the bamboo projectile
+                            bamboo_projectile.lives -= 1
+
+                            # If the bamboo projectile has no lives
+                            if bamboo_projectile.lives <= 0:
+
+                                # If this bamboo projectile was shot from the bamboo launcher
+                                if bamboo_projectile.is_bamboo_launcher_projectile == True:
+                                    #  Create a bamboo projectiles explosion (shoots projectiles in a circle)
+                                    self.player.create_bamboo_projectiles_explosion(projectile = bamboo_projectile)
+
+                                    # Create many shattered bamboo pieces
+                                    self.game_ui.create_angled_polygons_effects(
+                                                                                purpose = "ShatteredBambooPieces",
+                                                                                position = (bamboo_projectile.rect.centerx, bamboo_projectile.rect.centery),
+                                                                                specified_number_of_pieces = random_randrange(20, 30)
+                                                                                )
+                                # If this bamboo projectile was not shot from the bamboo launcher
+                                elif bamboo_projectile.is_bamboo_launcher_projectile == False:
+                                    # Create a few shattered bamboo pieces
+                                    self.game_ui.create_angled_polygons_effects(
+                                                                                purpose = "ShatteredBambooPieces",
+                                                                                position = (bamboo_projectile.rect.centerx, bamboo_projectile.rect.centery),
+                                                                                angle = bamboo_projectile.angle,
+                                                                                specified_number_of_pieces = random_randrange(2, 4)
+                                                                                )         
+                                # Remove it from the group
+                                self.bamboo_projectiles_group.remove(bamboo_projectile)
+
+                            # Create chilli pieces
+                            self.game_ui.create_angled_polygons_effects(
+                                                                        purpose = "ChilliPieces",
+                                                                        position = (chilli_projectile.rect.centerx, chilli_projectile.rect.centery),
+                                                                        angle = chilli_projectile.angle,
+                                                                        specified_number_of_pieces = 5
+                                                                        )                 
+
+                            # Remove the chilli projecitle from the chilli projectiles group
+                            self.chilli_projectiles_group.remove(chilli_projectile)
 
         # --------------------------------------------------------------------------------------
         # Bamboo piles
@@ -2232,7 +2287,6 @@ class Game:
         if hasattr(self, "chilli_projectiles_group"):
             # Empty the group
             self.chilli_projectiles_group.empty()
-
 
     def run(self, delta_time):
 

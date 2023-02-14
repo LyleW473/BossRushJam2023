@@ -54,10 +54,14 @@ class BambooProjectile(Generic):
         # If this was not shot from the bamboo launcher
         if is_bamboo_launcher_projectile == False:
             self.original_image = pygame_transform_rotozoom(surface = BambooProjectile.projectile_image.convert_alpha(), angle = degrees(angle), scale = 1)
+            # The amount of lives it has against other projectiles
+            self.lives = 2
 
         # If this was shot from the bamboo launcehr
         elif is_bamboo_launcher_projectile == True:
             self.original_image = pygame_transform_rotozoom(surface = BambooProjectile.launcher_projectile_image.convert_alpha(), angle = degrees(angle), scale = 1)
+            # The amount of lives it has against other projectiles
+            self.lives = 4
 
         # Inherit from the Generic class, which has basic attributes and methods.
         Generic.__init__(self, x = x, y = y, image = self.original_image)
