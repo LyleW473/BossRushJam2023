@@ -491,6 +491,29 @@ class AI:
 
         # Return the current look direction
         return current_look_direction
+    
+    def update_cooldown_timers(self):
+        
+        # Updates the cooldown timers of any action inside the previous actions dictionary
+
+        # If there are any previous actions
+        if len(self.previous_actions_dict) > 0:
+
+            # For each key inside the keys of the previous actions dictionary (The value is the length of the dictionary before it was added)
+            for previous_action in self.previous_actions_dict.copy().keys():
+                
+                # If the timer has not finished counting
+                if self.behaviour_patterns_dict[previous_action]["CooldownTimer"] > 0:
+                    # Decrease the cooldown timer
+                    self.behaviour_patterns_dict[previous_action]["CooldownTimer"] -= 1000 * self.delta_time
+
+                # If the timer has finished counting 
+                if self.behaviour_patterns_dict[previous_action]["CooldownTimer"] <= 0:
+                    # Reset the timer back to None
+                    self.behaviour_patterns_dict[previous_action]["CooldownTimer"] = None
+
+                    # Pop the previous action out of the previous actions dictionary
+                    self.previous_actions_dict.pop(previous_action)
 
     # ---------------------------------------------------------
     # Timers

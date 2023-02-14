@@ -1,6 +1,7 @@
 from pygame.transform import smoothscale
 from pygame import Surface as pygame_Surface
 from pygame import BLEND_RGB_ADD as pygame_BLEND_RGB_ADD
+
 from math import sin, radians
 
 def draw_text(text, text_colour, font, x, y, surface, scale_multiplier = None):
@@ -35,6 +36,26 @@ def change_image_colour(current_animation_image, desired_colour = (255, 255, 255
 
         # Return the coloured animation image (The result should be an image that has a different colour on top)
         return current_animation_image
+
+def change_image_colour_v2(current_animation_image, desired_colour):
+
+    # Changes the image colour completely, without flags
+
+    # Create a copy of the image (So that you don't overwrite the original)
+    changed_image = current_animation_image.copy().convert_alpha()
+
+      # For each row
+    for i in range(0, changed_image.get_width()):
+        # For each column
+        for j in range(0, changed_image.get_height()):
+            
+            # If the pixel is not fully transparent
+            if changed_image.get_at((i, j)).a != 0:
+                # Set the pixel as the desired colour
+                changed_image.set_at((i, j), (desired_colour[0], desired_colour[1], desired_colour[2], 255))
+
+    # Return the changed image
+    return changed_image
 
 def sin_change_object_colour(current_sin_angle, angle_time_gradient, colour_to_change, original_colour, delta_time, plus_or_minus_list, min_max_colours):
 

@@ -26,8 +26,6 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.draw import line as pygame_draw_line
 
-from pygame import Rect as pygame_Rect
-
 class Game:
     def __init__(self):
 
@@ -1109,6 +1107,135 @@ class Game:
                                                             text = "+" + str(self.player.player_gameplay_info_dict["ReflectDamageFrenzyModeIncrement"]),
                                                             larger_font = False
                                                             )
+        
+        # --------------------------------------------------------------------------------------
+        # Chilli projectiles
+
+        if hasattr(self, "chilli_projectiles_group") and len(self.chilli_projectiles_group) > 0:
+
+            # For each chilli projectile
+            for chilli_projectile in self.chilli_projectiles_group:
+
+                # --------------------------------
+                # World / building tiles
+
+                # Look for tile rect collisions between the chilli projectiles and world / building tiles
+                collision_result = chilli_projectile.rect.collidedict(self.world_tiles_dict)
+
+                # If there were any rect collisions
+                if collision_result != None:
+                    
+                    # --------------------------------
+                    # Building tiles
+                    
+                    # Check for a pixel-perfect collision between the chilli projectile and the building tile
+                    if pygame_sprite_collide_mask(chilli_projectile, collision_result[0]) != None:
+                        
+                        # If the chilli projectile was blocked by a building tile
+                        if collision_result[1] == "BuildingTile":
+                            
+                            # Take one life away from the building tile
+                            collision_result[0].lives -= 1
+
+                            # If the building tile has run out of lives
+                            if collision_result[0].lives <= 0:
+
+                                # "Create" an empty tile where the building tile was
+                                self.empty_tiles_dict[self.player.sprite_groups["ReplacedEmptyTiles"][collision_result[0]]] = 0
+                                
+                                # Remove the building tile from the player's replaced empty tiles dict
+                                self.player.sprite_groups["ReplacedEmptyTiles"].pop(collision_result[0])
+
+                                # Remove the building tile from the world tiles group
+                                self.world_tiles_group.remove(collision_result[0])
+
+                                # Remove the building tile from the world tiles dictionary
+                                self.world_tiles_dict.pop(collision_result[0])
+
+                                # Remove the building tile from the existing building tiles list
+                                self.player.tools["BuildingTool"]["ExistingBuildingTilesList"].remove(collision_result[0])
+
+                                # If the building tile to remove is in the neighbouring tiles dictionary (keys)
+                                if collision_result[0] in self.player.neighbouring_tiles_dict.keys():
+                                    # Remove the building tile
+                                    self.player.neighbouring_tiles_dict.pop(collision_result[0])
+
+                                # Create many shattered bamboo pieces
+                                self.game_ui.create_angled_polygons_effects(
+                                                                            purpose = "ShatteredBambooPieces",
+                                                                            position = (collision_result[0].rect.centerx, collision_result[0].rect.centery),
+                                                                            specified_number_of_pieces = random_randrange(10, 20)
+                                                                            )
+                                                                            
+                            # If the player's frenzy mode is not activated
+                            if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                                # Increase the player's frenzy mode meter by the block damage increment amount, limiting it to the maximum frenzy mode value
+                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
+                                                                                                    self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["BlockDamageFrenzyModeIncrement"],
+                                                                                                    self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
+                                                                                                )
+                                # Create frenzy mode value increment effect text
+                                self.game_ui.create_effect_text(
+                                                                type_of_effect_text = "FrenzyModeValueIncrement",
+                                                                target = "Player",
+                                                                text = "+" + str(self.player.player_gameplay_info_dict["BlockDamageFrenzyModeIncrement"]),
+                                                                larger_font = False
+                                                                )       
+
+                            # Remove the chilli projectile from the group if there is a collision
+                            self.chilli_projectiles_group.remove(chilli_projectile)
+
+                    # --------------------------------
+                    # World tiles
+
+                        # If the collided tile was a world tile
+                        elif collision_result[1]  == "WorldTile":
+                            # Remove the chilli projectile from the group if there is a collision
+                            self.chilli_projectiles_group.remove(chilli_projectile)
+                    
+                # --------------------------------
+                # Player
+
+                # Look for tile rect collisions between the chilli projectile and the player
+                if chilli_projectile.rect.colliderect(self.player.rect):
+                    
+                    # Check for a pixel-perfect collision between the chilli projectile and the player
+                    if pygame_sprite_collide_mask(chilli_projectile, self.player) != None:
+
+                        # Remove the chilli projectile from the group if there is a collision
+                        self.chilli_projectiles_group.remove(chilli_projectile)
+                        
+                        # Damage the player by the stomp attack node damage
+                        self.player.player_gameplay_info_dict["CurrentHealth"] -= chilli_projectile.damage_amount
+
+                        # If the player is alive / has more than 0 health
+                        if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
+                            # Create damage effect text
+                            self.game_ui.create_effect_text(
+                                                            type_of_effect_text = "Damage",
+                                                            target = "Player",
+                                                            text = "-" + str(chilli_projectile.damage_amount),
+                                                            larger_font = False
+                                                        )
+                                                        
+                        # Set the damaged flash effect timer to the damage flash effect time set (damaged flashing effect)
+                        self.player.player_gameplay_info_dict["DamagedFlashEffectTimer"] = self.player.player_gameplay_info_dict["DamagedFlashEffectTime"]
+
+                        # If the player's frenzy mode is not activated
+                        if self.player.player_gameplay_info_dict["FrenzyModeTimer"] == None:
+                            # Increase the player's frenzy mode meter by the take damage increment amount, limiting it to the maximum frenzy mode value
+                            self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] = min(
+                                                                                                self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] + self.player.player_gameplay_info_dict["TakeDamageFrenzyModeIncrement"],
+                                                                                                self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]
+                                                                                                )
+                            # Create frenzy mode value increment effect text
+                            self.game_ui.create_effect_text(
+                                                            type_of_effect_text = "FrenzyModeValueIncrement",
+                                                            target = "Player",
+                                                            text = "+" + str(self.player.player_gameplay_info_dict["TakeDamageFrenzyModeIncrement"]),
+                                                            larger_font = False
+                                                            )
+        
         # -------------------------------------------------------------------------------------- 
         # Bosses
 
@@ -1780,7 +1907,13 @@ class Game:
                                 "Down": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/Down/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/Down")))),
                                 "Down Left": tuple(pygame_transform_flip(surface = pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/DownRight/{i}.png").convert_alpha(), flip_x = True, flip_y = False) for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/DownRight")))),
                                 "Down Right": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Chase/DownRight/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Chase/Downright")))),
-                                }
+                                },
+
+                        "SpiralAttack": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/SpiralAttack/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/SpiralAttack")))),
+                                                
+                                                
+                                                
+                                                
                                                 }
 
                 # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
@@ -1792,6 +1925,11 @@ class Game:
                                                     )
                 # ----------------------------------------
                 # Preparing groups 
+
+                # Create a sprite group for the chilli projectiles created by the Golden Monkey boss`1`
+                from Level.Bosses.BossAttacks.chilli_attacks import ChilliProjectileController
+                self.chilli_projectiles_group = pygame_sprite_Group()
+                ChilliProjectileController.projectiles_group = self.chilli_projectiles_group
 
                 # Add the boss into the boss group
                 self.boss_group.add(golden_monkey_boss)
@@ -1914,6 +2052,20 @@ class Game:
                                                             guidelines_surface = self.guidelines_surface,
                                                             main_surface = self.scaled_surface
                                                             )
+
+        # If the current boss is the "GoldenMonkey"
+        if self.bosses_dict["CurrentBoss"] == "GoldenMonkey":
+
+            # Draw guidelines between the player and the boss
+            self.game_ui.draw_guidelines_between_a_and_b(
+                                                        a = self.boss_group.sprite.rect.center, 
+                                                        b = self.player.rect.center, 
+                                                        colour = "white",
+                                                        camera_position = self.camera_position, 
+                                                        guidelines_segments_thickness = self.guidelines_segments_thickness,
+                                                        guidelines_surface = self.guidelines_surface,
+                                                        main_surface = self.scaled_surface
+                                                        )
 
     # --------------------------------------------------------------------------------------
     # Game UI methods
@@ -2076,6 +2228,11 @@ class Game:
             # Empty the group
             self.stomp_attack_nodes_group.empty()
 
+        # If there is a group for the chilli projectiles
+        if hasattr(self, "chilli_projectiles_group"):
+            # Empty the group
+            self.chilli_projectiles_group.empty()
+
 
     def run(self, delta_time):
 
@@ -2192,18 +2349,17 @@ class Game:
                 # If the player is not alive
                 elif self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
 
-                    """ Only draw the player, boss and tiles (no other objects) and the ending transition on top of all of these """
+                    # Draw tiles and tile map objects inside the tile map / level
+                    self.draw_tile_map_objects()
 
                     # Run the player methods
                     self.player.run(delta_time = delta_time)
 
-                    # If this is the "SikaDeer" boss
+                    # If the boss' image is not the starting image
                     # Note: This is to set the image of the boss to be them standing still and upright
-                    if self.bosses_dict["CurrentBoss"] == "SikaDeer":
-                        # If the boss' image is not the starting image
-                        if self.boss_group.sprite.image != self.boss_group.sprite.starting_image:
-                            # Set their image as the starting image
-                            self.boss_group.sprite.image =  self.boss_group.sprite.starting_image
+                    if self.boss_group.sprite.image != self.boss_group.sprite.starting_image:
+                        # Set their image as the starting image
+                        self.boss_group.sprite.image =  self.boss_group.sprite.starting_image
 
                     # Only draw the boss (Do not update them)
                     self.boss_group.sprite.draw(
@@ -2212,9 +2368,6 @@ class Game:
                                                 y = (self.boss_group.sprite.rect.y - ((self.boss_group.sprite.image.get_height() / 2) - (self.boss_group.sprite.rect.height / 2))) - self.camera_position[1]
                                                     )
 
-                    # Draw world and building tiles
-                    self.draw_world_and_building_tiles()
-                    
             # If the current boss is not alive
             elif self.boss_group.sprite != None and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
 

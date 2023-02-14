@@ -7,7 +7,9 @@ from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from random import randrange as random_randrange
 
-class StompController(Generic):
+class StompController:
+
+    # stomp_controller_nodes_group = pygame.sprite.Group() [Created when the golden monkey boss is spawned]
 
     def __init__(self, scale_multiplier):
 

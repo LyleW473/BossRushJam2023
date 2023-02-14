@@ -2,11 +2,12 @@ from Global.generic import Generic
 from Level.Bosses.AI import AI
 from Global.settings import TILE_SIZE, FULL_DEATH_ANIMATION_DURATION
 from random import choice as random_choice
-from Global.functions import change_image_colour
+from Global.functions import change_image_colour, change_image_colour_v2
 from pygame.mask import from_surface as pygame_mask_from_surface
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from os import listdir as os_listdir
+from Level.Bosses.BossAttacks.chilli_attacks import ChilliProjectileController
 
 
 class GoldenMonkeyBoss(Generic, AI):
@@ -62,9 +63,14 @@ class GoldenMonkeyBoss(Generic, AI):
         self.neighbouring_tiles_dict
         self.camera_shake_events_list # A list of the camera shake events used to add the "Stomp" camera shake effect
         """
-        
+
         # The current action that the boss is performing
         self.current_action = "Chase"
+
+        # To delay actions right after spawning, set the cooldown timer to a desired amount of time and add it to this list, so that the cooldown timers can be updated
+        self.previous_actions_dict = {
+                                    "SpiralAttack": None 
+                                    }
 
         # A dictionary containing information relating to the behaviour of the Sika deer boss
         self.behaviour_patterns_dict = {
@@ -72,13 +78,38 @@ class GoldenMonkeyBoss(Generic, AI):
                                     "Chase": { 
                                             "FullAnimationDuration": 600
                                               },
+                                    
+                                    "SpiralAttack": {
+                                                    "Duration": 6000,
+                                                    "DurationTimer": None,
+                                                    "SpiralChilliSpawningCooldown": 60, # Cooldown between each chilli spawned in the spiral attack (50 chillis)
+                                                    "SpiralChilliSpawningCooldownTimer": None, 
+
+                                                    "Cooldown": 12000,
+                                                    "CooldownTimer": 100,
+
+                                                    # Animation
+                                                    "FullAnimationDuration": 150,
+
+
+
+                                                    },
 
                                     "Death": {
                                             "Images": None
 
 
                                             }
+                                            
                                         }
+        
+        # Controller to create chilli projectiles and chilli projectile attacks
+        self.chilli_projectile_controller = ChilliProjectileController()
+
+        # If the chilli projectile controller does not have this attribute
+        if hasattr(ChilliProjectileController, "spiral_attack_angle_time_gradient") == False:
+            # Set the time it takes for the attack to do one full rotation to be the half the duration of the attack
+            ChilliProjectileController.spiral_attack_angle_time_gradient = 360 /( (self.behaviour_patterns_dict["SpiralAttack"]["Duration"] / 1000) / 2)
         
         # ----------------------------------------------------------------------------------
         # Declare the animation attributes
@@ -104,6 +135,17 @@ class GoldenMonkeyBoss(Generic, AI):
         # Set the animation frame timer to start as the time between animation frames
         self.behaviour_patterns_dict["Chase"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["Chase"]["TimeBetweenAnimFrames"]
 
+        # --------------------------
+        # Spiral attack
+
+        # Note: All directions have the same number of animation frames
+
+        # The time between each frame should be how long each target animation cycle should last, divided by the total number of animation frames
+        self.behaviour_patterns_dict["SpiralAttack"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["SpiralAttack"]["FullAnimationDuration"] / (len(GoldenMonkeyBoss.ImagesDict))
+
+        # Set the animation frame timer to start as the time between animation frames
+        self.behaviour_patterns_dict["SpiralAttack"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["SpiralAttack"]["TimeBetweenAnimFrames"]
+
     def play_animations(self):
 
         # --------------------------------------------------------
@@ -124,8 +166,23 @@ class GoldenMonkeyBoss(Generic, AI):
                 # The current animation image
                 current_animation_image = current_animation_list[self.animation_index]
 
-                # If the boss has been damaged (red and white version)
+            # If the current action is "SpiralAttack"
+            elif self.current_action == "SpiralAttack":
+                # The current animation list
+                current_animation_list = GoldenMonkeyBoss.ImagesDict[self.current_action]
+
+                # The current animation image
+                current_animation_image = current_animation_list[self.animation_index]
+
+            # If the boss has been damaged (red and white version)
             if self.extra_information_dict["DamagedFlashEffectTimer"] != None:
+                
+                # Reduce the colour of the image all the way down to black
+                """Note: This is because yellow is made up of red and green, so the colours must be reduced all the way down first to actually see the red (otherwise the only colour visible would be white
+                and the default colours)
+                """
+                current_animation_image = change_image_colour_v2(current_animation_image = current_animation_image, desired_colour = (0, 0, 0))
+
                 # Set the current animation image to be a flashed version of the current animation image (a white flash effect)
                 current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = random_choice(((255, 255, 255), (255, 0, 0))))
 
@@ -168,6 +225,25 @@ class GoldenMonkeyBoss(Generic, AI):
 
                 # Reset the timer (adding will help with accuracy)
                 self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+        
+        # If the current action is to "SpiralAttack":
+        elif self.current_action == "SpiralAttack":
+            
+            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
+            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
+                # Go the next animation frame
+                self.animation_index += 1
+
+                # Reset the timer (adding will help with accuracy)
+                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+
+            # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
+            if self.animation_index == (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
+                # Go the the first animation frame (reset the animation)
+                self.animation_index = 0
+
+                # Reset the timer (adding will help with accuracy)
+                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
 
         # If the current action is "Death"
         elif self.current_action == "Death":
@@ -193,7 +269,6 @@ class GoldenMonkeyBoss(Generic, AI):
 
         # The main "brain" of the deer boss, which will decide on what action to perform
 
-
         # Find the player (To continuously update the look angle)
         """Note: This is done because even if the boss other attacks will also need the current look angle """
         self.find_player(current_position = self.rect.center, player_position = self.players_position, delta_time = self.delta_time)
@@ -210,20 +285,103 @@ class GoldenMonkeyBoss(Generic, AI):
                 # Reset the animation index whenever we change the action
                 self.animation_index = 0
 
+                # Choose a random action from the possible actions the boss can perform and set it as the current action
+                self.current_action = random_choice(action_list)
+
+                # If the current action that was chosen was "SpiralAttack", and "SpiralAttack" duration timer has not been set to start counting down yet
+                if self.current_action == "SpiralAttack" and self.behaviour_patterns_dict["SpiralAttack"]["DurationTimer"] == None:
+
+                    # Set the duration timer to start counting down
+                    self.behaviour_patterns_dict["SpiralAttack"]["DurationTimer"] = self.behaviour_patterns_dict["SpiralAttack"]["Duration"] 
+
+                    # Set the chilli projectile controllers center position so that chilli projectiles can spawn from the center of the boss
+                    self.chilli_projectile_controller.boss_center_position = self.rect.center
+
+                    # Set the rotation direction for this spiral attack (1 = clockwise, -1 = anti-clockwise)
+                    self.chilli_projectile_controller.spiral_attack_angle_time_gradient *= random_choice([-1, 1])
+
             # If there are no possible actions that the boss can perform or the boss has performed an action recently
             elif len(action_list) == 0 or self.extra_information_dict["NoActionTimer"] != None: 
                 # Move the boss (i.e. Chase the player)
                 self.move()
 
+        # If the current action is "SpiralAttack"
+        if self.current_action == "SpiralAttack":
+            
+            # If enough time has passed since the last set of chilli projectiles were sent out
+            if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] == None:
+                # Perform the spiral attack
+                self.chilli_projectile_controller.create_spiral_attack()
+                # Start the cooldown for the chilli spawning
+                self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] = self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldown"]
+
+            # Always increase the spiral attack angle
+            self.chilli_projectile_controller.increase_spiral_attack_angle(delta_time = self.delta_time)
+
+            # Update the spiral chilli spawning cooldown timer
+            self.update_spiral_chilli_spawning_cooldown_timer()
+
+    # ----------------------------------------------------------------------------------
+    # Timer updating
+
+    def update_duration_timers(self):
+
+        # Updates the duration timer of the current action 
+        # If the duration timer is over, the action is added to the previous actions list so that their cooldown timer can be updated
+        
+        # If the current action is not "Chase" (Chase does not have a duration timer)
+        if self.current_action != "Chase":
+            
+            # If the current action's duration timer has not finished counting down
+            if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] > 0:
+                # Decrease the timer
+                self.behaviour_patterns_dict[self.current_action]["DurationTimer"] -= 1000 * self.delta_time
+            
+            # If the current action's duration timer has finished counting down
+            if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] <= 0:
+                # Reset the duration timer back to None
+                self.behaviour_patterns_dict[self.current_action]["DurationTimer"] = None
+
+                # Reset the animation index
+                self.animation_index = 0
+
+                # Add the current action to the previous actions dict so that its cooldown timer can count down
+                self.previous_actions_dict[self.current_action] = None
+
+                # If the current action is "SpiralAttack"
+                if self.current_action == "SpiralAttack":
+
+                    # Set the no action timer to start counting down
+                    self.extra_information_dict["NoActionTimer"] = self.extra_information_dict["NoActionTime"]
+
+                    # Set the cooldown timer to start counting down
+                    self.behaviour_patterns_dict["SpiralAttack"]["CooldownTimer"] = self.behaviour_patterns_dict["SpiralAttack"]["Cooldown"]
+
+                    # Set the current action back to Chase
+                    self.current_action = "Chase"
+
+    def update_spiral_chilli_spawning_cooldown_timer(self):
+
+        if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] != None:
+
+            # If the spawning cooldown timer has not finished counting down
+            if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] > 0:
+                # Decrease the timer
+                self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] -= 1000 * self.delta_time
+            
+            # If the spawning cooldown timer has finished counting down
+            if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] <= 0:
+                # Reset the timer back to None
+                self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] = None
+
     def run(self):
 
-        # Draw the boss 
-        # Note: Additional positions to center the image (this is because the animation images can vary in size)
-        self.draw(
-            surface = self.surface, 
-            x = (self.rect.x - ((self.image.get_width() / 2)  - (self.rect.width / 2))) - self.camera_position[0], 
-            y = (self.rect.y - ((self.image.get_height() / 2) - (self.rect.height / 2))) - self.camera_position[1]
-                )
+        # Always update / move / draw the chilli projectiles
+        self.chilli_projectile_controller.update_chilli_projectiles(
+                                                                    delta_time = self.delta_time,
+                                                                    camera_position = self.camera_position,
+                                                                    surface = self.surface
+                                                                    )
 
         # If the boss has spawned and the camera panning has been completed
         if self.extra_information_dict["CanStartOperating"] == True:
@@ -255,12 +413,34 @@ class GoldenMonkeyBoss(Generic, AI):
                     self.behaviour_patterns_dict["Death"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["Death"]["FullAnimationDuration"] / len(self.behaviour_patterns_dict["Death"]["Images"])
                     self.behaviour_patterns_dict["Death"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["Death"]["TimeBetweenAnimFrames"]
 
-
             # Play animations
             self.play_animations()
 
             # Create / update a mask for pixel - perfect collisions
             self.mask = pygame_mask_from_surface(self.image)
 
-            # Update the knockback collision idle timer
-            self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
+            # If the boss is alive
+            if self.extra_information_dict["CurrentHealth"] > 0:
+
+                # Update the duration timers
+                self.update_duration_timers()
+
+                # Update the cooldown timers
+                self.update_cooldown_timers()
+
+                # Update the knockback collision idle timer
+                self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
+
+                # Update the no action timer (meaning the boss cannot perform any other actions other than chasing)
+                self.update_no_action_timer(delta_time = self.delta_time)
+
+        # Draw the boss 
+        """ Notes: 
+        - Additional positions to center the image (this is because the animation images can vary in size)
+        - This is down here because the chilli projectiles should be drawn under the boss 
+        """
+        self.draw(
+            surface = self.surface, 
+            x = (self.rect.x - ((self.image.get_width() / 2)  - (self.rect.width / 2))) - self.camera_position[0], 
+            y = (self.rect.y - ((self.image.get_height() / 2) - (self.rect.height / 2))) - self.camera_position[1]
+                )
