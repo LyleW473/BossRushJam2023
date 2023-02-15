@@ -14,7 +14,6 @@ from pygame import Surface as pygame_Surface
 from pygame.sprite import Group as pygame_sprite_Group
 from pygame.sprite import GroupSingle as pygame_sprite_GroupSingle
 from pygame.sprite import collide_mask as pygame_sprite_collide_mask
-from pygame.sprite import groupcollide as pygame_sprite_group_collide
 from pygame.image import load as pygame_image_load
 from pygame.transform import smoothscale as pygame_transform_smoothscale
 from pygame.transform import scale as pygame_transform_scale
@@ -105,6 +104,9 @@ class Game:
 
                                         "StompTimer": None,
                                         "StompTime": 100,
+                                        
+                                        "DiveBombTimer": None,
+                                        "DiveBombTime": 500 
 
                                     }
 
@@ -390,8 +392,13 @@ class Game:
             - Until the focus subject reaches half the size of the scaled screen height from the last tile in the tile map
         """
 
-        # Assign the camera position
-        self.camera_position = [camera_position_x, camera_position_y]
+        try:
+            # Assign the camera position
+            self.camera_position = [camera_position_x, camera_position_y]
+
+        except:
+            self.camera_position = [0, camera_position_y]
+
 
         # Perform screen / camera shake if the conditions are met
         self.camera_position = self.shake_camera(camera_position_to_change = self.camera_position, delta_time = delta_time)
@@ -402,7 +409,7 @@ class Game:
     def shake_camera(self, camera_position_to_change, delta_time):
         
         # Sets the timers for each camera shake event and performs the camera shake
-        
+
         # If there are no camera shake events
         if len(self.camera_shake_info_dict["EventsList"]) == 0:
             # Return the original camera position
@@ -415,7 +422,7 @@ class Game:
             # Setting the timers if there are any camera shake events and no timers have been activated
             
             # If all the camera shake events' timers are None (i.e. there is no camera shake to be performed currently)
-            if self.camera_shake_info_dict["BossTileCollideTimer"] == None and self.camera_shake_info_dict["StompTimer"] == None:
+            if self.camera_shake_info_dict["BossTileCollideTimer"] == None and self.camera_shake_info_dict["StompTimer"] == None and self.camera_shake_info_dict["DiveBombTimer"] == None:
 
                 # Identify what this camera shake is for and start the timer for the screenshake
                 match self.camera_shake_info_dict["EventsList"][0]:
@@ -431,6 +438,10 @@ class Game:
                     case "Stomp":
                         # Set the timer for the stomp screen shake to start
                         self.camera_shake_info_dict["StompTimer"] = self.camera_shake_info_dict["StompTime"]
+
+                    case "DiveBomb":
+                        # Set the timer for the divebomb screen shake to start
+                        self.camera_shake_info_dict["DiveBombTimer"] = self.camera_shake_info_dict["DiveBombTime"]
 
             # ---------------------------------------------------------------------------------------
             # Performing the screen shake and removing events if their timer has finished counting down
@@ -468,7 +479,7 @@ class Game:
                     self.camera_shake_info_dict["BossTileCollideTimer"] = None
 
             # Deer boss stomp timer
-            if self.camera_shake_info_dict["StompTimer"] != None:
+            elif self.camera_shake_info_dict["StompTimer"] != None:
                 
                 # If the timer has not finished counting down
                 if self.camera_shake_info_dict["StompTimer"] > 0:
@@ -487,6 +498,27 @@ class Game:
 
                     # Set the timer back to None
                     self.camera_shake_info_dict["StompTimer"] = None
+
+            # Golden monkey dive bomb timer
+            elif self.camera_shake_info_dict["DiveBombTimer"] != None:
+                
+                # If the timer has not finished counting down
+                if self.camera_shake_info_dict["DiveBombTimer"] > 0:
+                    # Adjust the camera position by the camera shake amounts
+                    camera_position_to_change[0] += random_uniform(-12, 12) * (self.camera_shake_info_dict["DiveBombTimer"] / self.camera_shake_info_dict["DiveBombTime"])
+                    camera_position_to_change[1] += random_uniform(-12, 12) * (self.camera_shake_info_dict["DiveBombTimer"] / self.camera_shake_info_dict["DiveBombTime"])
+
+                    # Decrease the timer
+                    self.camera_shake_info_dict["DiveBombTimer"] -= 1000 * delta_time
+
+                # If the timer has finished counting down 
+                if self.camera_shake_info_dict["DiveBombTimer"] <= 0:
+                    # Remove the event from the camera shake events list
+                    # random_uniform is for a random float number between a given range
+                    self.camera_shake_info_dict["EventsList"].pop()
+
+                    # Set the timer back to None
+                    self.camera_shake_info_dict["DiveBombTimer"] = None
 
             # Return the new camera position after shaking
             return camera_position_to_change
@@ -616,6 +648,23 @@ class Game:
         # Draw the empty tiles
         self.draw_empty_tiles()
 
+    def draw_bamboo_projectiles(self):
+
+        # Draws bamboo projectiles
+
+        for bamboo_projectile in self.bamboo_projectiles_group:
+            # Draw the bamboo projectile 
+            # pygame_draw_rect(self.scaled_surface, "white", (bamboo_projectile.rect.x - self.camera_position[0], bamboo_projectile.rect.y - self.camera_position[1], bamboo_projectile.rect.width, bamboo_projectile.rect.height), 0)
+            bamboo_projectile.draw(surface = self.scaled_surface, x = bamboo_projectile.rect.x - self.camera_position[0], y = bamboo_projectile.rect.y - self.camera_position[1])
+
+    def draw_bamboo_piles(self):
+
+        # Draws bamboo piles
+
+        for bamboo_pile in self.bamboo_piles_group:
+            # Draw the bamboo pile
+            bamboo_pile.draw(surface = self.scaled_surface, x = bamboo_pile.rect.x - self.camera_position[0], y = bamboo_pile.rect.y - self.camera_position[1])
+
     def draw_tile_map_objects(self):
 
         # Calls the draw methods of all objects in the level
@@ -623,17 +672,12 @@ class Game:
         # ---------------------------------------------
         # Bamboo projectiles
 
-        for bamboo_projectile in self.bamboo_projectiles_group:
-            # Draw the bamboo projectile 
-            # pygame_draw_rect(self.scaled_surface, "white", (bamboo_projectile.rect.x - self.camera_position[0], bamboo_projectile.rect.y - self.camera_position[1], bamboo_projectile.rect.width, bamboo_projectile.rect.height), 0)
-            bamboo_projectile.draw(surface = self.scaled_surface, x = bamboo_projectile.rect.x - self.camera_position[0], y = bamboo_projectile.rect.y - self.camera_position[1])
-       
+        self.draw_bamboo_projectiles()
+
         # ---------------------------------------------
         # Bamboo piles
 
-        for bamboo_pile in self.bamboo_piles_group:
-            # Draw the bamboo pile
-            bamboo_pile.draw(surface = self.scaled_surface, x = bamboo_pile.rect.x - self.camera_position[0], y = bamboo_pile.rect.y - self.camera_position[1])
+        self.draw_bamboo_piles()
 
     # --------------------------------------------------------------------------------------
     # Gameplay methods
@@ -1451,9 +1495,13 @@ class Game:
 
             # Only if the boss is the "SikaDeer" and the current action is "DiveBomb"
             if self.bosses_dict["CurrentBoss"] == "GoldenMonkey" and self.boss_group.sprite.current_action == "DiveBomb":
+
                 # If the boss just landed after performing a divebomb attack
-                if self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Land" and self.boss_group.sprite.animation_index == 0:
-                    
+                if self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["Land"]["DurationTimer"] == self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["Land"]["Duration"]:
+                
+                    # Create a camera shake effect for when the boss lands onto the ground
+                    self.camera_shake_info_dict["EventsList"].append("DiveBomb")
+
                     # If there is pixel perfect collision and the player has not been knocked back yet
                     if pygame_sprite_collide_mask(self.boss_group.sprite.dive_bomb_attack_controller, self.player) and self.player.player_gameplay_info_dict["InvincibilityTimer"] == None and (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None):
                         
@@ -1516,11 +1564,13 @@ class Game:
             - If the boss is not idling after knocking back the player (so that the player doesn't keep setting off the idle timer in quick succession)
             - If the boss is not currently stunned 
             - If the player is not invincible (after getting knocked back recently)
+            - The boss is the Golden Monkey and they are not currently performing the dive bomb attack, and is currently launching
             """
             if self.boss_group.sprite.rect.colliderect(self.player.rect) == True and \
                 (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None) and \
                     self.boss_group.sprite.current_action != "Stunned" and \
-                        self.player.player_gameplay_info_dict["InvincibilityTimer"] == None:
+                        self.player.player_gameplay_info_dict["InvincibilityTimer"] == None and \
+                            (self.boss_group.sprite.current_action == "DiveBomb" and self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Launch") == False:
 
                 # If there is pixel-perfect collision 
                 if pygame_sprite_collide_mask(self.boss_group.sprite, self.player):
@@ -2499,16 +2549,26 @@ class Game:
                     # Draw the empty tiles
                     self.draw_empty_tiles()
 
-                    # Draw all objects inside the tile map / level
-                    self.draw_tile_map_objects()
+                    # Draw bamboo piles
+                    self.draw_bamboo_piles()
 
                     # Draw the boss guidelines underneath the player and the boss
                     self.draw_boss_guidelines(delta_time = delta_time)
 
                     # If the current boss is the "GoldenMonkey" and they are currently targeting the player for a divebomb attack
-                    if self.bosses_dict["CurrentBoss"] == "GoldenMonkey" and self.boss_group.sprite.current_action == "DiveBomb" and self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Target":
-                        # Update and draw the divebomb circles UNDER the player
-                        self.boss_group.sprite.update_and_draw_divebomb_circles(delta_time = delta_time)
+                    if self.bosses_dict["CurrentBoss"] == "GoldenMonkey":
+
+                        if self.boss_group.sprite.current_action == "DiveBomb" and self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Target":
+                            # Update and draw the divebomb circles UNDER the player
+                            self.boss_group.sprite.update_and_draw_divebomb_circles(delta_time = delta_time)
+
+                        # If there are shockwave circles to be drawn (After the boss has just landed after performing a dive bomb attack)
+                        if self.boss_group.sprite.dive_bomb_attack_controller.shockwave_circle_alive_timer != None:
+                            # Draw the shockwave circles
+                            self.boss_group.sprite.draw_shockwave_circles(delta_time = delta_time)
+
+                    # Draw projectiles OVER the divebomb circles
+                    self.draw_bamboo_projectiles()
 
                     # Draw the world tiles
                     self.draw_world_tiles()

@@ -2,7 +2,7 @@ from Global.generic import Generic
 from Level.Bosses.AI import AI
 from Global.settings import TILE_SIZE, FULL_DEATH_ANIMATION_DURATION
 from random import choice as random_choice
-from Global.functions import change_image_colour, change_image_colour_v2, draw_text
+from Global.functions import change_image_colour, change_image_colour_v2
 from pygame.mask import from_surface as pygame_mask_from_surface
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
@@ -79,7 +79,8 @@ class GoldenMonkeyBoss(Generic, AI):
 
         # To delay actions right after spawning, set the cooldown timer to a desired amount of time and add it to this list, so that the cooldown timers can be updated
         self.previous_actions_dict = {
-                                    "SpiralAttack": None 
+                                    "SpiralAttack": None,
+                                    "DiveBomb": None
                                     }
 
         # A dictionary containing information relating to the behaviour of the Sika deer boss
@@ -99,8 +100,8 @@ class GoldenMonkeyBoss(Generic, AI):
                                                     "SpiralChilliSpawningCooldown": 60, # Cooldown between each chilli spawned in the spiral attack (50 chillis)
                                                     "SpiralChilliSpawningCooldownTimer": None, 
 
-                                                    "Cooldown": 10000,
-                                                    "CooldownTimer": 10000, # Start the cooldown timer at 10 seconds after being spawned
+                                                    "Cooldown": 8000,
+                                                    "CooldownTimer": 8000, # Start the cooldown timer at 10 seconds after being spawned
 
                                                     # Animation
                                                     "FullAnimationDuration": 150,
@@ -121,19 +122,21 @@ class GoldenMonkeyBoss(Generic, AI):
                                         "PlayerDamageMultiplierWhenBossIsSleeping": 1.75
                                             },
 
-                                    
-                                    # DiveBomb attack
-
                                     "DiveBomb":{
 
                                                 "CurrentDiveBombStage": None,
-                                                "Cooldown": 6000,
-                                                "CooldownTimer": None, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
+                                                "Cooldown": 8000,
+                                                "CooldownTimer": 5000, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
                                                 "EnergyDepletionAmount": 25,
+                                                "CameraShakePerformed": False, # This is used so that 
 
                                                 "Launch": {
-                                                            "Duration": 700, 
-                                                            "DurationTimer": None
+                                                            "Duration": 450, 
+                                                            "DurationTimer": None,
+                                                            "LaunchDistance": 40
+                                                            # JumpTimeGradient (this is set when the boss is launching up)
+
+                                                            # "FullAnimationDuration"
 
                                                             },
                                                 "Target": {
@@ -142,8 +145,13 @@ class GoldenMonkeyBoss(Generic, AI):
                                                         },
 
                                                 "Land": {
-                                                        "Duration": 700, 
-                                                        "DurationTimer": None
+                                                        "Duration": 600, # 700
+                                                        "DurationTimer": None,
+
+
+                                                        "ShockwaveCircleAlphaLevel": 0,
+                                                        "ShockwaveCircleAlphaLevelTimeGradient": 255 - 0 / (600 / 1000)
+
                                                         },
                                             },
 
@@ -249,7 +257,8 @@ class GoldenMonkeyBoss(Generic, AI):
         # DiveBomb
 
         # The time between each frame should be how long "Launch" state is active for, divided by the total number of animation frames
-        self.behaviour_patterns_dict["DiveBomb"]["Launch"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["DiveBomb"]["Launch"]["Duration"] / (len(GoldenMonkeyBoss.ImagesDict["DiveBomb"]["Launch"]))
+        # Note: Launch duration multiplied by 0.25 so that the end of the animation is reached faster than the full launch duration
+        self.behaviour_patterns_dict["DiveBomb"]["Launch"]["TimeBetweenAnimFrames"] = (self.behaviour_patterns_dict["DiveBomb"]["Launch"]["Duration"] * 0.25) / (len(GoldenMonkeyBoss.ImagesDict["DiveBomb"]["Launch"]))
         # Set the animation frame timer to start as the time between animation frames
         self.behaviour_patterns_dict["DiveBomb"]["Launch"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Launch"]["TimeBetweenAnimFrames"]
 
@@ -482,7 +491,7 @@ class GoldenMonkeyBoss(Generic, AI):
                     self.animation_index = 0
 
                     # Choose a random action from the possible actions the boss can perform and set it as the current action
-                    self.current_action = "DiveBomb" #random_choice(action_list)
+                    self.current_action = random_choice(action_list)
 
                     # If the current action that was chosen was "SpiralAttack", and "SpiralAttack" duration timer has not been set to start counting down yet
                     if self.current_action == "SpiralAttack" and self.behaviour_patterns_dict["SpiralAttack"]["DurationTimer"] == None:
@@ -532,8 +541,8 @@ class GoldenMonkeyBoss(Generic, AI):
                         
                         # Create a chilli projectile and throw it at the player
                         self.chilli_projectile_controller.create_chilli_projectile(
-                                        x_pos = self.rect.centerx + (ChilliProjectileController.displacement_from_center_position * cos(projectile_angle)),
-                                        y_pos = (self.rect.centery - (ChilliProjectileController.displacement_from_center_position * sin(projectile_angle))) + ChilliProjectileController.additional_y_displacement_to_position_under_boss,
+                                        x_pos = self.rect.centerx + ((ChilliProjectileController.displacement_from_center_position * 0.5) * cos(projectile_angle)),
+                                        y_pos = (self.rect.centery - ((ChilliProjectileController.displacement_from_center_position  * 0.5) * sin(projectile_angle))) + ChilliProjectileController.additional_y_displacement_to_position_under_boss,
                                         angle = projectile_angle,
                                         damage_amount = ChilliProjectileController.base_damage
                                                                                     )
@@ -584,8 +593,19 @@ class GoldenMonkeyBoss(Generic, AI):
                 self.rect.centerx = self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewCenterPositions"][0]
                 self.rect.centery = self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewCenterPositions"][1]
 
-            # # If the current action is "DiveBomb"
-            # elif self.current_action == "DiveBomb":
+            # If the current action is "DiveBomb"
+            elif self.current_action == "DiveBomb":
+                # If the boss is in the "Launch" stage of the "DiveBomb" action
+                if self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Launch":
+                    
+ 
+                    # Modify the gradient depending on how much time is left before the boss enters the "Target" stage
+                    self.behaviour_patterns_dict["DiveBomb"]["Launch"]["JumpUpGradient"] = (
+                        self.behaviour_patterns_dict["DiveBomb"]["Launch"]["LaunchDistance"] / ((self.behaviour_patterns_dict["DiveBomb"]["Launch"]["DurationTimer"] / self.behaviour_patterns_dict["DiveBomb"]["Launch"]["Duration"]) / 10)
+                                                                                            )
+                                                                        
+                    # Decrease the position of the boss (to move up)
+                    self.rect.y -= self.behaviour_patterns_dict["DiveBomb"]["Launch"]["JumpUpGradient"] * self.delta_time
                 
 
         # If the boss has 0 or less than 0 energy
@@ -600,7 +620,6 @@ class GoldenMonkeyBoss(Generic, AI):
                 # Set the sleep duration timer to start counting down
                 self.behaviour_patterns_dict["Sleep"]["DurationTimer"] = self.behaviour_patterns_dict["Sleep"]["Duration"]
 
-
     def update_and_draw_divebomb_circles(self, delta_time):
 
         # If the current dive bomb stage is "Target"
@@ -609,8 +628,8 @@ class GoldenMonkeyBoss(Generic, AI):
             # Fill the dive bomb attack controller's alpha surface with black
             self.dive_bomb_attack_controller.alpha_surface.fill("black")
 
-                # Draw the circles onto the alpha surface
-                # Note: The center 
+            # Draw the circles onto the alpha surface
+            # Note: The center 
             pygame_draw_circle(
                             surface = self.dive_bomb_attack_controller.alpha_surface, 
                             color = (180, 0, 0), 
@@ -660,6 +679,51 @@ class GoldenMonkeyBoss(Generic, AI):
                             )
 
             # self.dive_bomb_attack_controller.draw(surface= self.surface, x = self.dive_bomb_attack_controller.rect.x - self.camera_position[0], y = self.dive_bomb_attack_controller.rect.y - self.camera_position[1])
+    
+    def draw_shockwave_circles(self, delta_time):
+        
+        # Draws the shockwave circles
+    
+        # Fill the shockwave circle alpha surface with black
+        self.dive_bomb_attack_controller.shockwave_circle_alpha_surface.fill("black")
+
+
+        # Drawing the shockwave circles
+        pygame_draw_circle(
+                        surface = self.dive_bomb_attack_controller.shockwave_circle_alpha_surface, 
+                        color = (100, 0, 0),
+                        center = (self.dive_bomb_attack_controller.shockwave_circle_alpha_surface_size[0] / 2, self.dive_bomb_attack_controller.shockwave_circle_alpha_surface_size[1] / 2), 
+                        radius = self.dive_bomb_attack_controller.shockwave_circle_current_radius, 
+                        width = 0
+                        )
+        pygame_draw_circle(
+                        surface = self.dive_bomb_attack_controller.shockwave_circle_alpha_surface, 
+                        color = (120, 0, 0),
+                        center = (self.dive_bomb_attack_controller.shockwave_circle_alpha_surface_size[0] / 2, self.dive_bomb_attack_controller.shockwave_circle_alpha_surface_size[1] / 2), 
+                        radius = self.dive_bomb_attack_controller.shockwave_circle_current_radius * 0.4, 
+                        width = 0
+                        )
+        pygame_draw_circle(
+                        surface = self.dive_bomb_attack_controller.shockwave_circle_alpha_surface, 
+                        color = (140, 0, 0),
+                        center = (self.dive_bomb_attack_controller.shockwave_circle_alpha_surface_size[0] / 2, self.dive_bomb_attack_controller.shockwave_circle_alpha_surface_size[1] / 2), 
+                        radius = self.dive_bomb_attack_controller.shockwave_circle_current_radius * 0.15, 
+                        width = 0
+                        )
+
+        # Blit the center of the alpha surface at the landing position (Which would be the center of the player)
+        # Note: The rect positions should be the 
+        self.surface.blit(
+                        self.dive_bomb_attack_controller.shockwave_circle_alpha_surface, 
+                        (
+                        (self.dive_bomb_attack_controller.rect.centerx - (self.dive_bomb_attack_controller.shockwave_circle_alpha_surface_size[0] / 2)) - self.camera_position[0],
+                        (self.dive_bomb_attack_controller.rect.centery - (self.dive_bomb_attack_controller.shockwave_circle_alpha_surface_size[1] / 2))  - self.camera_position[1]
+                        ),
+                        )
+    
+        # Change the alpha level and size of the shockwave circles
+        self.dive_bomb_attack_controller.change_shockwave_circles_visual_effect(delta_time = delta_time)
+
     # ----------------------------------------------------------------------------------
     # Timer updating
 
@@ -765,8 +829,9 @@ class GoldenMonkeyBoss(Generic, AI):
                         self.dive_bomb_attack_controller.rect.center = self.players_position
 
                         # Modify the movement infomration dict's new center positions so that when the boss lands, it won't teleport back to its old position
+                        # Note: -(self.rect.height) / 2, so that the bottom of the boss will be spawned at the landing position
                         self.movement_information_dict["NewPositionCenterX"] = self.dive_bomb_attack_controller.landing_position[0]
-                        self.movement_information_dict["NewPositionCenterY"] = self.dive_bomb_attack_controller.landing_position[1]
+                        self.movement_information_dict["NewPositionCenterY"] = self.dive_bomb_attack_controller.landing_position[1] - (self.rect.height / 2)
 
                         # Take the boss off the map
                         self.rect.center = (10000, 10000)
@@ -780,13 +845,16 @@ class GoldenMonkeyBoss(Generic, AI):
                         self.behaviour_patterns_dict["DiveBomb"]["Land"]["DurationTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Land"]["Duration"]
 
                         # Set the boss to be at the landing position
-                        self.rect.center = self.dive_bomb_attack_controller.landing_position
+                        self.rect.midbottom = self.dive_bomb_attack_controller.landing_position
 
                         # Update the angle between the boss and the player, so that the player gets knocked back properly
                         self.find_player(player_position = self.players_position, current_position = self.dive_bomb_attack_controller.landing_position, delta_time = self.delta_time) 
 
                         # Reset the divebomb attributes of the divebobm attack controller
                         self.dive_bomb_attack_controller.reset_divebomb_attributes()
+
+                        # Set the shockwave circle timer to start as the boss just landed (visual effect)
+                        self.dive_bomb_attack_controller.shockwave_circle_alive_timer = self.dive_bomb_attack_controller.shockwave_circle_alive_time * 1000
 
                     case "Land":
                         # Set the current action back to "Chase"
@@ -841,9 +909,7 @@ class GoldenMonkeyBoss(Generic, AI):
                 # Reset the timer back to None
                 self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] = None
 
-    
     def run(self):
-        # print(self.current_action, self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"])
 
         # Always update / move / draw the chilli projectiles
         self.chilli_projectile_controller.update_chilli_projectiles(
