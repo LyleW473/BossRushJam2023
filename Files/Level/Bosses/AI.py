@@ -46,7 +46,7 @@ class AI:
         # A dictionary containing extra information about the bosses
         self.extra_information_dict = {    
                                         # Health
-                                        "CurrentHealth": max_health,
+                                        "CurrentHealth": 0.5 * max_health,
                                         "MaximumHealth": max_health,
 
                                         # Knockback damage

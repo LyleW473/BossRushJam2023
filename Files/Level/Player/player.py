@@ -73,7 +73,7 @@ class Player(Generic):
         - This means that as soon as we find a collision between a tile and a player, where the difference between the two points (i.e. the sides of each item) is less than the collision tolerance, then this will register as a collision.
         - So if the difference between the points of collision is less than the collision tolerance, then this will be detected as a collision
         """
-        self.collision_tolerance = TILE_SIZE
+        self.collision_tolerance = 18
         
         # ---------------------------------------------------------------------------------
         # Angles
@@ -1453,7 +1453,7 @@ class Player(Generic):
 
     def update_frenzy_mode_colour(self):
         
-        # Updates the frenzy
+        # Updates the frenzy mode colour
 
         # Change the colour of the player and update the current sin angle
         self.player_gameplay_info_dict["FrenzyModeVisualEffectColour"], self.player_gameplay_info_dict["FrenzyModeVisualEffectCurrentSinAngle"] = sin_change_object_colour(

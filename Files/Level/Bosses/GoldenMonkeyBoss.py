@@ -2,7 +2,7 @@ from Global.generic import Generic
 from Level.Bosses.AI import AI
 from Global.settings import TILE_SIZE, FULL_DEATH_ANIMATION_DURATION
 from random import choice as random_choice
-from Global.functions import change_image_colour, change_image_colour_v2
+from Global.functions import change_image_colour, change_image_colour_v2, sin_change_object_colour
 from pygame.mask import from_surface as pygame_mask_from_surface
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
@@ -77,6 +77,9 @@ class GoldenMonkeyBoss(Generic, AI):
         # The amount of energy that the boss starts with
         self.energy_amount = GoldenMonkeyBoss.maximum_energy_amount
 
+        # The current phase the golden monkey is in
+        self.current_phase = 1
+
         # To delay actions right after spawning, set the cooldown timer to a desired amount of time and add it to this list, so that the cooldown timers can be updated
         self.previous_actions_dict = {
                                     "SpiralAttack": None,
@@ -123,9 +126,9 @@ class GoldenMonkeyBoss(Generic, AI):
                                             },
 
                                     "DiveBomb":{
-
+                                                "SecondPhaseDiveBombCounter": 0,
                                                 "CurrentDiveBombStage": None,
-                                                "Cooldown": 8000,
+                                                "Cooldown": 10000,
                                                 "CooldownTimer": 5000, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
                                                 "EnergyDepletionAmount": 25,
                                                 "CameraShakePerformed": False, # This is used so that 
@@ -213,8 +216,44 @@ class GoldenMonkeyBoss(Generic, AI):
         if hasattr(EffectText, "effect_text_list") == False:
             EffectText.effect_text_list = []
 
+        # ----------------------------------------------------------------------------------
+        # Phase 2 colour
+
+        self.second_phase_colour_min_max_colours = ((0, 0, 120), (0, 120, 0))
+        self.second_phase_colour_current_colour = self.second_phase_colour_min_max_colours[1]
+        self.second_phase_colour_current_sin_angle = 0
+        self.second_phase_colour_angle_time_gradient = (360 - 0) / 1
+        self.second_phase_colour_plus_or_minus = (0, 1, 1)
+
     # ----------------------------------------------------------------------------------
     # Animations
+
+    def update_second_phase_colour(self):
+
+        # Change the colour of the player and update the current sin angle
+        self.second_phase_colour_current_colour, self.second_phase_colour_current_sin_angle = sin_change_object_colour(      
+                                                                                                                        # The current sin angle
+                                                                                                                        current_sin_angle = self.second_phase_colour_current_sin_angle,
+
+                                                                                                                        # The rate of change in the sin angle over time
+                                                                                                                        angle_time_gradient = self.second_phase_colour_angle_time_gradient, 
+
+                                                                                                                        # Set the colour that will be changed (the return value)
+                                                                                                                        colour_to_change = self.second_phase_colour_current_colour,
+
+                                                                                                                        # Set the original colour as either the min or max colour 
+                                                                                                                        # Note:  The order does not matter because the colour will always start at the midpoint RGB value
+                                                                                                                        original_colour = self.second_phase_colour_min_max_colours[0],
+
+                                                                                                                        # The minimum and maximum colours
+                                                                                                                        min_max_colours = self.second_phase_colour_min_max_colours,
+
+                                                                                                                        # A list containing values indicating whether we should subtract or add for each RGB value at a given angle, e.g. (-1, 0, 1)
+                                                                                                                        plus_or_minus_list = self.second_phase_colour_plus_or_minus,
+
+                                                                                                                        # Delta time to increase the angle over time
+                                                                                                                        delta_time = self.delta_time
+                                                                                                                        )
 
     def declare_animation_attributes(self):
 
@@ -312,6 +351,12 @@ class GoldenMonkeyBoss(Generic, AI):
                     current_animation_list = GoldenMonkeyBoss.ImagesDict[self.current_action]["Land"]
                     current_animation_image = GoldenMonkeyBoss.ImagesDict[self.current_action]["Land"][0]
 
+            # If the boss is in its second phase
+            if self.current_phase == 2:
+
+                # Change the colour of the boss to be its second phase colour
+                current_animation_image = change_image_colour(current_animation_image = current_animation_image, desired_colour = self.second_phase_colour_current_colour)
+                
             # If the boss has been damaged (red and white version)
             if self.extra_information_dict["DamagedFlashEffectTimer"] != None:
                 
@@ -480,7 +525,7 @@ class GoldenMonkeyBoss(Generic, AI):
 
             # If the current action is "Chase"
             if self.current_action == "Chase":
-
+                
                 # Create a list of all the actions that the AI can currently perform, if the action's cooldown timer is None
                 action_list = [action for action in self.behaviour_patterns_dict.keys() if (action == "SpiralAttack" or action == "DiveBomb") and self.behaviour_patterns_dict[action]["CooldownTimer"] == None]
 
@@ -598,16 +643,13 @@ class GoldenMonkeyBoss(Generic, AI):
                 # If the boss is in the "Launch" stage of the "DiveBomb" action
                 if self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Launch":
                     
- 
                     # Modify the gradient depending on how much time is left before the boss enters the "Target" stage
                     self.behaviour_patterns_dict["DiveBomb"]["Launch"]["JumpUpGradient"] = (
                         self.behaviour_patterns_dict["DiveBomb"]["Launch"]["LaunchDistance"] / ((self.behaviour_patterns_dict["DiveBomb"]["Launch"]["DurationTimer"] / self.behaviour_patterns_dict["DiveBomb"]["Launch"]["Duration"]) / 10)
-                                                                                            )
-                                                                        
+                                                                                            )                                                   
                     # Decrease the position of the boss (to move up)
                     self.rect.y -= self.behaviour_patterns_dict["DiveBomb"]["Launch"]["JumpUpGradient"] * self.delta_time
                 
-
         # If the boss has 0 or less than 0 energy
         elif self.energy_amount <= 0:
             
@@ -857,23 +899,46 @@ class GoldenMonkeyBoss(Generic, AI):
                         self.dive_bomb_attack_controller.shockwave_circle_alive_timer = self.dive_bomb_attack_controller.shockwave_circle_alive_time * 1000
 
                     case "Land":
-                        # Set the current action back to "Chase"
-                        self.current_action = "Chase"
-
-                        # Set the next stage to be None
-                        self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] = None
-
-                        # Set the cooldown timer to start counting down
-                        self.behaviour_patterns_dict["DiveBomb"]["CooldownTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Cooldown"]
-
-                        # Set the no action timer to start counting down
-                        self.extra_information_dict["NoActionTimer"] = self.extra_information_dict["NoActionTime"]
                         
-                        # Add the divebomb action to the previous actions dict so that its cooldown timer can count down
-                        self.previous_actions_dict["DiveBomb"] = None
+                        # If current phase is the first phase or the boss is in the second phase and the boss has dive bombed the player 3 times already
+                        if self.current_phase == 1 or (self.current_phase == 2 and self.behaviour_patterns_dict["DiveBomb"]["SecondPhaseDiveBombCounter"] == 2):
+                            # Set the current action back to "Chase"
+                            self.current_action = "Chase"
 
-                        # Reduce the amount of energy that the boss has
-                        self.energy_amount -= self.behaviour_patterns_dict["DiveBomb"]["EnergyDepletionAmount"]
+                            # Set the next stage to be None
+                            self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] = None
+
+                            # Set the cooldown timer to start counting down
+                            self.behaviour_patterns_dict["DiveBomb"]["CooldownTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Cooldown"]
+
+                            # Set the no action timer to start counting down
+                            self.extra_information_dict["NoActionTimer"] = self.extra_information_dict["NoActionTime"]
+                            
+                            # Add the divebomb action to the previous actions dict so that its cooldown timer can count down
+                            self.previous_actions_dict["DiveBomb"] = None
+
+                            # Reduce the amount of energy that the boss has
+                            self.energy_amount -= self.behaviour_patterns_dict["DiveBomb"]["EnergyDepletionAmount"]
+
+                            # If the boss has divebombed the player 3 times already
+                            if self.behaviour_patterns_dict["DiveBomb"]["SecondPhaseDiveBombCounter"] == 2:
+                                # Reset the seocnd phased dive bomb counter
+                                self.behaviour_patterns_dict["DiveBomb"]["SecondPhaseDiveBombCounter"] = 0
+
+                        # If the boss is in the second phase, and the boss has not divebombed the player 3 times yet
+                        elif self.current_phase == 2 and self.behaviour_patterns_dict["DiveBomb"]["SecondPhaseDiveBombCounter"] < 2:
+                            # Set the current action back to DiveBomb
+                            self.current_action = "DiveBomb"
+
+                            # Set the next stage to be None
+                            self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] = "Launch"
+
+                            # Set the "Launch" duration timer to start counting down
+                            self.behaviour_patterns_dict["DiveBomb"]["Launch"]["DurationTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Launch"]["Duration"]
+
+                            # Increment the second phase dive bomb counter
+                            self.behaviour_patterns_dict["DiveBomb"]["SecondPhaseDiveBombCounter"] += 1
+
 
     def update_spiral_chilli_spawning_cooldown_timer(self):
 
@@ -910,7 +975,7 @@ class GoldenMonkeyBoss(Generic, AI):
                 self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] = None
 
     def run(self):
-
+        
         # Always update / move / draw the chilli projectiles
         self.chilli_projectile_controller.update_chilli_projectiles(
                                                                     delta_time = self.delta_time,
@@ -956,6 +1021,20 @@ class GoldenMonkeyBoss(Generic, AI):
 
             # If the boss is alive
             if self.extra_information_dict["CurrentHealth"] > 0:
+
+                # If the boss has less than 60% of its maximum health
+                if self.extra_information_dict["CurrentHealth"] <=  (0.6 * self.extra_information_dict["MaximumHealth"]):
+                    # If the boss is not already in phase 2
+                    if self.current_phase != 2:
+                        # Go into phase 2
+                        self.current_phase = 2
+                        # Reduce the time it takes for the boss to target and divebomb the player
+                        self.behaviour_patterns_dict["DiveBomb"]["Target"]["Duration"] *= 0.75
+                        # Reduce the spawning cooldowns of the spiral attack
+                        self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldown"] *= 0.75
+                    
+                    # Update the second phase colour
+                    self.update_second_phase_colour()
 
                 # Update the duration timers
                 self.update_duration_timers()
