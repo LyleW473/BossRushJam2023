@@ -8,7 +8,7 @@ from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from os import listdir as os_listdir
 from Level.Bosses.BossAttacks.chilli_attacks import ChilliProjectileController
-from math import sin, cos
+from math import sin, cos, radians
 
 
 class GoldenMonkeyBoss(Generic, AI):
@@ -94,9 +94,14 @@ class GoldenMonkeyBoss(Generic, AI):
 
                                                     # Animation
                                                     "FullAnimationDuration": 150,
-
-
-
+                                                    
+                                                    # Moving the boss around a point in a circle
+                                                    "SpiralAttackSpinPivotPoint": None,
+                                                    "SpiralAttackSpinPivotDistance": 15,
+                                                    "SpiralAttackSpinAngle": 0, # The angle the boss will be compared to its pivot point
+                                                    "SpiralAttackSpinAngleTimeGradient": 360 / 1.2,
+                                                    "SpiralAttackSpinNewAngle": 0,
+                                                    "SpiralAttackSpinNewCenterPositions": None
                                                     },
 
                                     "Death": {
@@ -107,6 +112,9 @@ class GoldenMonkeyBoss(Generic, AI):
                                             
                                         }
         
+        # -------------------------------------------------
+        # Chilli projectiles and spiral attack 
+
         # Controller to create chilli projectiles and chilli projectile attacks
         self.chilli_projectile_controller = ChilliProjectileController()
 
@@ -114,6 +122,7 @@ class GoldenMonkeyBoss(Generic, AI):
         if hasattr(ChilliProjectileController, "spiral_attack_angle_time_gradient") == False:
             # Set the time it takes for the attack to do one full rotation to be the half the duration of the attack
             ChilliProjectileController.spiral_attack_angle_time_gradient = 360 /( (self.behaviour_patterns_dict["SpiralAttack"]["Duration"] / 1000) / 3)
+
         
         # ----------------------------------------------------------------------------------
         # Declare the animation attributes
@@ -269,6 +278,9 @@ class GoldenMonkeyBoss(Generic, AI):
         # Update damage flash effect timer
         self.update_damage_flash_effect_timer()
 
+    # ----------------------------------------------------------------------------------
+    # Gameplay
+
     def decide_action(self):
 
         # The main "brain" of the deer boss, which will decide on what action to perform
@@ -294,6 +306,9 @@ class GoldenMonkeyBoss(Generic, AI):
 
                 # If the current action that was chosen was "SpiralAttack", and "SpiralAttack" duration timer has not been set to start counting down yet
                 if self.current_action == "SpiralAttack" and self.behaviour_patterns_dict["SpiralAttack"]["DurationTimer"] == None:
+                    
+                    # --------------------------------------------
+                    # Chillis
 
                     # Set the duration timer to start counting down
                     self.behaviour_patterns_dict["SpiralAttack"]["DurationTimer"] = self.behaviour_patterns_dict["SpiralAttack"]["Duration"] 
@@ -303,6 +318,16 @@ class GoldenMonkeyBoss(Generic, AI):
 
                     # Set the rotation direction for this spiral attack (1 = clockwise, -1 = anti-clockwise)
                     self.chilli_projectile_controller.spiral_attack_angle_time_gradient *= random_choice([-1, 1])
+
+                    # --------------------------------------------
+                    # Spin
+                    
+                    # Set the pivot point to be the current center of the boss 
+                    self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinPivotPoint"] = self.rect.center
+
+                    # Alter the angle time gradient of the spin, so that the boss can rotate around the pivot point clockwise or anti clockwise
+                    self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinAngleTimeGradient"] *= random_choice([-1, 1])
+
 
             # If there are no possible actions that the boss can perform or the boss has performed an action recently
             elif len(action_list) == 0 or self.extra_information_dict["NoActionTimer"] != None: 
@@ -332,6 +357,9 @@ class GoldenMonkeyBoss(Generic, AI):
 
         # If the current action is "SpiralAttack"
         if self.current_action == "SpiralAttack":
+
+            # --------------------------------------------
+            # Chilli spiral attack
             
             # If enough time has passed since the last set of chilli projectiles were sent out
             if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] == None:
@@ -345,6 +373,28 @@ class GoldenMonkeyBoss(Generic, AI):
 
             # Update the spiral chilli spawning cooldown timer
             self.update_spiral_chilli_spawning_cooldown_timer()
+
+            # --------------------------------------------
+            # Pivoting around the original center point
+
+            # Increase the angle
+            self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewAngle"] += self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinAngleTimeGradient"] * self.delta_time
+            self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinAngle"] = round(self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewAngle"])
+
+            # Calculate the horizontal and vertical distnaces the player should be away from the pivot point
+            displacement_x = (self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinPivotDistance"] * cos(radians(self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinAngle"])))
+            displacement_y = (self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinPivotDistance"] * sin(radians(self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinAngle"])))
+            
+            # Calculate the new center position of the boss
+            self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewCenterPositions"] = (
+                                                                        self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinPivotPoint"][0] + displacement_x ,
+                                                                        self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinPivotPoint"][1] + displacement_y 
+                                                                                                )
+            
+            # Set the center of the boss to be the same as the new center positions
+            self.rect.centerx = self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewCenterPositions"][0]
+            self.rect.centery = self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewCenterPositions"][1]
+
 
     # ----------------------------------------------------------------------------------
     # Timer updating
@@ -373,8 +423,14 @@ class GoldenMonkeyBoss(Generic, AI):
                 # Add the current action to the previous actions dict so that its cooldown timer can count down
                 self.previous_actions_dict[self.current_action] = None
 
+                # -----------------------------------------------------------------------------------
+                # Additional resets depending on the action
+
                 # If the current action is "SpiralAttack"
                 if self.current_action == "SpiralAttack":
+
+                    # Set the current action back to Chase
+                    self.current_action = "Chase"
 
                     # Set the no action timer to start counting down
                     self.extra_information_dict["NoActionTimer"] = self.extra_information_dict["NoActionTime"]
@@ -382,8 +438,18 @@ class GoldenMonkeyBoss(Generic, AI):
                     # Set the cooldown timer to start counting down
                     self.behaviour_patterns_dict["SpiralAttack"]["CooldownTimer"] = self.behaviour_patterns_dict["SpiralAttack"]["Cooldown"]
 
-                    # Set the current action back to Chase
-                    self.current_action = "Chase"
+                    # --------------------------------------
+                    # Spin
+
+                    # Reset the angles for the spin pivoting
+                    self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinAngle"] = 0
+                    self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewAngle"] = 0
+
+                    # Set the position of the boss to be the original position again
+                    self.rect.center = self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinPivotPoint"]
+                    # Reset the pivot point back to None
+                    self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinPivotPoint"] = None
+
 
     def update_spiral_chilli_spawning_cooldown_timer(self):
 
