@@ -757,7 +757,6 @@ class Game:
                                     # Increase the base damage of the bamboo projectile by the damage multiplier dealt to the deer boss when stunned, plus a random damage amount
                                     total_damage_dealt = (bamboo_projectile.damage_amount * self.boss_group.sprite.behaviour_patterns_dict["Stunned"]["PlayerDamageMultiplierWhenStunned"]) + randomised_damage_amount
 
-
                                 # If the deer boss is not stunned
                                 elif self.boss_group.sprite.current_action != "Stunned":
                                     # Set the total damage to be the base damage amount plus a random damage amount
@@ -765,8 +764,15 @@ class Game:
 
                             # If the current boss is the "GoldenMonkey"
                             elif self.bosses_dict["CurrentBoss"] == "GoldenMonkey":
-                                # Set the total damage to be the base damage amount plus a random damage amount
-                                total_damage_dealt = bamboo_projectile.damage_amount + randomised_damage_amount
+                                # If the golden monkey boss is currently sleeping
+                                if self.boss_group.sprite.current_action == "Sleep":
+                                    # Increase the base damage of the bamboo projectile by the damage multiplier dealt to the deer boss when stunned, plus a random damage amount
+                                    total_damage_dealt = (bamboo_projectile.damage_amount * self.boss_group.sprite.behaviour_patterns_dict["Sleep"]["PlayerDamageMultiplierWhenBossIsSleeping"]) + randomised_damage_amount
+                                
+                                # If the golden monkey boss is not sleeping
+                                elif self.boss_group.sprite.current_action != "Sleep":
+                                    # Set the total damage to be the base damage amount plus a random damage amount
+                                    total_damage_dealt = bamboo_projectile.damage_amount + randomised_damage_amount
 
                             # Deal damage to the boss
                             self.boss_group.sprite.extra_information_dict["CurrentHealth"] -= total_damage_dealt
@@ -827,8 +833,6 @@ class Game:
                             # Remove the bamboo projectile
                             self.bamboo_projectiles_group.remove(bamboo_projectile)
            
-
-
                 # --------------------------------
                 # Chilli projectiles and bamboo projectiles
 
@@ -1981,9 +1985,7 @@ class Game:
                                 },
 
                         "SpiralAttack": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/SpiralAttack/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/SpiralAttack")))),
-                                                
-                                                
-                                                
+                        "Sleep": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Sleep/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Sleep"))))
                                                 
                                                 }
 

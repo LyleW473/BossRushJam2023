@@ -754,8 +754,10 @@ class SikaDeerBoss(Generic, AI):
                 # Update the knockback collision idle timer
                 self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
 
-                # Update the no action timer (meaning the boss cannot perform any other actions other than chasing)
-                self.update_no_action_timer(delta_time = self.delta_time)
+                # If the current action is not "Stunned"
+                if self.current_action != "Stunned":
+                    # Update the no action timer (meaning the boss cannot perform any other actions other than chasing)
+                    self.update_no_action_timer(delta_time = self.delta_time)
 
                 # TEMPORARY
                 for tile in self.neighbouring_tiles_dict.keys():
