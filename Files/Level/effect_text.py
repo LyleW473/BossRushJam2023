@@ -2,7 +2,7 @@ class EffectText:
 
     # effect_text_group = []
 
-    def __init__(self, x, y, colour, display_time, text, font, alpha_surface, alpha_level):
+    def __init__(self, x, y, colour, display_time, text, font, alpha_surface, alpha_level, type_of_effect_text):
 
         # Colour of the text
         self.colour = colour
@@ -12,6 +12,9 @@ class EffectText:
 
         # The text to be displayed
         self.text = text
+
+        # The type of effect text
+        self.type_of_effect_text = type_of_effect_text
 
         # The x and y co-ordinates of where the effect text alpha surface will be drawn onto
         self.x = x

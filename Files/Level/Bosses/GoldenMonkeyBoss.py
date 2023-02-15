@@ -2,14 +2,17 @@ from Global.generic import Generic
 from Level.Bosses.AI import AI
 from Global.settings import TILE_SIZE, FULL_DEATH_ANIMATION_DURATION
 from random import choice as random_choice
-from Global.functions import change_image_colour, change_image_colour_v2
+from Global.functions import change_image_colour, change_image_colour_v2, draw_text
 from pygame.mask import from_surface as pygame_mask_from_surface
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from os import listdir as os_listdir
 from Level.Bosses.BossAttacks.chilli_attacks import ChilliProjectileController
 from math import sin, cos, radians
-
+from pygame.font import Font as pygame_font_Font
+from Level.effect_text import EffectText
+from pygame import Surface as pygame_Surface
+from pygame.draw import rect as pygame_draw_rect
 
 class GoldenMonkeyBoss(Generic, AI):
 
@@ -88,7 +91,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                               },
                                     
                                     "SpiralAttack": {
-                                                    "EnergyDepletionAmount": 25,
+                                                    "EnergyDepletionAmount": 30,
                                                     "Duration": 6000,
                                                     "DurationTimer": None,
                                                     "SpiralChilliSpawningCooldown": 60, # Cooldown between each chilli spawned in the spiral attack (50 chillis)
@@ -140,6 +143,31 @@ class GoldenMonkeyBoss(Generic, AI):
         # ----------------------------------------------------------------------------------
         # Declare the animation attributes
         self.declare_animation_attributes()
+
+        # ----------------------------------------------------------------------------------
+        # Sleep text
+
+        """ Notes: 
+        - The game UI is responsible for drawing the text and updating it 
+        - The rest of the info e.g. gradients are inside the GameUI's effect text info dict
+        """
+        self.sleep_effect_text_info_dict = {
+                                    "Font": pygame_font_Font("graphics/Fonts/frenzy_mode_value_font.ttf", 30),
+                                    "Text": "Z",
+                                    "DisplayTime": 850,
+                                    "DefaultAlphaLevel": 185,
+                                    "Colour": "white",
+                                    "CreationCooldownTime": 300,
+                                    "CreationCooldownTimer": None
+                                    }
+        
+        # Font size for creating alpha surfaces
+        self.sleep_effect_text_info_dict["FontSize"] =  pygame_font_Font("graphics/Fonts/frenzy_mode_value_font.ttf", 30).size("Z") 
+
+        # If EffectText does not have an effect text list yet
+        # Note: This is because effect text is also created in the game UI
+        if hasattr(EffectText, "effect_text_list") == False:
+            EffectText.effect_text_list = []
 
     # ----------------------------------------------------------------------------------
     # Animations
@@ -242,6 +270,7 @@ class GoldenMonkeyBoss(Generic, AI):
         # Updating animation
 
         # Find which action is being performed and update the animation index based on that
+        
 
         # If the current action is to "Chase" or "SpiralAttack" or "Sleep"
         if self.current_action == "Chase" or self.current_action == "SpiralAttack" or self.current_action == "Sleep":
@@ -273,6 +302,13 @@ class GoldenMonkeyBoss(Generic, AI):
                 # Reset the timer (adding will help with accuracy)
                 self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
 
+        
+        # --------------------------------------------------------
+        # Additional for sleeping
+        
+        # Creates sleep effect text
+        self.create_sleep_text()
+
         # -----------------------------------
         # Updating timers
         
@@ -281,6 +317,55 @@ class GoldenMonkeyBoss(Generic, AI):
 
         # Update damage flash effect timer
         self.update_damage_flash_effect_timer()
+
+    def create_sleep_text(self):
+        
+        # Creates sleep effect text when the boss is in the sleep state (effect text is always updated by the game UI)
+
+        # If enough time has passed since the last sleep effect text was created
+        if self.sleep_effect_text_info_dict["CreationCooldownTimer"] == None:
+            
+            # Position of the text
+            text_position_x = (self.rect.midtop[0] + 3) - self.camera_position[0]
+            text_position_y = ((self.rect.midtop[1] - (self.sleep_effect_text_info_dict["FontSize"][1] / 2)) + 12) - self.camera_position[1]
+
+            # Alpha surface
+            new_alpha_surface = pygame_Surface(self.sleep_effect_text_info_dict["FontSize"])
+            new_alpha_surface.set_colorkey("black")
+            new_alpha_surface.set_alpha(self.sleep_effect_text_info_dict["DefaultAlphaLevel"])
+
+            # Create the effect text (Automatically added to the effect text group)
+            EffectText(
+                        x = text_position_x,
+                        y = text_position_y,
+                        colour = self.sleep_effect_text_info_dict["Colour"],
+                        display_time = self.sleep_effect_text_info_dict["DisplayTime"], 
+                        text = self.sleep_effect_text_info_dict["Text"],
+                        font = self.sleep_effect_text_info_dict["Font"],
+                        alpha_surface = new_alpha_surface,
+                        alpha_level = self.sleep_effect_text_info_dict["DefaultAlphaLevel"],
+                        type_of_effect_text = "Sleep"
+                        )
+
+            # Set the creation timer cooldown to start
+            self.sleep_effect_text_info_dict["CreationCooldownTimer"] = self.sleep_effect_text_info_dict["CreationCooldownTime"]
+
+    def update_sleep_effect_text_timer(self):
+
+        # Timer for the spawning of chillis whilst chasing the plyaer
+
+        # If there is a timer set for the chilli spawning for the spiral attack
+        if self.sleep_effect_text_info_dict["CreationCooldownTimer"] != None:
+
+            # If the spawning cooldown timer has not finished counting down
+            if self.sleep_effect_text_info_dict["CreationCooldownTimer"] > 0:
+                # Decrease the timer
+                self.sleep_effect_text_info_dict["CreationCooldownTimer"] -= 1000 * self.delta_time
+            
+            # If the spawning cooldown timer has finished counting down
+            if self.sleep_effect_text_info_dict["CreationCooldownTimer"] <= 0:
+                # Reset the timer back to None
+                self.sleep_effect_text_info_dict["CreationCooldownTimer"] = None
 
     # ----------------------------------------------------------------------------------
     # Gameplay
@@ -578,6 +663,11 @@ class GoldenMonkeyBoss(Generic, AI):
                     # Update the no action timer (meaning the boss cannot perform any other actions other than chasing)
                     self.update_no_action_timer(delta_time = self.delta_time)
 
+                # If the current action is "Sleep"
+                elif self.current_action == "Sleep":
+                    # Update the sleep effect text timer
+                    self.update_sleep_effect_text_timer()
+
         # Draw the boss 
         """ Notes: 
         - Additional positions to center the image (this is because the animation images can vary in size)
@@ -588,3 +678,4 @@ class GoldenMonkeyBoss(Generic, AI):
             x = (self.rect.x - ((self.image.get_width() / 2)  - (self.rect.width / 2))) - self.camera_position[0], 
             y = (self.rect.y - ((self.image.get_height() / 2) - (self.rect.height / 2))) - self.camera_position[1]
                 )
+        pygame_draw_rect(self.surface, "green", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 1)

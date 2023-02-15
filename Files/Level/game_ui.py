@@ -109,37 +109,54 @@ class GameUI:
         # A dictionary containing information about the effect text
         self.effect_text_info_dict = { 
 
-                                        "FloatUpTimeGradient": 12 / 0.2, # The vertical distance travelled over time in seconds (Should be the same as the display time)
-                                        "AlphaLevelTimeGradient": (125 - 255) / 0.6,
-                                        "DefaultAlphaLevel": 255,
-
                                         "Damage": {
                                                         "Font": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 16),
                                                         "LargerFont": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 18),
                                                         "DisplayTime": 2000,
-                                                        "Colour": (170, 4, 4)
+                                                        "Colour": (170, 4, 4),
+                                                        "FloatUpTimeGradient": 12 / 0.2, # The vertical distance travelled over time in seconds (Should be the same as the display time)
+                                                        "AlphaLevelTimeGradient": (125 - 255) / 0.6,
+                                                        "DefaultAlphaLevel": 255,
 
                                                         },
                                         "Heal": {
                                                         "Font": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 24),
                                                         "DisplayTime": 3000,
-                                                        "Colour": (4, 225, 4)
-
+                                                        "Colour": (4, 225, 4),
+                                                        "FloatUpTimeGradient": 12 / 0.2, # The vertical distance travelled over time in seconds (Should be the same as the display time)
+                                                        "AlphaLevelTimeGradient": (125 - 255) / 0.6,
+                                                        "DefaultAlphaLevel": 255,
                                                         },
                                         
                                         "BambooResourceReplenishment": {
                                                         "Font": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 16),
                                                         "DisplayTime": 2500,
-                                                        "Colour": (247, 127, 0)
-
+                                                        "Colour": (247, 127, 0),
+                                                        "FloatUpTimeGradient": 12 / 0.2, # The vertical distance travelled over time in seconds (Should be the same as the display time)
+                                                        "AlphaLevelTimeGradient": (125 - 255) / 0.6,
+                                                        "DefaultAlphaLevel": 255,
                                                         },
+
                                         "FrenzyModeValueIncrement":{
                                                         "Font": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 12), # 14
                                                         "LargerFont": pygame_font_Font("graphics/Fonts/effect_text_font.ttf", 24),
                                                         "DisplayTime": 500,
-                                                        "Colour": (235, 199, 230) #,(191, 172, 226)
+                                                        "Colour": (235, 199, 230), #,(191, 172, 226)
+                                                        "FloatUpTimeGradient": 12 / 0.2, # The vertical distance travelled over time in seconds (Should be the same as the display time)
+                                                        "AlphaLevelTimeGradient": (125 - 255) / 0.6,
+                                                        "DefaultAlphaLevel": 255,
                                                         },
+                                        "Sleep": {
+                                                "Font": pygame_font_Font("graphics/Fonts/frenzy_mode_value_font.ttf", 30),
+                                                "DisplayTime": 1000,
+                                                "DefaultAlphaLevel": 255,
+                                                "AlphaLevelTimeGradient": (0 - 255) / 1,
+                                                "FloatUpTimeGradient": 10 / 0.2,
+                                                "FloatRightTimeGradient": 5 / 0.2,
+                                                "Colour": "white"
+                                                }
                         }
+
      
 
         # Create a list for all the effect text
@@ -840,7 +857,7 @@ class GameUI:
         # Alpha surface
         new_alpha_surface = pygame_Surface(font_size)
         new_alpha_surface.set_colorkey("black")
-        new_alpha_surface.set_alpha(self.effect_text_info_dict["DefaultAlphaLevel"])
+        new_alpha_surface.set_alpha(self.effect_text_info_dict[type_of_effect_text]["DefaultAlphaLevel"])
 
 
         # Create the effect text (Automatically added to the effect text group)
@@ -852,10 +869,11 @@ class GameUI:
                     text = text,
                     font = font_selected,
                     alpha_surface = new_alpha_surface,
-                    alpha_level = self.effect_text_info_dict["DefaultAlphaLevel"]
+                    alpha_level = self.effect_text_info_dict[type_of_effect_text]["DefaultAlphaLevel"],
+                    type_of_effect_text = type_of_effect_text
                     )
 
-    def draw_and_update_effect_text(self, camera_position):
+    def draw_and_update_effect_text(self):
         
         # Draws and updates the effect text
         
@@ -890,14 +908,23 @@ class GameUI:
                     self.surface.blit(effect_text.alpha_surface, (effect_text.x, effect_text.y))
                     
                     # Decrease the y-pos of the effect text over time
-                    effect_text.y -= self.effect_text_info_dict["FloatUpTimeGradient"] * self.delta_time
+                    effect_text.y -= self.effect_text_info_dict[effect_text.type_of_effect_text]["FloatUpTimeGradient"] * self.delta_time
 
                     # Adjust the alpha level of the effect text's alpha surface over time
-                    effect_text.alpha_level += self.effect_text_info_dict["AlphaLevelTimeGradient"] * self.delta_time
+                    effect_text.alpha_level += self.effect_text_info_dict[effect_text.type_of_effect_text]["AlphaLevelTimeGradient"] * self.delta_time
                     effect_text.alpha_surface.set_alpha(round(effect_text.alpha_level))
-        
+
                     # Decrease the display time
                     effect_text.display_time -= 1000 * self.delta_time
+
+                    # ------------------------------------------------
+                    # Additional properties
+                    
+                    # If the effect text is "Sleep":
+                    if effect_text.type_of_effect_text == "Sleep":
+                        # Increase the x pos of the text
+                        effect_text.x += self.effect_text_info_dict[effect_text.type_of_effect_text]["FloatRightTimeGradient"] * self.delta_time
+
 
     def create_angled_polygons_effects(self, purpose, position = None, angle = None, specified_number_of_pieces = None):
         
@@ -1121,7 +1148,7 @@ class GameUI:
                 self.draw_player_frenzy_mode_bar()
 
                 # Draw and update any effect text
-                self.draw_and_update_effect_text(camera_position = camera_position)
+                self.draw_and_update_effect_text()
 
                 # Draw the mouse cursor
                 self.draw_mouse_cursor()

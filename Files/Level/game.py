@@ -1453,10 +1453,22 @@ class Game:
 
                 # If there is pixel-perfect collision 
                 if pygame_sprite_collide_mask(self.boss_group.sprite, self.player):
-
-                    # Knockback the player
-                    self.player.player_gameplay_info_dict["KnockbackAttackDirection"] = [self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"]]
-                    self.player.player_gameplay_info_dict["KnockbackTimer"] = self.player.player_gameplay_info_dict["KnockbackTime"]
+                    # -------------------
+                    # Error prevention
+                    """Note: This occurs if the boss has collided with the player before its move method has been called"""
+                    try:
+                        # Knockback the player
+                        self.player.player_gameplay_info_dict["KnockbackAttackDirection"] = [self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"]]
+                        self.player.player_gameplay_info_dict["KnockbackTimer"] = self.player.player_gameplay_info_dict["KnockbackTime"]
+                    except:
+                        # Set the horizontal distance travelled based on the current velocity of the boss
+                        self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"] = ((self.boss_group.sprite.movement_information_dict["HorizontalSuvatU"] * self.boss_group.sprite.movement_information_dict["DeltaTime"]) + (0.5 * self.boss_group.sprite.movement_information_dict["HorizontalSuvatA"] * (self.boss_group.sprite.movement_information_dict["DeltaTime"] ** 2)))
+                        # Set the vertical distance travelled based on the current velocity of the boss
+                        self.boss_group.sprite.movement_information_dict["VerticalSuvatS"] = ((self.boss_group.sprite.movement_information_dict["VerticalSuvatU"] * self.boss_group.sprite.movement_information_dict["DeltaTime"]) + (0.5 * self.boss_group.sprite.movement_information_dict["VerticalSuvatA"] * (self.boss_group.sprite.movement_information_dict["DeltaTime"] ** 2)))
+                        
+                        # Knockback the player
+                        self.player.player_gameplay_info_dict["KnockbackAttackDirection"] = [self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"]]
+                        self.player.player_gameplay_info_dict["KnockbackTimer"] = self.player.player_gameplay_info_dict["KnockbackTime"]
 
                     # Set the horizontal and vertical distance the player should travel based on the angle the boss hit it
                     # Note: Divided by 1000 because the knockback time is in milliseconds
