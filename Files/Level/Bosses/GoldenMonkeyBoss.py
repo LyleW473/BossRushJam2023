@@ -8,11 +8,13 @@ from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from os import listdir as os_listdir
 from Level.Bosses.BossAttacks.chilli_attacks import ChilliProjectileController
+from Level.Bosses.BossAttacks.dive_bomb_attack import DiveBombAttackController
 from math import sin, cos, radians
 from pygame.font import Font as pygame_font_Font
 from Level.effect_text import EffectText
 from pygame import Surface as pygame_Surface
 from pygame.draw import rect as pygame_draw_rect
+from pygame.draw import circle as pygame_draw_circle
 
 class GoldenMonkeyBoss(Generic, AI):
 
@@ -20,7 +22,7 @@ class GoldenMonkeyBoss(Generic, AI):
     # Example: Chase : [Direction][Image list]
     
     # Characteristics
-    knockback_damage = 15
+    knockback_damage = 20
     maximum_health = 20000
     maximum_energy_amount = 100
     
@@ -117,9 +119,33 @@ class GoldenMonkeyBoss(Generic, AI):
                                         "DurationTimer": None,
                                         "FullAnimationDuration": 1200,
                                         "PlayerDamageMultiplierWhenBossIsSleeping": 1.75
-                                        
+                                            },
 
-                                    },
+                                    
+                                    # DiveBomb attack
+
+                                    "DiveBomb":{
+
+                                                "CurrentDiveBombStage": None,
+                                                "Cooldown": 6000,
+                                                "CooldownTimer": None, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
+                                                "EnergyDepletionAmount": 25,
+
+                                                "Launch": {
+                                                            "Duration": 700, 
+                                                            "DurationTimer": None
+
+                                                            },
+                                                "Target": {
+                                                        "Duration": 2000, #3000,
+                                                        "DurationTimer": None
+                                                        },
+
+                                                "Land": {
+                                                        "Duration": 700, 
+                                                        "DurationTimer": None
+                                                        },
+                                            },
 
                                     "Death": {
                                             "Images": None
@@ -139,7 +165,17 @@ class GoldenMonkeyBoss(Generic, AI):
             # Set the time it takes for the attack to do one full rotation to be the half the duration of the attack
             ChilliProjectileController.spiral_attack_angle_time_gradient = 360 /( (self.behaviour_patterns_dict["SpiralAttack"]["Duration"] / 1000) / 3)
 
-        
+        # -------------------------------------------------
+        # Divebomb attack
+           
+        self.dive_bomb_attack_controller = DiveBombAttackController(
+            x = self.rect.x, 
+            y = self.rect.y, 
+            damage_amount = self.extra_information_dict["KnockbackDamage"] * 1.5,
+            knockback_multiplier = 1.5
+            )
+
+
         # ----------------------------------------------------------------------------------
         # Declare the animation attributes
         self.declare_animation_attributes()
@@ -209,6 +245,19 @@ class GoldenMonkeyBoss(Generic, AI):
         # Set the animation frame timer to start as the time between animation frames
         self.behaviour_patterns_dict["Sleep"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["Sleep"]["TimeBetweenAnimFrames"]
 
+        # --------------------------
+        # DiveBomb
+
+        # The time between each frame should be how long "Launch" state is active for, divided by the total number of animation frames
+        self.behaviour_patterns_dict["DiveBomb"]["Launch"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["DiveBomb"]["Launch"]["Duration"] / (len(GoldenMonkeyBoss.ImagesDict["DiveBomb"]["Launch"]))
+        # Set the animation frame timer to start as the time between animation frames
+        self.behaviour_patterns_dict["DiveBomb"]["Launch"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Launch"]["TimeBetweenAnimFrames"]
+
+        # The time between each frame should be how long "Land" state is active for, divided by the total number of animation frames
+        self.behaviour_patterns_dict["DiveBomb"]["Land"]["TimeBetweenAnimFrames"] = self.behaviour_patterns_dict["DiveBomb"]["Land"]["Duration"] / (len(GoldenMonkeyBoss.ImagesDict["DiveBomb"]["Land"]))
+        # Set the animation frame timer to start as the time between animation frames
+        self.behaviour_patterns_dict["DiveBomb"]["Land"]["AnimationFrameTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Land"]["TimeBetweenAnimFrames"]
+
     def play_animations(self):
 
         # --------------------------------------------------------
@@ -237,6 +286,22 @@ class GoldenMonkeyBoss(Generic, AI):
 
                 # The current animation image
                 current_animation_image = current_animation_list[self.animation_index]
+
+            # If the current action is "DiveBomb"
+            elif self.current_action == "DiveBomb":
+                
+                # If the current divebomb stage is not "Target"
+                if self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] != "Target":
+                    # The current animation list (e.g. ["DiveBomb"]["Land"])
+                    current_animation_list = GoldenMonkeyBoss.ImagesDict[self.current_action][self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"]]
+                    # The current animation image
+                    current_animation_image = current_animation_list[self.animation_index]
+
+                # If the current divebomb stage is "Target"
+                elif self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Target":
+                    # Set the image and image list to be anything (This is because the boss will not be in frame, so it does not matter)
+                    current_animation_list = GoldenMonkeyBoss.ImagesDict[self.current_action]["Land"]
+                    current_animation_image = GoldenMonkeyBoss.ImagesDict[self.current_action]["Land"][0]
 
             # If the boss has been damaged (red and white version)
             if self.extra_information_dict["DamagedFlashEffectTimer"] != None:
@@ -270,8 +335,6 @@ class GoldenMonkeyBoss(Generic, AI):
         # Updating animation
 
         # Find which action is being performed and update the animation index based on that
-        
-
         # If the current action is to "Chase" or "SpiralAttack" or "Sleep"
         if self.current_action == "Chase" or self.current_action == "SpiralAttack" or self.current_action == "Sleep":
             
@@ -301,8 +364,24 @@ class GoldenMonkeyBoss(Generic, AI):
 
                 # Reset the timer (adding will help with accuracy)
                 self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-
         
+        # If the current action is "DiveBomb"
+        elif self.current_action == "DiveBomb":
+
+            # Current divebomb stage
+            current_stage = self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"]
+            
+            # If the current stage is not "Target"
+            if current_stage != "Target":
+
+                # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
+                if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action][current_stage]["AnimationFrameTimer"]) <= 0:
+                    # Go the next animation frame
+                    self.animation_index += 1
+
+                    # Reset the timer (adding will help with accuracy)
+                    self.behaviour_patterns_dict[self.current_action][current_stage]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action][current_stage]["TimeBetweenAnimFrames"]
+            
         # --------------------------------------------------------
         # Additional for sleeping
         
@@ -312,8 +391,17 @@ class GoldenMonkeyBoss(Generic, AI):
         # -----------------------------------
         # Updating timers
         
-        # Decrease the animation frame timers
-        self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] -= 1000 * self.delta_time
+        # If the current action isn't "DiveBomb"
+        if self.current_action != "DiveBomb":
+            # Decrease the animation frame timers
+            self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] -= 1000 * self.delta_time
+
+        # If the current action is "DiveBomb"
+        elif self.current_action == "DiveBomb":
+            # If the current divebomb stage is not "Target" ("Target" does not have an animation")
+            if current_stage != "Target":
+                # Decrease the animation frame timers
+                self.behaviour_patterns_dict[self.current_action][current_stage]["AnimationFrameTimer"] -= 1000 * self.delta_time
 
         # Update damage flash effect timer
         self.update_damage_flash_effect_timer()
@@ -385,7 +473,7 @@ class GoldenMonkeyBoss(Generic, AI):
             if self.current_action == "Chase":
 
                 # Create a list of all the actions that the AI can currently perform, if the action's cooldown timer is None
-                action_list = [action for action in self.behaviour_patterns_dict.keys() if (action == "SpiralAttack") and self.behaviour_patterns_dict[action]["CooldownTimer"] == None]
+                action_list = [action for action in self.behaviour_patterns_dict.keys() if (action == "SpiralAttack" or action == "DiveBomb") and self.behaviour_patterns_dict[action]["CooldownTimer"] == None]
 
                 # If there are any possible actions that the boss can perform (other than "Chase") and the boss has not performed an action recently
                 if len(action_list) > 0 and self.extra_information_dict["NoActionTimer"] == None:
@@ -394,7 +482,7 @@ class GoldenMonkeyBoss(Generic, AI):
                     self.animation_index = 0
 
                     # Choose a random action from the possible actions the boss can perform and set it as the current action
-                    self.current_action = random_choice(action_list)
+                    self.current_action = "DiveBomb" #random_choice(action_list)
 
                     # If the current action that was chosen was "SpiralAttack", and "SpiralAttack" duration timer has not been set to start counting down yet
                     if self.current_action == "SpiralAttack" and self.behaviour_patterns_dict["SpiralAttack"]["DurationTimer"] == None:
@@ -421,6 +509,15 @@ class GoldenMonkeyBoss(Generic, AI):
                         self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinAngleTimeGradient"] *= random_choice([-1, 1])
 
 
+                    # If the current action that was chosen was "DiveBomb" and the current divebomb stage is set to None (meaning the attack has not started yet)
+                    elif self.current_action == "DiveBomb" and self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == None:
+                        
+                        # Set the divebomb stage to be Launch
+                        self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] = "Launch"
+                        
+                        # Set the "Launch" duration timer to start counting down
+                        self.behaviour_patterns_dict["DiveBomb"]["Launch"]["DurationTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Launch"]["Duration"]
+                
                 # If there are no possible actions that the boss can perform or the boss has performed an action recently
                 elif len(action_list) == 0 or self.extra_information_dict["NoActionTimer"] != None: 
                     
@@ -450,7 +547,7 @@ class GoldenMonkeyBoss(Generic, AI):
             # If the current action is "SpiralAttack"
             if self.current_action == "SpiralAttack":
 
-                # --------------------------------------------
+                # -------------------------------------------------------------------------------------------------
                 # Chilli spiral attack
                 
                 # If enough time has passed since the last set of chilli projectiles were sent out
@@ -487,6 +584,10 @@ class GoldenMonkeyBoss(Generic, AI):
                 self.rect.centerx = self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewCenterPositions"][0]
                 self.rect.centery = self.behaviour_patterns_dict["SpiralAttack"]["SpiralAttackSpinNewCenterPositions"][1]
 
+            # # If the current action is "DiveBomb"
+            # elif self.current_action == "DiveBomb":
+                
+
         # If the boss has 0 or less than 0 energy
         elif self.energy_amount <= 0:
             
@@ -499,6 +600,66 @@ class GoldenMonkeyBoss(Generic, AI):
                 # Set the sleep duration timer to start counting down
                 self.behaviour_patterns_dict["Sleep"]["DurationTimer"] = self.behaviour_patterns_dict["Sleep"]["Duration"]
 
+
+    def update_and_draw_divebomb_circles(self, delta_time):
+
+        # If the current dive bomb stage is "Target"
+        if self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Target":
+            
+            # Fill the dive bomb attack controller's alpha surface with black
+            self.dive_bomb_attack_controller.alpha_surface.fill("black")
+
+                # Draw the circles onto the alpha surface
+                # Note: The center 
+            pygame_draw_circle(
+                            surface = self.dive_bomb_attack_controller.alpha_surface, 
+                            color = (180, 0, 0), 
+                            center = (self.dive_bomb_attack_controller.maximum_circle_radius, self.dive_bomb_attack_controller.maximum_circle_radius), 
+                            radius = self.dive_bomb_attack_controller.maximum_circle_radius, 
+                            width = 0
+                            )
+
+            pygame_draw_circle(
+                            surface = self.dive_bomb_attack_controller.alpha_surface, 
+                            color = (225, 0, 0), 
+                            center = (self.dive_bomb_attack_controller.maximum_circle_radius, self.dive_bomb_attack_controller.maximum_circle_radius), 
+                            radius = self.dive_bomb_attack_controller.growing_circle_radius, 
+                            width = 0
+                            )
+                            
+            pygame_draw_circle(
+                            surface = self.dive_bomb_attack_controller.alpha_surface, 
+                            color = (255, 0, 0), 
+                            center = (self.dive_bomb_attack_controller.maximum_circle_radius, self.dive_bomb_attack_controller.maximum_circle_radius), 
+                            radius = min(0, self.dive_bomb_attack_controller.growing_circle_radius - 20),
+                            width = 0
+                            )
+
+            # Blit the center of the alpha surface at the landing position (Which would be the center of the player)
+            self.surface.blit(
+                            self.dive_bomb_attack_controller.alpha_surface, 
+                            (
+                            (self.dive_bomb_attack_controller.landing_position[0] - self.dive_bomb_attack_controller.maximum_circle_radius) - self.camera_position[0],
+                            (self.dive_bomb_attack_controller.landing_position[1] - self.dive_bomb_attack_controller.maximum_circle_radius)  - self.camera_position[1]
+                            )
+                            )
+
+            # Increase the radius of the smaller, growing circle and change the alpha level of the alpha surface
+            self.dive_bomb_attack_controller.change_visual_effects(
+                                proportional_time_remaining = self.behaviour_patterns_dict["DiveBomb"]["Target"]["DurationTimer"] / self.behaviour_patterns_dict["DiveBomb"]["Target"]["Duration"],
+                                delta_time = delta_time
+                                                                            )
+
+            # Outline
+            pygame_draw_circle(
+                            surface = self.surface, 
+                            color = (0, 0, 0), 
+                            center = (self.dive_bomb_attack_controller.landing_position[0] - self.camera_position[0], self.dive_bomb_attack_controller.landing_position[1] - self.camera_position[1]), 
+                            radius = self.dive_bomb_attack_controller.maximum_circle_radius, 
+                            width = 3
+                            )
+
+            # self.dive_bomb_attack_controller.draw(surface= self.surface, x = self.dive_bomb_attack_controller.rect.x - self.camera_position[0], y = self.dive_bomb_attack_controller.rect.y - self.camera_position[1])
     # ----------------------------------------------------------------------------------
     # Timer updating
 
@@ -507,8 +668,8 @@ class GoldenMonkeyBoss(Generic, AI):
         # Updates the duration timer of the current action 
         # If the duration timer is over, the action is added to the previous actions list so that their cooldown timer can be updated
         
-        # If the current action is not "Chase" (Chase does not have a duration timer)
-        if self.current_action != "Chase":
+        # If the current action is not "Chase" (Chase does not have a duration timer) or "DiveBomb" (DiveBomb has multiple stages)
+        if self.current_action != "Chase" and self.current_action != "DiveBomb":
             
             # If the current action's duration timer has not finished counting down
             if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] > 0:
@@ -567,6 +728,85 @@ class GoldenMonkeyBoss(Generic, AI):
                     # Set the energy amount back to the maximum amount
                     self.energy_amount = GoldenMonkeyBoss.maximum_energy_amount
 
+        # If the current action is "DiveBomb"
+        elif self.current_action == "DiveBomb":
+            
+            # Current DiveBomb stage
+            current_stage = self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] 
+
+            # If the current action's duration timer has not finished counting down
+            if self.behaviour_patterns_dict["DiveBomb"][current_stage]["DurationTimer"] > 0:
+                # Decrease the timer
+                self.behaviour_patterns_dict["DiveBomb"][current_stage]["DurationTimer"] -= 1000 * self.delta_time
+            
+            # If the current action's duration timer has finished counting down
+            if self.behaviour_patterns_dict["DiveBomb"][current_stage]["DurationTimer"] <= 0:
+                # Reset the duration timer back to None
+                self.behaviour_patterns_dict["DiveBomb"][current_stage]["DurationTimer"] = None
+
+                # Reset the animation index
+                self.animation_index = 0
+
+                # Identify the current divebomb stage
+                match current_stage:
+
+                    case "Launch":
+
+                        # Set the next stage to be "Target"
+                        self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] = "Target"
+
+                        # Set the divebomb "Target" duration timer to start counting down
+                        self.behaviour_patterns_dict["DiveBomb"]["Target"]["DurationTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Target"]["Duration"]
+
+                        # Set the divebomb's end position (where to land) to be the center of the player
+                        self.dive_bomb_attack_controller.landing_position = self.players_position
+                        
+                        # Set the divebomb attack controller's center to be the same as the player (for the image to also be centered for mask collisions)
+                        self.dive_bomb_attack_controller.rect.center = self.players_position
+
+                        # Modify the movement infomration dict's new center positions so that when the boss lands, it won't teleport back to its old position
+                        self.movement_information_dict["NewPositionCenterX"] = self.dive_bomb_attack_controller.landing_position[0]
+                        self.movement_information_dict["NewPositionCenterY"] = self.dive_bomb_attack_controller.landing_position[1]
+
+                        # Take the boss off the map
+                        self.rect.center = (10000, 10000)
+
+                    case "Target":
+
+                        # Set the next stage to be "Land"
+                        self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] = "Land"
+
+                        # Set the divebomb "Land" duration timer to start counting down
+                        self.behaviour_patterns_dict["DiveBomb"]["Land"]["DurationTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Land"]["Duration"]
+
+                        # Set the boss to be at the landing position
+                        self.rect.center = self.dive_bomb_attack_controller.landing_position
+
+                        # Update the angle between the boss and the player, so that the player gets knocked back properly
+                        self.find_player(player_position = self.players_position, current_position = self.dive_bomb_attack_controller.landing_position, delta_time = self.delta_time) 
+
+                        # Reset the divebomb attributes of the divebobm attack controller
+                        self.dive_bomb_attack_controller.reset_divebomb_attributes()
+
+                    case "Land":
+                        # Set the current action back to "Chase"
+                        self.current_action = "Chase"
+
+                        # Set the next stage to be None
+                        self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] = None
+
+                        # Set the cooldown timer to start counting down
+                        self.behaviour_patterns_dict["DiveBomb"]["CooldownTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Cooldown"]
+
+                        # Set the no action timer to start counting down
+                        self.extra_information_dict["NoActionTimer"] = self.extra_information_dict["NoActionTime"]
+                        
+                        # Add the divebomb action to the previous actions dict so that its cooldown timer can count down
+                        self.previous_actions_dict["DiveBomb"] = None
+
+                        # Reduce the amount of energy that the boss has
+                        self.energy_amount -= self.behaviour_patterns_dict["DiveBomb"]["EnergyDepletionAmount"]
+
     def update_spiral_chilli_spawning_cooldown_timer(self):
 
         # Timer for the spawning of chillis during the spiral attack
@@ -601,7 +841,9 @@ class GoldenMonkeyBoss(Generic, AI):
                 # Reset the timer back to None
                 self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] = None
 
+    
     def run(self):
+        # print(self.current_action, self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"])
 
         # Always update / move / draw the chilli projectiles
         self.chilli_projectile_controller.update_chilli_projectiles(

@@ -578,11 +578,22 @@ class Game:
                             player_gameplay_info_dict = self.player.player_gameplay_info_dict,
                             camera_pan_information_dict = self.camera_pan_information_dict
                             )
-
-    def draw_tiles(self):
+    
+    def draw_empty_tiles(self):
         
-        # Draws the world tiles, building tiles and "empty" tiles
-        # Note: This is separated so that when the player dies, the world tiles and building tiles are still drawn
+        # Draws the empty tiles
+
+        for empty_tile in self.empty_tiles_dict.keys():
+            # If the empty tile is within view of the camera (i.e. on the screen)
+            if self.camera_position[0] - TILE_SIZE <= empty_tile.rect.x <= (self.camera_position[0] + (self.scaled_surface.get_width())) + TILE_SIZE and \
+                self.camera_position[1] - TILE_SIZE <= empty_tile.rect.y <= (self.camera_position[1] + (self.scaled_surface.get_height())) + TILE_SIZE:
+                
+                # Draw the empty tile onto the screen
+                empty_tile.draw(surface = self.scaled_surface, x = (empty_tile.rect.x - self.camera_position[0]), y = (empty_tile.rect.y - self.camera_position[1])) 
+
+    def draw_world_tiles(self):
+
+        # Draws the world tiles
 
         for tile in self.world_tiles_dict.keys():
             # If the tile object is within view of the camera (i.e. on the screen)
@@ -592,22 +603,22 @@ class Game:
                 # Draw the world / building tile onto the screen
                 tile.draw(surface = self.scaled_surface, x = (tile.rect.x - self.camera_position[0]), y = (tile.rect.y - self.camera_position[1]))         
 
-        for empty_tile in self.empty_tiles_dict.keys():
-            # If the empty tile is within view of the camera (i.e. on the screen)
-            if self.camera_position[0] - TILE_SIZE <= empty_tile.rect.x <= (self.camera_position[0] + (self.scaled_surface.get_width())) + TILE_SIZE and \
-                self.camera_position[1] - TILE_SIZE <= empty_tile.rect.y <= (self.camera_position[1] + (self.scaled_surface.get_height())) + TILE_SIZE:
-                
-                # Draw the empty tile onto the screen
-                empty_tile.draw(surface = self.scaled_surface, x = (empty_tile.rect.x - self.camera_position[0]), y = (empty_tile.rect.y - self.camera_position[1]))         
+    def draw_tiles(self):
+        
+        # Draws the world tiles, building tiles and "empty" tiles
+        """ Notes: 
+        - This is separated from draw_tile_map_objects so that when the player dies, the world tiles and building tiles are still drawn 
+        - The world tiles and empty tiles draw methods are separated so that for the divebomb attack, the divebomb circles won't be drawn over the walls
+        """
+        # Draw the world tiles
+        self.draw_world_tiles()
+
+        # Draw the empty tiles
+        self.draw_empty_tiles()
 
     def draw_tile_map_objects(self):
 
         # Calls the draw methods of all objects in the level
-
-        # ---------------------------------------------
-        # World tiles, building tiles and "empty" tiles
-
-        self.draw_tiles()
 
         # ---------------------------------------------
         # Bamboo projectiles
@@ -1418,7 +1429,7 @@ class Game:
             # --------------------------------------
             # World tiles while charging
 
-            # Only if the boss is the "SikaDeer"
+            # Only if the boss is the "SikaDeer" and the current action is "Charge"
             if self.bosses_dict["CurrentBoss"] == "SikaDeer" and self.boss_group.sprite.current_action == "Charge":
                     # If there is an x or y world tile collision
                     if self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsX"] == True or self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsY"] == True:
@@ -1434,6 +1445,66 @@ class Game:
 
                         # Create a camera shake effect for when the boss collides with a tile
                         self.camera_shake_info_dict["EventsList"].append("BossTileCollide")
+
+            # --------------------------------------
+            # Dive bomb attack circles
+
+            # Only if the boss is the "SikaDeer" and the current action is "DiveBomb"
+            if self.bosses_dict["CurrentBoss"] == "GoldenMonkey" and self.boss_group.sprite.current_action == "DiveBomb":
+                # If the boss just landed after performing a divebomb attack
+                if self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Land" and self.boss_group.sprite.animation_index == 0:
+                    
+                    # If there is pixel perfect collision and the player has not been knocked back yet
+                    if pygame_sprite_collide_mask(self.boss_group.sprite.dive_bomb_attack_controller, self.player) and self.player.player_gameplay_info_dict["InvincibilityTimer"] == None and (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None):
+                        
+                        # -------------------
+                        # Error prevention
+
+                        """Note: This occurs if the boss divebombs the player before its move method has been called"""
+                        try:
+                            # Knockback the player
+                            self.player.player_gameplay_info_dict["KnockbackAttackDirection"] = [self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"]]
+                            self.player.player_gameplay_info_dict["KnockbackTimer"] = self.player.player_gameplay_info_dict["KnockbackTime"] * 2
+                        except:
+                            # Set the horizontal distance travelled based on the current velocity of the boss
+                            self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"] = ((self.boss_group.sprite.movement_information_dict["HorizontalSuvatU"] * self.boss_group.sprite.movement_information_dict["DeltaTime"]) + (0.5 * self.boss_group.sprite.movement_information_dict["HorizontalSuvatA"] * (self.boss_group.sprite.movement_information_dict["DeltaTime"] ** 2)))
+                            # Set the vertical distance travelled based on the current velocity of the boss
+                            self.boss_group.sprite.movement_information_dict["VerticalSuvatS"] = ((self.boss_group.sprite.movement_information_dict["VerticalSuvatU"] * self.boss_group.sprite.movement_information_dict["DeltaTime"]) + (0.5 * self.boss_group.sprite.movement_information_dict["VerticalSuvatA"] * (self.boss_group.sprite.movement_information_dict["DeltaTime"] ** 2)))
+                            
+                        # Knockback the player
+                        self.player.player_gameplay_info_dict["KnockbackAttackDirection"] = [self.boss_group.sprite.movement_information_dict["HorizontalSuvatS"], self.boss_group.sprite.movement_information_dict["VerticalSuvatS"]]
+                        self.player.player_gameplay_info_dict["KnockbackTimer"] = self.player.player_gameplay_info_dict["KnockbackTime"]
+
+                        # Set the horizontal and vertical distance the player should travel based on the angle the boss hit it
+                        # Note: Divided by 1000 because the knockback time is in milliseconds
+                        self.player.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * cos(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
+                        self.player.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] = (self.player.player_gameplay_info_dict["KnockbackDistanceTravelled"] * sin(self.boss_group.sprite.movement_information_dict["Angle"])) / (self.player.player_gameplay_info_dict["KnockbackTime"] / 1000)
+                        """Multipled by the divebomb knockback multiplier for a stronger knockback"""
+                        self.player.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] *= self.boss_group.sprite.dive_bomb_attack_controller.knockback_multiplier
+                        self.player.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] *= self.boss_group.sprite.dive_bomb_attack_controller.knockback_multiplier
+
+
+                        # Set the player's invincibility timer to start counting down 
+                        self.player.player_gameplay_info_dict["InvincibilityTimer"] = self.player.player_gameplay_info_dict["InvincibilityTime"]
+
+                        # If the player is alive / has more than 0 health
+                        if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
+                            # Create damage effect text
+                            self.game_ui.create_effect_text(
+                                                            type_of_effect_text = "Damage",
+                                                            target = "Player",
+                                                            text = "-" + str(self.boss_group.sprite.dive_bomb_attack_controller.damage_amount),
+                                                            larger_font = True
+                                                        )
+
+                        # Set the boss to stop moving momentarily
+                        self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] = self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTime"]
+
+                        # Reset the boss' movement acceleration
+                        self.boss_group.sprite.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
+
+                        # Damage the player by the amount of knockback damage the divebomb attack deals
+                        self.player.player_gameplay_info_dict["CurrentHealth"] = max(self.player.player_gameplay_info_dict["CurrentHealth"] - self.boss_group.sprite.dive_bomb_attack_controller.damage_amount, 0)
 
             # --------------------------------------
             # Player
@@ -1997,8 +2068,12 @@ class Game:
                                 },
 
                         "SpiralAttack": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/SpiralAttack/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/SpiralAttack")))),
-                        "Sleep": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Sleep/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Sleep"))))
-                                                
+                        "Sleep": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/Sleep/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/Sleep")))),
+
+                        "DiveBomb": {
+                                    "Launch": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/DiveBomb/Launch/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/DiveBomb/Launch")))),
+                                    "Land": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/DiveBomb/Land/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/DiveBomb/Land"))))
+                                    }
                                                 }
 
                 # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
@@ -2381,6 +2456,9 @@ class Game:
 
             # If there is no boss
             if self.boss_group.sprite == None:
+                
+                # Draw all tiles
+                self.draw_tiles()
 
                 # Draw all objects inside the tile map / level
                 self.draw_tile_map_objects()
@@ -2413,13 +2491,27 @@ class Game:
                 # If the player is also alive
                 if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
 
-                    """ Draw the main game, with the boss always being drawn over the player """
+                    """ 
+                    - Draw the main game, with the boss always being drawn over the player 
+                    - The boss divebomb circles should not be drawn over walls, but can be drawn over "empty" tiles
+                    """
+
+                    # Draw the empty tiles
+                    self.draw_empty_tiles()
 
                     # Draw all objects inside the tile map / level
                     self.draw_tile_map_objects()
 
                     # Draw the boss guidelines underneath the player and the boss
                     self.draw_boss_guidelines(delta_time = delta_time)
+
+                    # If the current boss is the "GoldenMonkey" and they are currently targeting the player for a divebomb attack
+                    if self.bosses_dict["CurrentBoss"] == "GoldenMonkey" and self.boss_group.sprite.current_action == "DiveBomb" and self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Target":
+                        # Update and draw the divebomb circles UNDER the player
+                        self.boss_group.sprite.update_and_draw_divebomb_circles(delta_time = delta_time)
+
+                    # Draw the world tiles
+                    self.draw_world_tiles()
 
                     # Run the player methods
                     self.player.run(delta_time = delta_time)
@@ -2432,6 +2524,9 @@ class Game:
 
                 # If the player is not alive
                 elif self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
+                    
+                    # Draw all tiles
+                    self.draw_tiles()
 
                     # Draw tiles and tile map objects inside the tile map / level
                     self.draw_tile_map_objects()
@@ -2457,6 +2552,9 @@ class Game:
 
                 """ Draws the player over the skull """
 
+                # Draw all tiles
+                self.draw_tiles()
+
                 # Draw all objects inside the tile map / level
                 self.draw_tile_map_objects()
 
@@ -2479,3 +2577,4 @@ class Game:
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame_transform_scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))
+

@@ -21,7 +21,7 @@ class SikaDeerBoss(Generic, AI):
     # Example: Stomp : [Image list]
     
     # Characteristics
-    knockback_damage = 20
+    knockback_damage = 30
     maximum_health = 25000
     
 
