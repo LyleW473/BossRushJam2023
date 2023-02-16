@@ -106,7 +106,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                                     "SpiralChilliSpawningCooldown": 60, # Cooldown between each chilli spawned in the spiral attack (50 chillis)
                                                     "SpiralChilliSpawningCooldownTimer": None, 
 
-                                                    "Cooldown": 8000,
+                                                    "Cooldown": 10000,
                                                     "CooldownTimer": 8000, # Start the cooldown timer at 10 seconds after being spawned
 
                                                     # Animation
@@ -131,7 +131,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                     "DiveBomb":{
                                                 "SecondPhaseDiveBombCounter": 0,
                                                 "CurrentDiveBombStage": None,
-                                                "Cooldown": 10000,
+                                                "Cooldown": 7500,
                                                 "CooldownTimer": 5000, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
                                                 "EnergyDepletionAmount": 25,
                                                 "CameraShakePerformed": False, # This is used so that 
@@ -408,8 +408,8 @@ class GoldenMonkeyBoss(Generic, AI):
                 # Go the the first animation frame (reset the animation)
                 self.animation_index = 0
 
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+                # Reset the timer
+                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] = self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
 
         # If the current action is "Death"
         elif self.current_action == "Death":
@@ -419,8 +419,8 @@ class GoldenMonkeyBoss(Generic, AI):
                 # Go the next animation frame
                 self.animation_index += 1
 
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+                # Reset the timer 
+                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] = self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
         
         # If the current action is "DiveBomb"
         elif self.current_action == "DiveBomb":
@@ -436,8 +436,8 @@ class GoldenMonkeyBoss(Generic, AI):
                     # Go the next animation frame
                     self.animation_index += 1
 
-                    # Reset the timer (adding will help with accuracy)
-                    self.behaviour_patterns_dict[self.current_action][current_stage]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action][current_stage]["TimeBetweenAnimFrames"]
+                    # Reset the timer 
+                    self.behaviour_patterns_dict[self.current_action][current_stage]["AnimationFrameTimer"] = self.behaviour_patterns_dict[self.current_action][current_stage]["TimeBetweenAnimFrames"]
             
         # --------------------------------------------------------
         # Additional for sleeping
@@ -467,8 +467,8 @@ class GoldenMonkeyBoss(Generic, AI):
         
         # Creates sleep effect text when the boss is in the sleep state (effect text is always updated by the game UI)
 
-        # If enough time has passed since the last sleep effect text was created
-        if self.sleep_effect_text_info_dict["CreationCooldownTimer"] == None:
+        # If enough time has passed since the last sleep effect text was created and the current action is "Sleep"
+        if self.sleep_effect_text_info_dict["CreationCooldownTimer"] == None and self.current_action == "Sleep":
             
             # Position of the text
             text_position_x = (self.rect.midtop[0] + 3) - self.camera_position[0]
@@ -522,7 +522,7 @@ class GoldenMonkeyBoss(Generic, AI):
         # Find the player (To continuously update the look angle)
         """Note: This is done because even if the boss other attacks will also need the current look angle """
         self.find_player(current_position = self.rect.center, player_position = self.players_position, delta_time = self.delta_time)
-
+        
         # If the energy amount is greater than 0
         if self.energy_amount > 0:
 
@@ -589,8 +589,8 @@ class GoldenMonkeyBoss(Generic, AI):
                         
                         # Create a chilli projectile and throw it at the player
                         self.chilli_projectile_controller.create_chilli_projectile(
-                                        x_pos = self.rect.centerx + ((ChilliProjectileController.displacement_from_center_position * 0.5) * cos(projectile_angle)),
-                                        y_pos = (self.rect.centery - ((ChilliProjectileController.displacement_from_center_position  * 0.5) * sin(projectile_angle))) + ChilliProjectileController.additional_y_displacement_to_position_under_boss,
+                                        x_pos = self.rect.centerx,
+                                        y_pos = self.rect.centery,
                                         angle = projectile_angle,
                                         damage_amount = ChilliProjectileController.base_damage
                                                                                     )
@@ -903,7 +903,7 @@ class GoldenMonkeyBoss(Generic, AI):
                         # Modify the movement infomration dict's new center positions so that when the boss lands, it won't teleport back to its old position
                         # Note: -(self.rect.height) / 2, so that the bottom of the boss will be spawned at the landing position
                         self.movement_information_dict["NewPositionCenterX"] = self.dive_bomb_attack_controller.landing_position[0]
-                        self.movement_information_dict["NewPositionCenterY"] = self.dive_bomb_attack_controller.landing_position[1] - (self.rect.height / 2)
+                        self.movement_information_dict["NewPositionCenterY"] = self.dive_bomb_attack_controller.landing_position[1]
 
                         # Take the boss off the map
                         self.rect.center = (10000, 10000)
@@ -969,7 +969,6 @@ class GoldenMonkeyBoss(Generic, AI):
                             # Increment the second phase dive bomb counter
                             self.behaviour_patterns_dict["DiveBomb"]["SecondPhaseDiveBombCounter"] += 1
 
-
     def update_spiral_chilli_spawning_cooldown_timer(self):
 
         # Timer for the spawning of chillis during the spiral attack
@@ -1005,7 +1004,7 @@ class GoldenMonkeyBoss(Generic, AI):
                 self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] = None
 
     def run(self):
-        
+         
         # Always update / move / draw the chilli projectiles
         self.chilli_projectile_controller.update_chilli_projectiles(
                                                                     delta_time = self.delta_time,
@@ -1015,15 +1014,18 @@ class GoldenMonkeyBoss(Generic, AI):
 
         # If the boss has spawned and the camera panning has been completed
         if self.extra_information_dict["CanStartOperating"] == True:
-
-            # Decide the action that the boss should perform
-            self.decide_action()
+            
+            # If the boss is alive:
+            if self.extra_information_dict["CurrentHealth"] > 0:
+                # Decide the action that the boss should perform
+                self.decide_action()
 
             # Check if the boss' health is less than 0
-            if self.extra_information_dict["CurrentHealth"] <= 0:
+            elif self.extra_information_dict["CurrentHealth"] <= 0:
                 
-                # If current action has not been set to "Death" the boss does not have a death animation images list yet
-                if self.current_action != "Death" or self.behaviour_patterns_dict["Death"]["Images"]  == None:
+                # If current action has not been set to "Death" and the boss does not have a death animation images list yet
+                if self.current_action != "Death" and self.behaviour_patterns_dict["Death"]["Images"]  == None:
+                    
 
                     """Note: Do not set self.extra_information_dict["CanStartOperating"] to False, otherwise the death animation will not play"""
                     
@@ -1053,13 +1055,11 @@ class GoldenMonkeyBoss(Generic, AI):
             if self.extra_information_dict["CurrentHealth"] > 0:
 
                 # If the boss has less than 60% of its maximum health
-                if self.extra_information_dict["CurrentHealth"] <=  (0.6 * self.extra_information_dict["MaximumHealth"]):
+                if self.extra_information_dict["CurrentHealth"] <=  (0.4 * self.extra_information_dict["MaximumHealth"]):
                     # If the boss is not already in phase 2
                     if self.current_phase != 2:
                         # Go into phase 2
                         self.current_phase = 2
-                        # Reduce the time it takes for the boss to target and divebomb the player
-                        self.behaviour_patterns_dict["DiveBomb"]["Target"]["Duration"] *= 0.75
                         # Reduce the spawning cooldowns of the spiral attack
                         self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldown"] *= 0.75
                     

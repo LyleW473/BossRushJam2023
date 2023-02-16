@@ -1839,7 +1839,7 @@ class Game:
             
             # Create a dictionary to hold information regarding bosses
             self.bosses_dict = { 
-                        "CurrentBoss": "GoldenMonkey",
+                        "CurrentBoss": "GoldenMonkey", # "SikaDeer"
                         "NumOfTilesForChecking": number_of_tiles_for_checking, # The number of tiles to the left / right / up, down of the randomly chosen empty tile for the spawning position to be valid
                         "RandomSpawningPosition" : random_choice(list(self.empty_tiles_dict.keys())), # Choose a random spawning position
                         "ValidSpawningPosition": None, 
@@ -2644,4 +2644,3 @@ class Game:
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame_transform_scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))
-

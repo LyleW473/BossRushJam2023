@@ -225,7 +225,7 @@ class Player(Generic):
                                             "ShootingCooldown": 700, 
                                             "ShootingCooldownTimer": None,
                                             "BambooResourceDepletionAmount": 15,
-                                            "WeaponDamage": 60,
+                                            "WeaponDamage": 120,
                                             "MiniProjectilesDamage": 10,
                                             "NumberOfMiniProjectiles": 12
                                           },
@@ -874,9 +874,33 @@ class Player(Generic):
                 # Update the direction variables
                 self.update_direction_variables()
 
+                # ------------------------------------
+                # Adjusting distance moved based on the direction the player is moving 
+                """ Notes: 
+                - This is so that the player does not move faster when walking diagonally
+                - abs() because the distance to travel must be the absolute value of the distance travelled 
+                """
+
+                # If the player is only moving in one direction
+                if len(self.player_direction) == 1:
+                    # Set the distance to travel to be the movement distance travelled
+                    distance_to_travel = self.movement_suvat_s + self.floating_point_correction_x
+
+                # If the player is moving in two directions
+                elif len(self.player_direction) > 1:
+                    # If the vertical direction is "Up"
+                    if self.player_direction[0] == "Up":
+                        # Calculate the horizontal distance to travel based on the angle
+                        distance_to_travel = abs((self.movement_suvat_s * cos(radians(45))) + self.floating_point_correction_x)
+
+                    # If the vertical direction is "Down"
+                    elif self.player_direction[0] == "Down":
+                        # Calculate the horizontal distance to travel based on the angle
+                        distance_to_travel = abs((self.movement_suvat_s * cos(radians(315))) + self.floating_point_correction_x)
+
                 # Handle tile collisions
                 self.handle_tile_collisions(
-                                            distance_to_travel = self.movement_suvat_s + self.floating_point_correction_x,
+                                            distance_to_travel = distance_to_travel,
                                             check_x = True,
                                             check_y = False
                                             )
@@ -920,10 +944,34 @@ class Player(Generic):
                 
                 # Update the direction variables
                 self.update_direction_variables()
+                
+                # ------------------------------------
+                # Adjusting distance moved based on the direction the player is moving 
+                """ Notes: 
+                - This is so that the player does not move faster when walking diagonally
+                - abs() because the distance to travel must be the absolute value of the distance travelled 
+                """
+
+                # If the player is only moving in one direction
+                if len(self.player_direction) == 1:
+                    # Set the distance to travel to be the movement distance travelled
+                    distance_to_travel = self.movement_suvat_s + self.floating_point_correction_x
+
+                # If the player is moving in two directions
+                elif len(self.player_direction) > 1:
+                    # If the vertical direction is "Up"
+                    if self.player_direction[0] == "Up":
+                        # Calculate the horizontal distance to travel based on the angle
+                        distance_to_travel = abs((self.movement_suvat_s * cos(radians(135))) + self.floating_point_correction_x)
+
+                    # If the vertical direction is "Down"
+                    elif self.player_direction[0] == "Down":
+                        # Calculate the horizontal distance to travel based on the angle
+                        distance_to_travel = abs((self.movement_suvat_s * cos(radians(225))) + self.floating_point_correction_x)
 
                 # Handle tile collisions
                 self.handle_tile_collisions(
-                                            distance_to_travel = self.movement_suvat_s + self.floating_point_correction_x,
+                                            distance_to_travel = distance_to_travel,
                                             check_x = True,
                                             check_y = False
                                             )
@@ -968,9 +1016,33 @@ class Player(Generic):
                 # Update the direction variables
                 self.update_direction_variables()
 
+                # ------------------------------------
+                # Adjusting distance moved based on the direction the player is moving 
+                """ Notes: 
+                - This is so that the player does not move faster when walking diagonally
+                - abs() because the distance to travel must be the absolute value of the distance travelled 
+                """
+
+                # If the player is only moving in one direction
+                if len(self.player_direction) == 1:
+                    # Set the distance to travel to be the movabs(ement distance travelled
+                    distance_to_travel = self.movement_suvat_s + self.floating_point_correction_y
+
+                # If the player is moving in two directions
+                elif len(self.player_direction) > 1:
+                    # If the horizontal direction is "Left"
+                    if self.player_direction[1] == "Left":
+                        # Calculate the vertical distance to travel based on the angle
+                        distance_to_travel = abs((self.movement_suvat_s * sin(radians(135))) + self.floating_point_correction_y)
+
+                    # If the horizontal direction is "Right"
+                    elif self.player_direction[1] == "Right":
+                        # Calculate the vertical distance to travel based on the angle
+                        distance_to_travel = abs((self.movement_suvat_s * sin(radians(45))) + self.floating_point_correction_y)
+
                 # Handle tile collisions
                 self.handle_tile_collisions(
-                                            distance_to_travel = self.movement_suvat_s + self.floating_point_correction_y,
+                                            distance_to_travel = distance_to_travel,
                                             check_x = False,
                                             check_y = True
                                             )
@@ -1013,10 +1085,31 @@ class Player(Generic):
 
                 # Update the direction variables
                 self.update_direction_variables()
-                
+
+                # ------------------------------------
+                # Adjusting distance moved based on the direction the player is moving 
+                """ Note: This is so that the player does not move faster when walking diagonally"""
+
+                # If the player is only moving in one direction
+                if len(self.player_direction) == 1:
+                    # Set the distance to travel to be the movement distance travelled
+                    distance_to_travel = self.movement_suvat_s + self.floating_point_correction_y
+
+                # If the player is moving in two directions
+                elif len(self.player_direction) > 1:
+                    # If the horizontal direction is "Left"
+                    if self.player_direction[1] == "Left":
+                        # Calculate the vertical distance to travel based on the angle
+                        distance_to_travel = abs(((self.movement_suvat_s) * sin(radians(225))) + self.floating_point_correction_y)
+
+                    # If the horizontal direction is "Right"
+                    elif self.player_direction[1] == "Right":
+                        # Calculate the vertical distance to travel based on the angle
+                        distance_to_travel = abs(((self.movement_suvat_s) * sin(radians(315))) + self.floating_point_correction_y)
+
                 # Handle tile collisions
                 self.handle_tile_collisions(
-                                            distance_to_travel = self.movement_suvat_s + self.floating_point_correction_y,
+                                            distance_to_travel = distance_to_travel,
                                             check_x = False,
                                             check_y = True
                                             )
@@ -1847,10 +1940,17 @@ class Player(Generic):
                         
                         # If the player has enough bamboo resource to place down another building tile
                         if self.player_gameplay_info_dict["AmountOfBambooResource"] - self.tools["BuildingTool"]["BambooResourceDepletionAmount"] > 0:
-                            
-                            # If there is no current boss or there is a current boss and the player's mouse is not colliding with the rect of the boss
+
+                            """Conditions:
+                            - If there is no current boss
+                            - There is no boss but the player restarted the session
+                            - There is a current boss and the player's mouse is not colliding with the rect of the boss
+                            """
+                            # If there is no current boss or there is a current boss and the player's mouse is not colliding with the rect of the boss or
                             # Note: This is so that the player can't build tiles right on top of the boss (Drains resource very quickly)
-                            if hasattr(self, "boss_rect") == False or (hasattr(self, "boss_rect") == True and self.mouse_rect.colliderect(self.boss_rect) == False):
+                            if hasattr(self, "boss_rect") == False or \
+                                self.boss_rect == None or \
+                                    (hasattr(self, "boss_rect") == True and self.mouse_rect.colliderect(self.boss_rect) == False):
 
                                 # Create a building tile
                                 building_tile = BuildingTile(x = empty_tile.rect.x, y = empty_tile.rect.y, image = self.tools["BuildingTool"]["Images"]["TileImage"])

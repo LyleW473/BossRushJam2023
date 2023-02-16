@@ -10,7 +10,7 @@ class BambooPile(Generic):
     # Dictionary containing information relating to bamboo piles
     bamboo_pile_info_dict = {
                             "BambooResourceReplenishAmount": 15,
-                            "HealthReplenishmentAmount": 10,
+                            "HealthReplenishmentAmount": 20,
                             "SpawningCooldown": 2500, 
                             "SpawningCooldownTimer": 2500,
                             "MinimumSpawningDistanceFromMiddle": 5 * TILE_SIZE,
