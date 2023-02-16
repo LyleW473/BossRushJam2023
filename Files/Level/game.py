@@ -1507,6 +1507,62 @@ class Game:
                     # Create a camera shake effect for when the boss lands onto the ground
                     self.camera_shake_info_dict["EventsList"].append("DiveBomb")
 
+                    # --------------------------------------
+                    # Building tiles
+
+                    # If there is at least one existing building tile
+                    if (len(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"]) > 0):
+                        
+                        # Find the index of the building tile in the existing building tiles list if there is a rect collision between the tile and the boss
+                        building_collision_result_indexes = self.boss_group.sprite.dive_bomb_attack_controller.rect.collidelistall(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"])
+
+                        # If there are any rect collisions
+                        if len(building_collision_result_indexes) > 0:
+                            
+                            # Create a tuple with the indexes of building tiles inside the existing building tiles list, if there is pixel-perfect collision between the tile and the dive bomb attack circle
+                            pixel_perfect_collision_indexes_tuple = tuple(
+                                                building_collision_result_index for building_collision_result_index in building_collision_result_indexes 
+                                                if pygame_sprite_collide_mask(self.boss_group.sprite.dive_bomb_attack_controller, self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]) != None
+                                                                    )
+
+                            # For each building tile index
+                            for building_collision_result_index in pixel_perfect_collision_indexes_tuple:
+
+                                # Temporary variable for the building tile to remove
+                                building_tile_to_remove = self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][building_collision_result_index]
+
+                                # "Create" an empty tile where the building tile was
+                                self.empty_tiles_dict[self.player.sprite_groups["ReplacedEmptyTiles"][building_tile_to_remove]] = 0
+                                
+                                # Remove the building tile from the player's replaced empty tiles dict
+                                self.player.sprite_groups["ReplacedEmptyTiles"].pop(building_tile_to_remove)
+
+                                # Remove the building tile from the world tiles group
+                                self.world_tiles_group.remove(building_tile_to_remove)
+
+                                # Remove the building tile from the world tiles dictionary
+                                self.world_tiles_dict.pop(building_tile_to_remove)
+
+                                # If the building tile to remove is in the neighbouring tiles dictionary (keys)
+                                if building_tile_to_remove in self.player.neighbouring_tiles_dict.keys():
+                                    # Remove the building tile
+                                    self.player.neighbouring_tiles_dict.pop(building_tile_to_remove)
+
+                                # Create many shattered bamboo pieces
+                                self.game_ui.create_angled_polygons_effects(
+                                                                            purpose = "ShatteredBambooPieces",
+                                                                            position = (building_tile_to_remove.rect.centerx, building_tile_to_remove.rect.centery),
+                                                                            specified_number_of_pieces = random_randrange(10, 20)
+                                                                            )
+
+                            # Rebuild the existing building tiles list
+                            # Note: This is because, popping whilst iterating over the list would cause an index error
+                            self.player.tools["BuildingTool"]["ExistingBuildingTilesList"] = [
+                                self.player.tools["BuildingTool"]["ExistingBuildingTilesList"][i] for i in range(0, len(self.player.tools["BuildingTool"]["ExistingBuildingTilesList"])) if i not in pixel_perfect_collision_indexes_tuple]
+
+                    # ------------------------------------------------------------------
+                    # Player
+
                     # If there is pixel perfect collision and the player has not been knocked back yet
                     if pygame_sprite_collide_mask(self.boss_group.sprite.dive_bomb_attack_controller, self.player) and self.player.player_gameplay_info_dict["InvincibilityTimer"] == None and (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None):
                         
@@ -2462,7 +2518,7 @@ class Game:
     def run(self, delta_time):
 
         # Fill the scaled surface with a colour
-        self.scaled_surface.fill((7, 10, 17))
+        self.scaled_surface.fill("black") #(51, 61, 41))
 
         # Check if the player has just "died"
         if self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:

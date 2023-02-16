@@ -11,6 +11,7 @@ from pygame import Surface as pygame_Surface
 from Level.effect_text import EffectText
 from random import randrange as random_randrange
 from math import degrees
+from pygame.image import load as pygame_image_load
 
 class GameUI:
 
@@ -91,8 +92,8 @@ class GameUI:
                                 "bar_outline_thickness": 4,
                                 "text_font": pygame_font_Font("graphics/Fonts/player_stats_font.ttf", 32),
                                 "changing_health_bar_edge_thickness": 3,
-                                }
-                          }
+                                },
+                            }
                             
         # A dictionary containing the display cards of all the elements of the game UI
         self.display_cards_dict = {
@@ -345,9 +346,26 @@ class GameUI:
             # Bar that changes depending on the health of the current boss
 
             health_bar_width = max((self.current_boss.extra_information_dict["CurrentHealth"] / self.current_boss.extra_information_dict["MaximumHealth"] ) * self.dimensions["boss_bar"]["width"], 0)
+
+            # If the boss isn't the "GoldenMonkey"
+            if self.current_boss_name != "GoldenMonkey":
+                # Set the health bar to be red
+                health_bar_colours = ("firebrick3", "firebrick4", (200, 44, 44))
+
+            # If the boss is the "GoldenMonkey"
+            elif self.current_boss_name == "GoldenMonkey":
+                # If the boss is in phase 1
+                if self.current_boss.current_phase == 1:
+                    # Set the health bar to be red
+                    health_bar_colours = ("firebrick3", "firebrick4", (200, 44, 44))
+                # If the boss is in phase 2
+                elif self.current_boss.current_phase == 2:
+                    # Set the health bar to be orange
+                    health_bar_colours = ((255,140,0), (238,118,0), (220,108,0))
+
             pygame_draw_rect(
                             surface = self.dimensions["boss_bar"]["alpha_surface"],
-                            color = "firebrick3",
+                            color = health_bar_colours[0],
                             rect = pygame_Rect(
                                             0,
                                             0,
@@ -359,7 +377,7 @@ class GameUI:
 
             pygame_draw_rect(
                             surface = self.dimensions["boss_bar"]["alpha_surface"],
-                            color = "firebrick4",
+                            color = health_bar_colours[1],
                             rect = pygame_Rect(
                                             0,
                                             0 + (self.dimensions["boss_bar"]["height"] / 2),
@@ -375,7 +393,7 @@ class GameUI:
                 # Edge at the end of the changing part of the boss' health
                 pygame_draw_line(
                                 surface = self.dimensions["boss_bar"]["alpha_surface"], 
-                                color = (200, 44, 44),
+                                color = health_bar_colours[2],
                                 start_pos = ((health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), 0),
                                 end_pos = ((health_bar_width) - (self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"] / 2), self.dimensions["boss_bar"]["height"]),
                                 width = self.dimensions["boss_bar"]["changing_health_bar_edge_thickness"]
@@ -415,6 +433,60 @@ class GameUI:
                     font = self.dimensions["boss_bar"]["text_font"],
                     x = (self.dimensions["boss_bar"]["x"] + (self.dimensions["boss_bar"]["width"] / 2)) - ((boss_health_text_font_size[0] / self.scale_multiplier) / 2),
                     y = (self.dimensions["boss_bar"]["y"] + (self.dimensions["boss_bar"]["height"] / 2)) - ((boss_health_text_font_size[1] / self.scale_multiplier) / 2),
+                    surface = self.surface, 
+                    scale_multiplier = self.scale_multiplier
+                    )
+
+    def draw_golden_monkey_energy_indicator(self):
+        
+        # If there is a current boss and the boss is the "GoldenMonkey"
+        if self.current_boss != None and self.current_boss_name == "GoldenMonkey":
+
+            # If the following does not exist in the dimensions dictionary
+            if self.dimensions.get("golden_monkey_energy_indicator") == None:
+                # Load the image and text font and calculate the x and y positions that the image will be blitted at
+                self.dimensions["golden_monkey_energy_indicator"] = {
+                                                                    "Image": pygame_image_load("graphics/Misc/Energy.png").convert_alpha(),
+                                                                    "x": self.dimensions["boss_bar"]["x"] + self.dimensions["boss_bar"]["width"],
+                                                                    "y": self.dimensions["boss_bar"]["y"] + (self.dimensions["boss_bar"]["height"] / 2),
+                                                                    "Font": self.dimensions["boss_bar"]["text_font"],
+                                                                    "SpacingXFromBossBar": 20
+                                                                    
+                                                                        }
+                # X pos shift
+                self.dimensions["golden_monkey_energy_indicator"]["x"] += self.dimensions["golden_monkey_energy_indicator"]["SpacingXFromBossBar"]
+                
+                # Alpha surface
+                self.dimensions["AlphaSurface"] = pygame_Surface(self.dimensions["golden_monkey_energy_indicator"]["Image"].get_size())
+                self.dimensions["AlphaSurface"].set_colorkey("blue")
+                self.dimensions["AlphaSurface"].set_alpha(130)
+
+            # Fill the alpha surface with blue
+            self.dimensions["AlphaSurface"].fill("blue")
+
+            # Draw the image onto the alpha surface
+            self.dimensions["AlphaSurface"].blit(self.dimensions["golden_monkey_energy_indicator"]["Image"], (0, 0))
+
+            # Draw the alpha surface at the location
+            self.surface.blit(
+                            self.dimensions["AlphaSurface"], 
+                            (self.dimensions["golden_monkey_energy_indicator"]["x"] , self.dimensions["golden_monkey_energy_indicator"]["y"] - (self.dimensions["golden_monkey_energy_indicator"]["Image"].get_height() / 2))
+                            )
+
+            # Update the text that will be displayed on the screen depending on the boss' current energy
+            energy_text = f'{max(self.current_boss.energy_amount, 0)}'
+            # Calculate the font size, used to position the text properly
+            energy_text_font_size = self.dimensions["golden_monkey_energy_indicator"]["Font"].size(energy_text)
+
+            #pygame_draw_line(self.surface, "green", (0, (self.dimensions["golden_monkey_energy_indicator"]["y"])),(self.surface.get_width(), (self.dimensions["golden_monkey_energy_indicator"]["y"])))
+
+            # Draw the text displaying the amount of energy the golden monkey boss has
+            draw_text(
+                    text = energy_text, 
+                    text_colour = "white",
+                    font = self.dimensions["golden_monkey_energy_indicator"]["Font"],
+                    x = (self.dimensions["golden_monkey_energy_indicator"]["x"] + (self.dimensions["golden_monkey_energy_indicator"]["Image"].get_width() / 2)) - ((energy_text_font_size[0] / 2) / self.scale_multiplier),
+                    y = (self.dimensions["golden_monkey_energy_indicator"]["y"]) - ((energy_text_font_size[1] / 2) / self.scale_multiplier),
                     surface = self.surface, 
                     scale_multiplier = self.scale_multiplier
                     )
@@ -1142,6 +1214,9 @@ class GameUI:
 
                 # Draw the boss' health if a boss has been spawned
                 self.draw_boss_health()
+
+                # Draw the golden monkey energy indicator if the boss is the golden monkey and they have spawned
+                self.draw_golden_monkey_energy_indicator()
 
                 # Draw the player's frenzy mode bar
                 self.draw_player_frenzy_mode_bar()

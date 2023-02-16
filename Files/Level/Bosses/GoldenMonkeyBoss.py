@@ -133,7 +133,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                                 "SecondPhaseDiveBombCounter": 0,
                                                 "CurrentDiveBombStage": None,
                                                 "Cooldown": 7500,
-                                                "CooldownTimer": 6000, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
+                                                "CooldownTimer": 1000, #6000, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
                                                 "EnergyDepletionAmount": 25,
                                                 "CameraShakePerformed": False, # This is used so that 
 
@@ -1240,4 +1240,9 @@ class GoldenMonkeyBoss(Generic, AI):
             x = (self.rect.x - ((self.image.get_width() / 2)  - (self.rect.width / 2))) - self.camera_position[0], 
             y = (self.rect.y - ((self.image.get_height() / 2) - (self.rect.height / 2))) - self.camera_position[1]
                 )
+
+        # TEMPORARY
         pygame_draw_rect(self.surface, "green", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 1)
+
+        for tile in self.neighbouring_tiles_dict.keys():
+            pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
