@@ -20,6 +20,9 @@ class GoldenMonkeyBoss(Generic, AI):
 
     # ImagesDict = ?? (This is set when the boss is instantiated)
     # Example: Chase : [Direction][Image list]
+
+    # Find the boss map boundaries, so that for the divebomb mechanic, they aren't spawned inside of a tile
+    # boss_boundaries = {"Top": (0, 32), "Left": (32, 0), "Right": len(self.tile_map[0]) * TILE_SIZE, "Bottom": len(self.tile_map) * TILE_SIZE}
     
     # Characteristics
     knockback_damage = 20
@@ -858,17 +861,44 @@ class GoldenMonkeyBoss(Generic, AI):
 
                     case "Launch":
 
-                        # Set the next stage to be "Target"
+                        # Set the next stage to be "Target"wdddaw
                         self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] = "Target"
 
                         # Set the divebomb "Target" duration timer to start counting down
                         self.behaviour_patterns_dict["DiveBomb"]["Target"]["DurationTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Target"]["Duration"]
 
-                        # Set the divebomb's end position (where to land) to be the center of the player
-                        self.dive_bomb_attack_controller.landing_position = self.players_position
+                        # -----------------------------------------------------------------------
+                        # Finding a valid divebomb end position 
+
+                        """Note:
+                        - The landing position is the center of the player, therefore if the plasayer was at the edge of the map, the boss would be spawned inside the tile.
+                        The following code will correct the positions so that e.g. if the player was on the far right of the map, the landing position would need to be at a position where
+                        the right side of the boss' rect would be touching the far right tile, but not  inside
+                        """
+                        # Save the new position in a temporary variable
+                        new_position = [self.players_position[0], self.players_position[1]]
+
+                        # Right side correction:
+                        if (new_position[0] + (self.rect.width / 2)) >= GoldenMonkeyBoss.boss_map_boundaries["Right"]:
+                            new_position[0] = GoldenMonkeyBoss.boss_map_boundaries["Right"] - (self.rect.width / 2)
+                        
+                        # Left side correction:
+                        if (new_position[0] - (self.rect.width / 2)) <= GoldenMonkeyBoss.boss_map_boundaries["Left"]:
+                            new_position[0] = GoldenMonkeyBoss.boss_map_boundaries["Left"] + (self.rect.width / 2)
+                        
+                        # Top side correction 
+                        if (new_position[1] - (self.rect.height / 2)) <= GoldenMonkeyBoss.boss_map_boundaries["Top"]:
+                            new_position[1] = GoldenMonkeyBoss.boss_map_boundaries["Top"] + (self.rect.height / 2)
+
+                        # Bottom side correction 
+                        if (new_position[1] + (self.rect.height / 2)) >= GoldenMonkeyBoss.boss_map_boundaries["Bottom"]:
+                            new_position[1] = GoldenMonkeyBoss.boss_map_boundaries["Bottom"]  - (self.rect.height / 2)
+
+                        # Set the divebomb's end position (where to land) to be the calculated position
+                        self.dive_bomb_attack_controller.landing_position = new_position
                         
                         # Set the divebomb attack controller's center to be the same as the player (for the image to also be centered for mask collisions)
-                        self.dive_bomb_attack_controller.rect.center = self.players_position
+                        self.dive_bomb_attack_controller.rect.center = new_position
 
                         # Modify the movement infomration dict's new center positions so that when the boss lands, it won't teleport back to its old position
                         # Note: -(self.rect.height) / 2, so that the bottom of the boss will be spawned at the landing position
@@ -887,7 +917,7 @@ class GoldenMonkeyBoss(Generic, AI):
                         self.behaviour_patterns_dict["DiveBomb"]["Land"]["DurationTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Land"]["Duration"]
 
                         # Set the boss to be at the landing position
-                        self.rect.midbottom = self.dive_bomb_attack_controller.landing_position
+                        self.rect.center = self.dive_bomb_attack_controller.landing_position
 
                         # Update the angle between the boss and the player, so that the player gets knocked back properly
                         self.find_player(player_position = self.players_position, current_position = self.dive_bomb_attack_controller.landing_position, delta_time = self.delta_time) 

@@ -925,7 +925,6 @@ class GameUI:
                         # Increase the x pos of the text
                         effect_text.x += self.effect_text_info_dict[effect_text.type_of_effect_text]["FloatRightTimeGradient"] * self.delta_time
 
-
     def create_angled_polygons_effects(self, purpose, position = None, angle = None, specified_number_of_pieces = None):
         
         # Identify what angled polygon effect this is

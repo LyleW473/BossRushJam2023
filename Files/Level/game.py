@@ -538,11 +538,16 @@ class Game:
         # Creates the objects tile map
         # Note: The objects tile map is created by the gamestates controller within the load_level method
 
+        # --------------------------------
+        # Used so that the divebomb mechanic for the golden monkey boss doesn't result in him being spawned inside a tile)
+        self.tile_map = non_transformed_tile_map
+
         # For all rows of objects in the tile map
         for row_index, row in enumerate(non_transformed_tile_map):
             # For each item in each row
             for column_index, tile_map_object in enumerate(row):
                 
+                # -------------------------------------------------
                 # If this is the tile in the middle of the tile map
                 """ Note: This is used for calculating the spawning locations of the bamboo piles"""
                 if row_index == int(len(non_transformed_tile_map) / 2) and column_index == int(len(non_transformed_tile_map[row_index]) / 2):
@@ -770,7 +775,7 @@ class Game:
                             self.game_ui.create_angled_polygons_effects(
                                                                         purpose = "ShatteredBambooPieces",
                                                                         position = (bamboo_projectile.rect.centerx, bamboo_projectile.rect.centery),
-                                                                        specified_number_of_pieces = random_randrange(20, 30)
+                                                                        specified_number_of_pieces = random_randrange(15, 25)
                                                                         )
                         # If this bamboo projectile was not shot from the bamboo launcher
                         elif bamboo_projectile.is_bamboo_launcher_projectile == False:
@@ -873,7 +878,7 @@ class Game:
                                 self.game_ui.create_angled_polygons_effects(
                                                                             purpose = "ShatteredBambooPieces",
                                                                             position = (bamboo_projectile.rect.centerx, bamboo_projectile.rect.centery),
-                                                                            specified_number_of_pieces = random_randrange(20, 30)
+                                                                            specified_number_of_pieces = random_randrange(15, 25)
                                                                             )
                             # If this bamboo projectile was not shot from the bamboo launcher
                             elif bamboo_projectile.is_bamboo_launcher_projectile == False:
@@ -918,7 +923,7 @@ class Game:
                                     self.game_ui.create_angled_polygons_effects(
                                                                                 purpose = "ShatteredBambooPieces",
                                                                                 position = (bamboo_projectile.rect.centerx, bamboo_projectile.rect.centery),
-                                                                                specified_number_of_pieces = random_randrange(20, 30)
+                                                                                specified_number_of_pieces = random_randrange(15, 25)
                                                                                 )
                                 # If this bamboo projectile was not shot from the bamboo launcher
                                 elif bamboo_projectile.is_bamboo_launcher_projectile == False:
@@ -2125,6 +2130,8 @@ class Game:
                                     "Land": tuple(pygame_image_load(f"graphics/Bosses/GoldenMonkey/DiveBomb/Land/{i}.png").convert_alpha() for i in range(len(os_listdir("graphics/Bosses/GoldenMonkey/DiveBomb/Land"))))
                                     }
                                                 }
+                # Find the boss map boundaries, so that for the divebomb mechanic, they aren't spawned inside of a tile
+                GoldenMonkeyBoss.boss_map_boundaries = {"Top": 3 * TILE_SIZE, "Left": TILE_SIZE, "Right": (len(self.tile_map[0]) - 1) * TILE_SIZE, "Bottom": (len(self.tile_map) - 1) * TILE_SIZE}
 
                 # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
                 golden_monkey_boss = GoldenMonkeyBoss(
