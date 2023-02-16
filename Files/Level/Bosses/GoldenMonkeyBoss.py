@@ -15,6 +15,7 @@ from Level.effect_text import EffectText
 from pygame import Surface as pygame_Surface
 from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
+from pygame import BLEND_RGB_ADD as pygame_BLEND_RGB_ADD
 
 class GoldenMonkeyBoss(Generic, AI):
 
@@ -22,7 +23,7 @@ class GoldenMonkeyBoss(Generic, AI):
     # Example: Chase : [Direction][Image list]
 
     # Find the boss map boundaries, so that for the divebomb mechanic, they aren't spawned inside of a tile
-    # boss_boundaries = {"Top": (0, 32), "Left": (32, 0), "Right": len(self.tile_map[0]) * TILE_SIZE, "Bottom": len(self.tile_map) * TILE_SIZE}
+    # boss_map_boundaries = {"Top": (0, 32), "Left": (32, 0), "Right": len(self.tile_map[0]) * TILE_SIZE, "Bottom": len(self.tile_map) * TILE_SIZE}
     
     # Characteristics
     knockback_damage = 20
@@ -107,7 +108,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                                     "SpiralChilliSpawningCooldownTimer": None, 
 
                                                     "Cooldown": 10000,
-                                                    "CooldownTimer": 8000, # Start the cooldown timer at 10 seconds after being spawned
+                                                    "CooldownTimer": 10000, # Start the cooldown timer at 10 seconds after being spawned
 
                                                     # Animation
                                                     "FullAnimationDuration": 150,
@@ -132,7 +133,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                                 "SecondPhaseDiveBombCounter": 0,
                                                 "CurrentDiveBombStage": None,
                                                 "Cooldown": 7500,
-                                                "CooldownTimer": 5000, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
+                                                "CooldownTimer": 6000, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
                                                 "EnergyDepletionAmount": 25,
                                                 "CameraShakePerformed": False, # This is used so that 
 
@@ -146,7 +147,7 @@ class GoldenMonkeyBoss(Generic, AI):
 
                                                             },
                                                 "Target": {
-                                                        "Duration": 2000, #3000,
+                                                        "Duration": 2250, #3000,
                                                         "DurationTimer": None
                                                         },
 
@@ -222,11 +223,11 @@ class GoldenMonkeyBoss(Generic, AI):
         # ----------------------------------------------------------------------------------
         # Phase 2 colour
 
-        self.second_phase_colour_min_max_colours = ((0, 0, 120), (0, 120, 0))
+        self.second_phase_colour_min_max_colours = ((0, 60, 0), (0, 0, 0))
         self.second_phase_colour_current_colour = self.second_phase_colour_min_max_colours[1]
         self.second_phase_colour_current_sin_angle = 0
-        self.second_phase_colour_angle_time_gradient = (360 - 0) / 1
-        self.second_phase_colour_plus_or_minus = (0, 1, 1)
+        self.second_phase_colour_angle_time_gradient = (360 - 0) / 0.6
+        self.second_phase_colour_plus_or_minus = (0, 1, 0)
 
     # ----------------------------------------------------------------------------------
     # Animations
@@ -528,11 +529,18 @@ class GoldenMonkeyBoss(Generic, AI):
 
             # If the current action is "Chase"
             if self.current_action == "Chase":
-                
-                # Create a list of all the actions that the AI can currently perform, if the action's cooldown timer is None
-                action_list = [action for action in self.behaviour_patterns_dict.keys() if (action == "SpiralAttack" or action == "DiveBomb") and self.behaviour_patterns_dict[action]["CooldownTimer"] == None]
 
-                # If there are any possible actions that the boss can perform (other than "Chase") and the boss has not performed an action recently
+                # If the boss did not just enter phase 2 (so that it doesn't interrupt the effect)
+                if hasattr(self, "second_phase_circles_dict") == False:
+                    # Create a list of all the actions that the AI can currently perform, if the action's cooldown timer is None
+                    action_list = [action for action in self.behaviour_patterns_dict.keys() if (action == "SpiralAttack" or action == "DiveBomb") and self.behaviour_patterns_dict[action]["CooldownTimer"] == None]
+
+                # If the boss just entered phase 2
+                elif hasattr(self, "second_phase_circles_dict") == True:
+                    # Set the action list as empty, meaning that the boss can only chase the player
+                    action_list = []
+
+                # If there are any possible actions that the boss can perform (other than "Chase") and the boss has not performed an action recently 
                 if len(action_list) > 0 and self.extra_information_dict["NoActionTimer"] == None:
 
                     # Reset the animation index whenever we change the action
@@ -576,8 +584,7 @@ class GoldenMonkeyBoss(Generic, AI):
                         self.behaviour_patterns_dict["DiveBomb"]["Launch"]["DurationTimer"] = self.behaviour_patterns_dict["DiveBomb"]["Launch"]["Duration"]
                 
                 # If there are no possible actions that the boss can perform or the boss has performed an action recently
-                elif len(action_list) == 0 or self.extra_information_dict["NoActionTimer"] != None: 
-                    
+                elif len(action_list) == 0 or self.extra_information_dict["NoActionTimer"] != None:
                     # Move the boss (i.e. Chase the player)
                     self.move()
 
@@ -768,6 +775,103 @@ class GoldenMonkeyBoss(Generic, AI):
     
         # Change the alpha level and size of the shockwave circles
         self.dive_bomb_attack_controller.change_shockwave_circles_visual_effect(delta_time = delta_time)
+
+    def update_and_draw_second_phase_circles(self, delta_time):
+
+        # Fill the alpha surfaces with black
+        self.second_phase_circles_dict["AlphaSurface"].fill("black")
+        self.second_phase_circles_dict["BlendingAlphaSurface"].fill("black")
+
+        # Draw 3 circles for each circle
+        for i in range(0, 3):
+            
+            # If the current index is less than the number of circles drawn so far
+            if i <= self.second_phase_circles_dict["CircleCounterIndex"]:
+
+                # ---------------------------------------------------------------------------------------
+                # Setting the colours
+                
+                colour1 = (238,44,44) if i == 0 else (0,255,255) if i == 1 else (191, 62, 255)
+
+                colour2 = (max(0, colour1[0] - 20), max(0, colour1[1] - 20), max(0, colour1[2] - 20))
+
+                colour3 = (max(0, colour2[0] - 20), max(0, colour2[1] - 20), max(0, colour2[2] - 20))
+
+                # ---------------------------------------------------------------------------------------
+                # Drawing the phase 2 circles
+
+                # Update the blit position along with the center of the boss
+                self.second_phase_circles_dict["BlitPosition"] = ( 
+                                        (self.rect.centerx - self.camera_position[0]),
+                                        (self.rect.centery - self.camera_position[1])
+                                        )
+            
+                # Outer circle
+                pygame_draw_circle(
+                                surface = self.second_phase_circles_dict["BlendingAlphaSurface"], 
+                                color = colour3,
+                                center = self.second_phase_circles_dict["BlitPosition"], 
+                                radius = self.second_phase_circles_dict["CurrentRadiusList"][i] * 2.5, 
+                                width = 0
+                                )
+                # Middle circle
+                pygame_draw_circle(
+                            surface = self.second_phase_circles_dict["BlendingAlphaSurface"], 
+                            color = colour2,
+                            center = self.second_phase_circles_dict["BlitPosition"],
+                            radius = self.second_phase_circles_dict["CurrentRadiusList"][i] * 1.5, 
+                            width = 0
+                            )       
+                
+                # Inner circle
+                pygame_draw_circle(
+                                surface = self.second_phase_circles_dict["BlendingAlphaSurface"], 
+                                color = colour1,
+                                center = self.second_phase_circles_dict["BlitPosition"],
+                                radius = self.second_phase_circles_dict["CurrentRadiusList"][i], 
+                                width = 0
+                                )
+
+
+                # If all three circles have not been drawn yet, and the inner circle of the last circle is less than the maximum radius
+                if self.second_phase_circles_dict["CircleCounterIndex"] < 3 and (self.second_phase_circles_dict["CurrentRadiusList"][2]) < self.second_phase_circles_dict["MaximumRadius"]:
+                    # Increase the radius of the shockwave circle
+                    self.second_phase_circles_dict["CurrentRadiusList"][self.second_phase_circles_dict["CircleCounterIndex"]] += self.second_phase_circles_dict["RadiusTimeGradient"] * delta_time
+
+
+        # ---------------------------------------------------------------------------------------------
+        # Alpha surfaces
+
+        # Blit the blending alpha surface onto the alpha surface
+        self.second_phase_circles_dict["AlphaSurface"].blit(
+                                                            self.second_phase_circles_dict["BlendingAlphaSurface"],
+                                                            (0, 0),
+                                                            special_flags = pygame_BLEND_RGB_ADD
+                                                            )
+
+        # Blit alpha surface onto the main surface
+        # Note: The blending alpha surface and alpha surface are both the tile map size
+        self.surface.blit(
+                        self.second_phase_circles_dict["AlphaSurface"], 
+                        (0 , 0)
+                        )
+
+        # If the current alpha level of the main alpha surface is greater than 0
+        if self.second_phase_circles_dict["CurrentAlphaLevel"] > 0:
+            # Decrease the alpha level of the shockwave circle alpha surface
+            self.second_phase_circles_dict["CurrentAlphaLevel"] = max(0, self.second_phase_circles_dict["CurrentAlphaLevel"] + (self.second_phase_circles_dict["AlphaLevelTimeGradient"] * delta_time))
+            self.second_phase_circles_dict["AlphaSurface"].set_alpha(self.second_phase_circles_dict["CurrentAlphaLevel"])
+
+        # If the timer has finished counting down
+        if self.second_phase_circles_dict["CurrentRadiusList"][self.second_phase_circles_dict["CircleCounterIndex"]] > self.second_phase_circles_dict["MaximumRadius"] \
+            and self.second_phase_circles_dict["CircleCounterIndex"] < 2:
+            # Increment the number of circles already drawn
+            self.second_phase_circles_dict["CircleCounterIndex"] += 1
+
+        # If 3 circles have been drawn and the alpha level of tbe alpha surface is less than or equal to 0
+        if self.second_phase_circles_dict["CircleCounterIndex"] == 2 and self.second_phase_circles_dict["CurrentAlphaLevel"] <= 0:
+            # Delete the second phase circles dictionary
+            del self.second_phase_circles_dict
 
     # ----------------------------------------------------------------------------------
     # Timer updating
@@ -1058,13 +1162,54 @@ class GoldenMonkeyBoss(Generic, AI):
                 if self.extra_information_dict["CurrentHealth"] <=  (0.4 * self.extra_information_dict["MaximumHealth"]):
                     # If the boss is not already in phase 2
                     if self.current_phase != 2:
+
                         # Go into phase 2
                         self.current_phase = 2
+                        
                         # Reduce the spawning cooldowns of the spiral attack
                         self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldown"] *= 0.75
+
+                        # -------------------------------------------------------
+                        # Second phase circles
+
+                        # Create a circles dict for the second phase circles effect
+                        self.second_phase_circles_dict = {
+                                                    "AliveTime": 3.25,
+                                                    "CircleCounterIndex": 0,
+                                                    "MinimumRadius": 30,
+                                                    "MaximumRadius": 800,
+                                                    "StartingAlphaLevel": 80
+                                                
+                                                    }
+
+                        # Current radius / alpha level
+                        self.second_phase_circles_dict["CurrentRadiusList"] = [self.second_phase_circles_dict["MinimumRadius"] for i in range(0, 3)]
+                        self.second_phase_circles_dict["CurrentAlphaLevel"] = self.second_phase_circles_dict["StartingAlphaLevel"] 
+
+                        # Alpha level / radius time gradients
+                        self.second_phase_circles_dict["AlphaLevelTimeGradient"] = (0 - self.second_phase_circles_dict["StartingAlphaLevel"]) / (self.second_phase_circles_dict["AliveTime"] * 3) # * 3 because there are 3 circles to be drawn
+                        self.second_phase_circles_dict["RadiusTimeGradient"] = (self.second_phase_circles_dict["MaximumRadius"] - self.second_phase_circles_dict["MinimumRadius"]) / self.second_phase_circles_dict["AliveTime"]
+
+                        # Blending alpha surface to blend all the rgb colours
+                        self.second_phase_circles_dict["BlendingAlphaSurface"] = pygame_Surface(GoldenMonkeyBoss.boss_map_boundaries["EntireTileMapSize"])
+                        self.second_phase_circles_dict["BlendingAlphaSurface"].set_colorkey("black")
+                        self.second_phase_circles_dict["BlendingAlphaSurfaceSize"] = self.second_phase_circles_dict["BlendingAlphaSurface"].get_size()
+                        
+                        # Alpha surface
+                        self.second_phase_circles_dict["AlphaSurface"] = pygame_Surface(GoldenMonkeyBoss.boss_map_boundaries["EntireTileMapSize"])
+                        self.second_phase_circles_dict["AlphaSurfaceSize"] = self.second_phase_circles_dict["AlphaSurface"].get_size()
+                        self.second_phase_circles_dict["AlphaSurface"].set_alpha(self.second_phase_circles_dict["StartingAlphaLevel"])
+                        self.second_phase_circles_dict["AlphaSurface"].set_colorkey("black")
                     
                     # Update the second phase colour
                     self.update_second_phase_colour()
+
+                    # If there is a dictionary called "second_phase_circles_dict"
+                    # Note: This is because once the effect is complete, the dictionary is deleted
+                    if hasattr(self, "second_phase_circles_dict") == True:
+                        # Update and draw the second phase circles
+                        self.update_and_draw_second_phase_circles(delta_time = self.delta_time)
+
 
                 # Update the duration timers
                 self.update_duration_timers()

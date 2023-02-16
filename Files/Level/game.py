@@ -2131,7 +2131,16 @@ class Game:
                                     }
                                                 }
                 # Find the boss map boundaries, so that for the divebomb mechanic, they aren't spawned inside of a tile
-                GoldenMonkeyBoss.boss_map_boundaries = {"Top": 3 * TILE_SIZE, "Left": TILE_SIZE, "Right": (len(self.tile_map[0]) - 1) * TILE_SIZE, "Bottom": (len(self.tile_map) - 1) * TILE_SIZE}
+                GoldenMonkeyBoss.boss_map_boundaries = {
+                    "Top": 3 * TILE_SIZE, 
+                    "Left": TILE_SIZE, 
+                    "Right": (len(self.tile_map[0]) - 1) * TILE_SIZE, 
+                    "Bottom": (len(self.tile_map) - 1) * TILE_SIZE,
+
+                    # Used for the second phase circles
+                    "EntireTileMapSize": (len(self.tile_map[0]) * TILE_SIZE, len(self.tile_map) * TILE_SIZE)
+                    
+                    }
 
                 # Spawn the boss at the middle of the tile, with the bottom of the boss being at the bottom of the tile
                 golden_monkey_boss = GoldenMonkeyBoss(

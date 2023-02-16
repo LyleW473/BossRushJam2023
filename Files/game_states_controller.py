@@ -1,6 +1,7 @@
 from pygame.display import set_mode as pygame_display_set_mode
 from pygame import SCALED as pygame_SCALED
 from pygame import FULLSCREEN as pygame_FULLSCREEN
+from pygame import HWSURFACE as pygame_HWSURFACE
 from pygame.mouse import set_visible as pygame_mouse_set_visible
 from pygame.event import get as pygame_event_get
 from pygame import QUIT as pygame_QUIT
@@ -22,7 +23,7 @@ class GameStatesController():
 
         # Screen
         # Set the screen to be full screen 
-        self.surface = pygame_display_set_mode((screen_width, screen_height), flags = pygame_SCALED + pygame_FULLSCREEN)
+        self.surface = pygame_display_set_mode((screen_width, screen_height), flags = pygame_SCALED + pygame_FULLSCREEN + pygame_HWSURFACE)
 
         self.full_screen = True
 
@@ -155,14 +156,14 @@ class GameStatesController():
                             if self.full_screen == True:
                                 
                                 # Change to windowed mode
-                                self.surface = pygame_display_set_mode((screen_width, screen_height))
+                                self.surface = pygame_display_set_mode((screen_width, screen_height), pygame_HWSURFACE)
                                 self.full_screen = False
 
                             # Changing from windowed to full screen mode
                             elif self.full_screen == False:
                                 
                                 # Change to full screen mode
-                                self.surface = pygame_display_set_mode((screen_width, screen_height), pygame_SCALED + pygame_FULLSCREEN)
+                                self.surface = pygame_display_set_mode((screen_width, screen_height), pygame_SCALED + pygame_FULLSCREEN + pygame_HWSURFACE)
                                 self.full_screen = True
 
                     # ------------------------------------------------------------
