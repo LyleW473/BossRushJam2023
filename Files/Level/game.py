@@ -24,7 +24,7 @@ from pygame.key import get_pressed as pygame_key_get_pressed
 from pygame import K_f as pygame_K_f
 from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
-from pygame.draw import line as pygame_draw_line
+
 
 class Game:
     def __init__(self):
@@ -151,6 +151,9 @@ class Game:
         self.player.sprite_groups[ReplacedEmptyTiles][building_tile] = empty_tile
         """
         self.replaced_empty_tiles_dict = {}
+
+        # --------------------------------------------------------------------------------------
+    
 
     # --------------------------------------------------------------------------------------
     # Camera methods
@@ -1870,6 +1873,10 @@ class Game:
 
         The final condition is that there shouldn't already be a boss
         """
+
+        # if hasattr(self, "bosses_dict"):
+        #     print(self.bosses_dict["ValidSpawningPosition"], self.bosses_dict["SpawningEffectTimer"], self.bosses_dict["SpawningEffectCounter"], self.bosses_dict["SpawningPositionTilesList"])
+
         if (pygame_key_get_pressed()[pygame_K_f] and hasattr(self, "bosses_dict") == False) or \
             (pygame_key_get_pressed()[pygame_K_f] and hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] == None) or \
             hasattr(self, "bosses_dict") == True and self.bosses_dict["ValidSpawningPosition"] != None:
@@ -1878,6 +1885,16 @@ class Game:
             if len(self.boss_group) == 0:
                 # Find a valid boss spawning position, and continue spawning them
                 self.find_valid_boss_spawning_position(delta_time = delta_time)
+
+            # If a boss has been spawned but was defeated by the player
+            elif len(self.boss_group) == 1 and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
+                # If there are still remaining bosses left
+                if len(self.bosses_dict["RemainingBossesList"]) > 0:
+                    # Empty the boss group
+                    self.boss_group.empty()
+                    # Choose the next boss in the list (The current one would have already been removed, when they were first spawned)
+                    self.bosses_dict["CurrentBoss"] = self.bosses_dict["RemainingBossesList"][0]
+
 
     def find_valid_boss_spawning_position(self, delta_time):
         
@@ -1895,7 +1912,10 @@ class Game:
             
             # Create a dictionary to hold information regarding bosses
             self.bosses_dict = { 
-                        "CurrentBoss": "GoldenMonkey", # "SikaDeer"
+                        "CurrentBoss": "SikaDeer", # "SikaDeer"
+
+                        "RemainingBossesList": ["SikaDeer", "GoldenMonkey"],
+
                         "NumOfTilesForChecking": number_of_tiles_for_checking, # The number of tiles to the left / right / up, down of the randomly chosen empty tile for the spawning position to be valid
                         "RandomSpawningPosition" : random_choice(list(self.empty_tiles_dict.keys())), # Choose a random spawning position
                         "ValidSpawningPosition": None, 
@@ -1966,122 +1986,139 @@ class Game:
                 self.bosses_dict["RandomSpawningPosition"] =  random_choice(list(self.empty_tiles_dict.keys()))
                 # Empty the spawning position tiles list
                 self.bosses_dict["SpawningPositionTilesList"] = []
+ 
+    def draw_spawning_effect_and_call_spawn_boss(self, delta_time):
 
-        # If a valid spawning position has been found and a boss has not been spawned yet
-        elif self.bosses_dict["ValidSpawningPosition"] != None and len(self.boss_group) == 0:
+        # Draws the spawning effect and spawns the boss once the time to spawn timer is complete
 
-                # If a timer has been set to spawn the boss
-                if self.bosses_dict["TimeToSpawnTimer"] != None:
+        # If a timer has been set to spawn the boss
+        if self.bosses_dict["TimeToSpawnTimer"] != None:
 
-                    # For each empty tile in the spawning position tiles list
-                    for empty_tile in self.bosses_dict["SpawningPositionTilesList"]:
+            # For each empty tile in the spawning position tiles list
+            for empty_tile in self.bosses_dict["SpawningPositionTilesList"]:
 
-                            # If the empty tile is the required distance away from the selected spawning tile
-                            if self.bosses_dict["ValidSpawningPosition"].rect.x - (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) <= empty_tile.rect.x <= self.bosses_dict["ValidSpawningPosition"].rect.x + (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) and \
-                                self.bosses_dict["ValidSpawningPosition"].rect.y - (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) <= empty_tile.rect.y <= self.bosses_dict["ValidSpawningPosition"].rect.y + (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE):
+                    # If the empty tile is the required distance away from the selected spawning tile
+                    if self.bosses_dict["ValidSpawningPosition"].rect.x - (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) <= empty_tile.rect.x <= self.bosses_dict["ValidSpawningPosition"].rect.x + (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) and \
+                        self.bosses_dict["ValidSpawningPosition"].rect.y - (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE) <= empty_tile.rect.y <= self.bosses_dict["ValidSpawningPosition"].rect.y + (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE):
+                        
+                        # Highlight the empty tile
+                        pygame_draw_rect(
+                            surface = self.scaled_surface, 
+                            color = (255, 0, 50), 
+                            rect = (empty_tile.rect.x - self.camera_position[0], empty_tile.rect.y - self.camera_position[1], empty_tile.rect.width, empty_tile.rect.height), 
+                            width = 1,
+                            border_radius = 5
+                            )
+                        # Draw a circle which grows with the spawning effect counter (inner circle)
+                        pygame_draw_circle(
+                                        surface = self.scaled_surface, 
+                                        color = (160, 160, 160),
+                                        center = (self.bosses_dict["ValidSpawningPosition"].rect.centerx - self.camera_position[0], self.bosses_dict["ValidSpawningPosition"].rect.centery - self.camera_position[1]), 
+                                        radius = ((self.bosses_dict["SpawningEffectCounter"] - 1) * TILE_SIZE),
+                                        width = 1
+                                        )
+
+                        # Draw a circle which grows with the spawning effect counter (outer circle)
+                        pygame_draw_circle(
+                                        surface = self.scaled_surface, 
+                                        color = (180, 180, 180), 
+                                        center = (self.bosses_dict["ValidSpawningPosition"].rect.centerx - self.camera_position[0], self.bosses_dict["ValidSpawningPosition"].rect.centery - self.camera_position[1]), 
+                                        radius = (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE),
+                                        width = 1
+                                        )
+
+            # Draw the spawning tile
+            pygame_draw_rect(
+                            surface = self.scaled_surface, 
+                            color = "firebrick1", 
+                            rect = (
                                 
-                                # Highlight the empty tile
-                                pygame_draw_rect(
-                                    surface = self.scaled_surface, 
-                                    color = (255, 0, 50), 
-                                    rect = (empty_tile.rect.x - self.camera_position[0], empty_tile.rect.y - self.camera_position[1], empty_tile.rect.width, empty_tile.rect.height), 
-                                    width = 1,
-                                    border_radius = 5
-                                    )
-                                # Draw a circle which grows with the spawning effect counter (inner circle)
-                                pygame_draw_circle(
-                                                surface = self.scaled_surface, 
-                                                color = (160, 160, 160),
-                                                center = (self.bosses_dict["ValidSpawningPosition"].rect.centerx - self.camera_position[0], self.bosses_dict["ValidSpawningPosition"].rect.centery - self.camera_position[1]), 
-                                                radius = ((self.bosses_dict["SpawningEffectCounter"] - 1) * TILE_SIZE),
-                                                width = 1
-                                                )
+                                    self.bosses_dict["ValidSpawningPosition"].rect.x - self.camera_position[0],
+                                    self.bosses_dict["ValidSpawningPosition"].rect.y - self.camera_position[1], 
+                                    self.bosses_dict["ValidSpawningPosition"].rect.width, 
+                                    self.bosses_dict["ValidSpawningPosition"].rect.height
+                                    ),
+                            width = 0, 
+                            border_radius = 5
+                            )
 
-                                # Draw a circle which grows with the spawning effect counter (outer circle)
-                                pygame_draw_circle(
-                                                surface = self.scaled_surface, 
-                                                color = (180, 180, 180), 
-                                                center = (self.bosses_dict["ValidSpawningPosition"].rect.centerx - self.camera_position[0], self.bosses_dict["ValidSpawningPosition"].rect.centery - self.camera_position[1]), 
-                                                radius = (self.bosses_dict["SpawningEffectCounter"] * TILE_SIZE),
-                                                width = 1
-                                                )
+            # Draw the spawning tile outline    
+            pygame_draw_rect(
+                            surface = self.scaled_surface, 
+                            color = "black", 
+                            rect = (
+                                
+                                    self.bosses_dict["ValidSpawningPosition"].rect.x - self.camera_position[0],
+                                    self.bosses_dict["ValidSpawningPosition"].rect.y - self.camera_position[1], 
+                                    self.bosses_dict["ValidSpawningPosition"].rect.width,
+                                    self.bosses_dict["ValidSpawningPosition"].rect.height
+                                    ),
+                            width = 2, 
+                            border_radius = 5
+                            )
+            
+            # --------------------------------------------
+            # Spawning effect timer 
 
-                    # Draw the spawning tile
-                    pygame_draw_rect(
-                                    surface = self.scaled_surface, 
-                                    color = "firebrick1", 
-                                    rect = (
-                                        
-                                            self.bosses_dict["ValidSpawningPosition"].rect.x - self.camera_position[0],
-                                            self.bosses_dict["ValidSpawningPosition"].rect.y - self.camera_position[1], 
-                                            self.bosses_dict["ValidSpawningPosition"].rect.width, 
-                                            self.bosses_dict["ValidSpawningPosition"].rect.height
-                                           ),
-                                    width = 0, 
-                                    border_radius = 5
-                                    )
-        
-                    # Draw the spawning tile outline    
-                    pygame_draw_rect(
-                                    surface = self.scaled_surface, 
-                                    color = "black", 
-                                    rect = (
-                                        
-                                            self.bosses_dict["ValidSpawningPosition"].rect.x - self.camera_position[0],
-                                            self.bosses_dict["ValidSpawningPosition"].rect.y - self.camera_position[1], 
-                                            self.bosses_dict["ValidSpawningPosition"].rect.width,
-                                            self.bosses_dict["ValidSpawningPosition"].rect.height
-                                           ),
-                                    width = 2, 
-                                    border_radius = 5
-                                    )
-                    # --------------------------------------------
-                    # Spawning effect timer 
+            # If the timer has not finished counting down
+            if self.bosses_dict["SpawningEffectTimer"] > 0:
+                # Decrease the timer
+                self.bosses_dict["SpawningEffectTimer"] -= 1000 * delta_time
 
-                    # If the timer has not finished counting down
-                    if self.bosses_dict["SpawningEffectTimer"] > 0:
-                        # Decrease the timer
-                        self.bosses_dict["SpawningEffectTimer"] -= 1000 * delta_time
+            # If the timer has finished counting down
+            if self.bosses_dict["SpawningEffectTimer"] <= 0:
 
-                    # If the timer has finished counting down
-                    if self.bosses_dict["SpawningEffectTimer"] <= 0:
+                # If incrementing the spawning effect counter is less than the number of tiles for checking
+                if self.bosses_dict["SpawningEffectCounter"] + 1 <= self.bosses_dict["NumOfTilesForChecking"]:
+                    # Increment the spawning effect counter
+                    self.bosses_dict["SpawningEffectCounter"] += 1
 
-                        # If incrementing the spawning effect counter is less than the number of tiles for checking
-                        if self.bosses_dict["SpawningEffectCounter"] + 1 <= self.bosses_dict["NumOfTilesForChecking"]:
-                            # Increment the spawning effect counter
-                            self.bosses_dict["SpawningEffectCounter"] += 1
+                # If incrementing the spawning effect counter is greater than the number of tiles for checking
+                elif self.bosses_dict["SpawningEffectCounter"] + 1 > self.bosses_dict["NumOfTilesForChecking"]:
+                    # Reset the spawning effect counter
+                    self.bosses_dict["SpawningEffectCounter"] = self.bosses_dict["OriginalSpawningEffectCounter"]
 
-                        # If incrementing the spawning effect counter is greater than the number of tiles for checking
-                        elif self.bosses_dict["SpawningEffectCounter"] + 1 > self.bosses_dict["NumOfTilesForChecking"]:
-                            # Reset the spawning effect counter
-                            self.bosses_dict["SpawningEffectCounter"] = self.bosses_dict["OriginalSpawningEffectCounter"]
+                # Reset the timer (Adding it will help improve accuracy)
+                self.bosses_dict["SpawningEffectTimer"] += self.bosses_dict["SpawningEffectTimeBetweenEachChange"]
 
-                        # Reset the timer (Adding it will help improve accuracy)
-                        self.bosses_dict["SpawningEffectTimer"] += self.bosses_dict["SpawningEffectTimeBetweenEachChange"]
+            # Change the time between each change depending on how close the boss is to spawning
+            self.bosses_dict["SpawningEffectTimeBetweenEachChange"] = self.bosses_dict["SpawningEffectOriginalTimeBetweenEachChange"] * self.bosses_dict["TimeToSpawnTimer"] / self.bosses_dict["TimeToSpawn"]
+                                                                        
+            # --------------------------------------------
+            # Spawning timer 
 
-                    # Change the time between each change depending on how close the boss is to spawning
-                    self.bosses_dict["SpawningEffectTimeBetweenEachChange"] = self.bosses_dict["SpawningEffectOriginalTimeBetweenEachChange"] * self.bosses_dict["TimeToSpawnTimer"] / self.bosses_dict["TimeToSpawn"]
-                                                                                
-                    # --------------------------------------------
-                    # Spawning timer 
+            # If the timer has not finished counting down
+            if self.bosses_dict["TimeToSpawnTimer"] > 0:
+                # Decrease the timer
+                self.bosses_dict["TimeToSpawnTimer"] -= 1000 * delta_time
 
-                    # If the timer has not finished counting down
-                    if self.bosses_dict["TimeToSpawnTimer"] > 0:
-                        # Decrease the timer
-                        self.bosses_dict["TimeToSpawnTimer"] -= 1000 * delta_time
+            # If the timer has finished counting down
+            if self.bosses_dict["TimeToSpawnTimer"] <= 0:
+                # Set the boss spawn timer back to None, which will allow for the boss to be spawned
+                self.bosses_dict["TimeToSpawnTimer"] = None
 
-                    # If the timer has finished counting down
-                    if self.bosses_dict["TimeToSpawnTimer"] <= 0:
-                        # Set the boss spawn timer back to None, which will allow for the boss to be spawned
-                        self.bosses_dict["TimeToSpawnTimer"] = None
+        # If the timer has finished counting down
+        if self.bosses_dict["TimeToSpawnTimer"] == None:
 
-                # If the timer has finished counting down
-                if self.bosses_dict["TimeToSpawnTimer"] == None:
+            # If there is no current boss
+            if len(self.boss_group) == 0:
+                # Spawn the boss
+                self.spawn_boss(boss_to_spawn = self.bosses_dict["CurrentBoss"])
 
-                    # If there is no current boss
-                    if len(self.boss_group) == 0:
-                        # Spawn the boss
-                        self.spawn_boss(boss_to_spawn = self.bosses_dict["CurrentBoss"])
+                # -------------------------------------------------------------------------
+                # Resetting for the next boss
+
+                # Reset the spawning effect variables, so that when the next boss spawns, the effect will work as intended
+                self.bosses_dict["SpawningEffectTimer"] = None
+                self.bosses_dict["SpawningEffectTimeBetweenEachChange"] = self.bosses_dict["SpawningEffectOriginalTimeBetweenEachChange"]
+                self.bosses_dict["SpawningEffectCounter"] = self.bosses_dict["OriginalSpawningEffectCounter"] 
+                self.bosses_dict["SpawningPositionTilesList"] = []
+
+                # Set the valid spawning position back to None (that way when the game restarts or the player goes to the next boss, the boss can be spawned)
+                self.bosses_dict["ValidSpawningPosition"] = None
+                self.bosses_dict["RandomSpawningPosition"] = random_choice(list(self.empty_tiles_dict.keys()))
+
+
 
     def spawn_boss(self, boss_to_spawn):
 
@@ -2222,12 +2259,15 @@ class Game:
                 # Set the current boss' last tile position to be the last tile position found (for collisions)
                 self.boss_group.sprite.last_tile_position = self.last_tile_position
 
-                                           
-            case "AsiaticBlackBear":
-                pass
 
-        # Set the valid spawning position back to None (that way when the game restarts or the player goes to the next boss, the boss can be spawned)
-        self.bosses_dict["ValidSpawningPosition"] = None
+
+        # Remove the remaining bosses list 
+        self.bosses_dict["RemainingBossesList"].remove(self.bosses_dict["CurrentBoss"])
+
+        # Update the Game UI with the current boss
+        # Note: Required so that when the player goes to the next boss, we can draw the correct game UI
+        self.game_ui.current_boss = self.boss_group.sprite
+        self.game_ui.current_boss_name = self.bosses_dict["CurrentBoss"]
 
     def update_and_run_boss(self, delta_time):
 
@@ -2391,6 +2431,10 @@ class Game:
             # Generate a new spawning position (even if it is valid, the boss should spawn in a different location)
             self.bosses_dict["RandomSpawningPosition"] = random_choice(list(self.empty_tiles_dict.keys()))
 
+            # Resetting boss list and current boss
+            self.bosses_dict["RemainingBossesList"] = ["SikaDeer", "GoldenMonkey"]
+            self.bosses_dict["CurrentBoss"] = "SikaDeer"
+
         # ------------------------------------------------------
         # Effect text and VFX
         self.game_ui.reset_effect_text_list()
@@ -2518,7 +2562,7 @@ class Game:
     def run(self, delta_time):
 
         # Fill the scaled surface with a colour
-        self.scaled_surface.fill("black") #(51, 61, 41))
+        self.scaled_surface.fill((20, 20, 20)) # (15, 16, 8)
 
         # Check if the player has just "died"
         if self.player.player_gameplay_info_dict["CurrentHealth"] <= 0:
@@ -2564,6 +2608,9 @@ class Game:
                 # Update the camera position depending on who the focus subject is
                 self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = self.update_focus_subject())
 
+                # Look for input to spawn the boss
+                self.look_for_input_to_spawn_boss(delta_time = delta_time)
+
                 # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
                 self.spawn_bamboo_pile(delta_time = delta_time)
 
@@ -2585,8 +2632,10 @@ class Game:
                 # Draw all objects inside the tile map / level
                 self.draw_tile_map_objects()
 
-                # Look for input to spawn the boss
-                self.look_for_input_to_spawn_boss(delta_time = delta_time)
+                # If a valid spawning position has been found and a boss has not been spawned yet
+                if hasattr(self, "bosses_dict") and self.bosses_dict["ValidSpawningPosition"] != None and len(self.boss_group) == 0:
+                    # Draw the spawning effect and call spawn boss method
+                    self.draw_spawning_effect_and_call_spawn_boss(delta_time = delta_time)
 
                 # Draw the angled polygon visual effects
                 self.game_ui.draw_angled_polygons_effects(camera_position = self.camera_position, delta_time = delta_time)
@@ -2701,7 +2750,7 @@ class Game:
             
             # ---------------------------------------------------------
 
-            # Update the game UI when the player is alive
+            # Update the game UI
             self.update_game_ui(delta_time = delta_time)
 
             # Run the game UI when the player is alive
