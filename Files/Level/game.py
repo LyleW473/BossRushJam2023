@@ -618,6 +618,8 @@ class Game:
                             player_gameplay_info_dict = self.player.player_gameplay_info_dict,
                             camera_pan_information_dict = self.camera_pan_information_dict
                             )
+        print("Created")
+        self.game_ui.alternative_surface = self.screen
     
     def draw_empty_tiles(self):
         
@@ -2118,8 +2120,6 @@ class Game:
                 self.bosses_dict["ValidSpawningPosition"] = None
                 self.bosses_dict["RandomSpawningPosition"] = random_choice(list(self.empty_tiles_dict.keys()))
 
-
-
     def spawn_boss(self, boss_to_spawn):
 
         # Spawns the boss
@@ -2608,8 +2608,10 @@ class Game:
                 # Update the camera position depending on who the focus subject is
                 self.update_camera_position(delta_time = delta_time, focus_subject_center_pos = self.update_focus_subject())
 
-                # Look for input to spawn the boss
-                self.look_for_input_to_spawn_boss(delta_time = delta_time)
+                # If the player has finished the introduction
+                if hasattr(self.game_ui, "introduction_box_dict") == True and self.game_ui.introduction_box_dict["IntroductionCompleted"] == True:
+                    # Look for input to spawn the boss
+                    self.look_for_input_to_spawn_boss(delta_time = delta_time)
 
                 # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
                 self.spawn_bamboo_pile(delta_time = delta_time)
@@ -2758,3 +2760,8 @@ class Game:
 
         # Draw the scaled surface onto the screen
         self.screen.blit(pygame_transform_scale(self.scaled_surface, (screen_width, screen_height)), (0, 0))
+
+        # Display the introduction box and text if the player has not seen it yet
+        self.game_ui.display_introduction(surface = self.screen)
+
+

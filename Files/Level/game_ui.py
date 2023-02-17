@@ -13,6 +13,7 @@ from random import randrange as random_randrange
 from math import degrees
 from pygame.image import load as pygame_image_load
 
+
 class GameUI:
 
     def __init__(self, surface, scale_multiplier, player_tools, player_gameplay_info_dict, camera_pan_information_dict):
@@ -817,6 +818,69 @@ class GameUI:
                 # Set the alpha level, not allowing it to go below 0 or above 255
                 self.boss_text_alpha_surface.set_alpha(max(0, min(255, self.boss_text_new_alpha_level)))
 
+    # ---------------------------------------------------------------------
+    # Tutorial / Guide text
+
+    def display_introduction(self, surface):
+
+        if hasattr(self, "introduction_box_dict") == False:
+
+            # Stages of the introduction tutorial text
+            self.introduction_box_dict = {
+                                                    "Images": (
+                                                                    pygame_image_load("graphics/Misc/IntroText1.png").convert_alpha(),
+                                                                    pygame_image_load("graphics/Misc/IntroText2.png").convert_alpha()
+                                                                    ),
+                                                    "IntroductionCompleted": False,
+                                                    "IntroductionBoxSize": (700, 800),
+                                                    "IntroductionStage": 1
+
+                                                    }
+        
+        # If the introduction has not been completed yet
+        if self.introduction_box_dict["IntroductionCompleted"] == False:
+
+            # Calculate the box positions for the introduction box
+            introduction_box_positions = (
+                                    (surface.get_width() / 2) - (self.introduction_box_dict["IntroductionBoxSize"][0] / 2), 
+                                    (surface.get_height() / 2) - (self.introduction_box_dict["IntroductionBoxSize"][1] / 2), 
+                                    )
+            # Body
+            pygame_draw_rect(
+                surface = surface,
+                color = (97, 104, 58), 
+                rect = (
+                    introduction_box_positions[0], 
+                    introduction_box_positions[1], 
+                    self.introduction_box_dict["IntroductionBoxSize"][0],
+                    self.introduction_box_dict["IntroductionBoxSize"][1]
+                    ),
+                width = 0
+                )
+
+            # Outline
+            pygame_draw_rect(
+                surface = surface,
+                color = "black", 
+                rect = (
+                    introduction_box_positions[0], 
+                    introduction_box_positions[1], 
+                    self.introduction_box_dict["IntroductionBoxSize"][0],
+                    self.introduction_box_dict["IntroductionBoxSize"][1]
+                    ),
+                width = 5)
+
+            # Draw the image text onto the screen
+            surface.blit(
+                        self.introduction_box_dict["Images"][self.introduction_box_dict["IntroductionStage"] - 1],
+                        (
+                        introduction_box_positions[0],
+                        introduction_box_positions[1]
+                        )
+                        )
+        
+
+
     # -----------------------------------------------------------------------------
     # Visual effects
 
@@ -1223,8 +1287,6 @@ class GameUI:
 
                 # Draw and update any effect text
                 self.draw_and_update_effect_text()
-
+                
                 # Draw the mouse cursor
                 self.draw_mouse_cursor()
-
-            

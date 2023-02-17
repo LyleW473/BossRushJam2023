@@ -12,6 +12,7 @@ from pygame import K_F11 as pygame_K_F11
 from pygame import K_1 as pygame_K_1
 from pygame import K_2 as pygame_K_2
 from pygame import K_3 as pygame_K_3
+from pygame import K_SPACE as pygame_K_SPACE
 from sys import exit as sys_exit
 from Global.settings import *
 from Menu.menu import Menu
@@ -173,6 +174,19 @@ class GameStatesController():
                         
                         # Find which key was pressed
                         match event.key:
+                            
+                            # "Space" key
+                            case _ if event.key == pygame_K_SPACE:
+                                # If this dict exists
+                                if hasattr(self.game.game_ui, "introduction_box_dict"):
+                                    # Go to the next introduction stage
+                                    self.game.game_ui.introduction_box_dict["IntroductionStage"] += 1
+
+                                    # If the player has reached the final stage
+                                    if self.game.game_ui.introduction_box_dict["IntroductionStage"] > 2:
+                                        # Set the introduction as completed
+                                        self.game.game_ui.introduction_box_dict["IntroductionCompleted"] = True
+
 
                             # "Esc" key
                             case _ if event.key == pygame_K_ESCAPE:
