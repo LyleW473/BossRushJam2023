@@ -17,6 +17,7 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.draw import ellipse as pygame_draw_ellipse
 from pygame import BLEND_RGB_ADD as pygame_BLEND_RGB_ADD
+from pygame.display import update as pygame_display_update
 
 class GoldenMonkeyBoss(Generic, AI):
 
@@ -80,7 +81,7 @@ class GoldenMonkeyBoss(Generic, AI):
         self.current_action = "Chase"
         
         # The amount of energy that the boss starts with
-        self.energy_amount = 10 #,GoldenMonkeyBoss.maximum_energy_amount
+        self.energy_amount = GoldenMonkeyBoss.maximum_energy_amount
 
         # The current phase the golden monkey is in
         self.current_phase = 1
@@ -102,7 +103,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                               },
                                     
                                     "SpiralAttack": {
-                                                    "EnergyDepletionAmount": 30,
+                                                    "EnergyDepletionAmount": 35,
                                                     "Duration": 6000,
                                                     "DurationTimer": None,
                                                     "SpiralChilliSpawningCooldown": 60, # Cooldown between each chilli spawned in the spiral attack (50 chillis)
@@ -124,7 +125,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                                     },
 
                                     "Sleep": {
-                                        "Duration": 5000,
+                                        "Duration": 5500,
                                         "DurationTimer": None,
                                         "FullAnimationDuration": 1200,
                                         "PlayerDamageMultiplierWhenBossIsSleeping": 1.75
@@ -134,7 +135,7 @@ class GoldenMonkeyBoss(Generic, AI):
                                                 "SecondPhaseDiveBombCounter": 0,
                                                 "CurrentDiveBombStage": None,
                                                 "Cooldown": 7500,
-                                                "CooldownTimer": 1000, #6000, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
+                                                "CooldownTimer": 6000, # This will be set after the attack has completed (Change this number if you want to delay when the boss can first divebomb attack)
                                                 "EnergyDepletionAmount": 25,
                                                 "CameraShakePerformed": False, # This is used so that 
 
@@ -148,7 +149,7 @@ class GoldenMonkeyBoss(Generic, AI):
 
                                                             },
                                                 "Target": {
-                                                        "Duration": 2250, #3000,
+                                                        "Duration": 2100, #3000,
                                                         "DurationTimer": None
                                                         },
 
@@ -779,82 +780,59 @@ class GoldenMonkeyBoss(Generic, AI):
 
     def update_and_draw_second_phase_circles(self, delta_time):
 
-        # Fill the alpha surfaces with black
+        # Fill the alpha surface with black
         self.second_phase_circles_dict["AlphaSurface"].fill("black")
-        self.second_phase_circles_dict["BlendingAlphaSurface"].fill("black")
-
-        # Draw 3 circles for each circle
-        for i in range(0, 3):
+        
+        # The current colour
+        current_colour = self.second_phase_circles_dict["Colours"][self.second_phase_circles_dict["CircleCounterIndex"]]
             
-            # If the current index is less than the number of circles drawn so far
-            if i <= self.second_phase_circles_dict["CircleCounterIndex"]:
+        # Outer circle
+        pygame_draw_circle(
+                        surface = self.second_phase_circles_dict["AlphaSurface"],
+                        color = (max(current_colour[0] - 60, 0), max(current_colour[1] - 60, 0), max(current_colour[2] - 60, 0)),
+                        center = (self.second_phase_circles_dict["AlphaSurfaceSize"][0] / 2, self.second_phase_circles_dict["AlphaSurfaceSize"][1] / 2),
+                        radius = self.second_phase_circles_dict["CurrentRadiusList"][self.second_phase_circles_dict["CircleCounterIndex"]], 
+                        width = 0
+                        )
 
-                # ---------------------------------------------------------------------------------------
-                # Setting the colours
-                
-                colour1 = (238,44,44) if i == 0 else (0,255,255) if i == 1 else (191, 62, 255)
+        # Mid-circle
+        pygame_draw_circle(
+                        surface = self.second_phase_circles_dict["AlphaSurface"],
+                        color = (max(current_colour[0] - 20, 0), max(current_colour[1] - 20, 0), max(current_colour[2] - 20, 0)),
+                        center = (self.second_phase_circles_dict["AlphaSurfaceSize"][0] / 2, self.second_phase_circles_dict["AlphaSurfaceSize"][1] / 2),
+                        radius = self.second_phase_circles_dict["CurrentRadiusList"][self.second_phase_circles_dict["CircleCounterIndex"]] * 0.5, 
+                        width = 0
+                        )
 
-                colour2 = (max(0, colour1[0] - 20), max(0, colour1[1] - 20), max(0, colour1[2] - 20))
-
-                colour3 = (max(0, colour2[0] - 20), max(0, colour2[1] - 20), max(0, colour2[2] - 20))
-
-                # ---------------------------------------------------------------------------------------
-                # Drawing the phase 2 circles
-
-                # Update the blit position along with the center of the boss
-                self.second_phase_circles_dict["BlitPosition"] = ( 
-                                        (self.rect.centerx - self.camera_position[0]),
-                                        (self.rect.centery - self.camera_position[1])
-                                        )
-            
-                # Outer circle
-                pygame_draw_circle(
-                                surface = self.second_phase_circles_dict["BlendingAlphaSurface"], 
-                                color = colour3,
-                                center = self.second_phase_circles_dict["BlitPosition"], 
-                                radius = self.second_phase_circles_dict["CurrentRadiusList"][i] * 2.5, 
-                                width = 0
-                                )
-                # Middle circle
-                pygame_draw_circle(
-                            surface = self.second_phase_circles_dict["BlendingAlphaSurface"], 
-                            color = colour2,
-                            center = self.second_phase_circles_dict["BlitPosition"],
-                            radius = self.second_phase_circles_dict["CurrentRadiusList"][i] * 1.5, 
-                            width = 0
-                            )       
-                
-                # Inner circle
-                pygame_draw_circle(
-                                surface = self.second_phase_circles_dict["BlendingAlphaSurface"], 
-                                color = colour1,
-                                center = self.second_phase_circles_dict["BlitPosition"],
-                                radius = self.second_phase_circles_dict["CurrentRadiusList"][i], 
-                                width = 0
-                                )
-
-
-                # If all three circles have not been drawn yet, and the inner circle of the last circle is less than the maximum radius
-                if self.second_phase_circles_dict["CircleCounterIndex"] < 3 and (self.second_phase_circles_dict["CurrentRadiusList"][2]) < self.second_phase_circles_dict["MaximumRadius"]:
-                    # Increase the radius of the shockwave circle
-                    self.second_phase_circles_dict["CurrentRadiusList"][self.second_phase_circles_dict["CircleCounterIndex"]] += self.second_phase_circles_dict["RadiusTimeGradient"] * delta_time
+        # Inner circle
+        pygame_draw_circle(
+                        surface = self.second_phase_circles_dict["AlphaSurface"],
+                        color = current_colour,
+                        center = (self.second_phase_circles_dict["AlphaSurfaceSize"][0] / 2, self.second_phase_circles_dict["AlphaSurfaceSize"][1] / 2),
+                        radius = self.second_phase_circles_dict["CurrentRadiusList"][self.second_phase_circles_dict["CircleCounterIndex"]] * 0.2, 
+                        width = 0
+                        )
+        
+        # If all three circles have not been drawn yet, and the inner circle of the last circle is less than the maximum radius
+        if self.second_phase_circles_dict["CircleCounterIndex"] < 3 and (self.second_phase_circles_dict["CurrentRadiusList"][self.second_phase_circles_dict["CircleCounterIndex"] ]) < self.second_phase_circles_dict["MaximumRadius"]:
+            # Increase the radius of the shockwave circle
+            self.second_phase_circles_dict["CurrentRadiusList"][self.second_phase_circles_dict["CircleCounterIndex"]] += self.second_phase_circles_dict["RadiusTimeGradient"] * delta_time
 
 
         # ---------------------------------------------------------------------------------------------
-        # Alpha surfaces
+        # Alpha surfaces    
 
-        # Blit the blending alpha surface onto the alpha surface
-        self.second_phase_circles_dict["AlphaSurface"].blit(
-                                                            self.second_phase_circles_dict["BlendingAlphaSurface"],
-                                                            (0, 0),
-                                                            special_flags = pygame_BLEND_RGB_ADD
-                                                            )
+        # Update the blit position along with the center of the boss
+        self.second_phase_circles_dict["BlitPosition"] = ( 
+                                (self.rect.centerx - self.camera_position[0]) - (self.second_phase_circles_dict["AlphaSurfaceSize"][0] / 2),
+                                (self.rect.centery - self.camera_position[1]) - (self.second_phase_circles_dict["AlphaSurfaceSize"][1] / 2)
+                                )
 
         # Blit alpha surface onto the main surface
         # Note: The blending alpha surface and alpha surface are both the tile map size
         self.surface.blit(
                         self.second_phase_circles_dict["AlphaSurface"], 
-                        (0 , 0)
+                        self.second_phase_circles_dict["BlitPosition"]
                         )
 
         # If the current alpha level of the main alpha surface is greater than 0
@@ -863,9 +841,14 @@ class GoldenMonkeyBoss(Generic, AI):
             self.second_phase_circles_dict["CurrentAlphaLevel"] = max(0, self.second_phase_circles_dict["CurrentAlphaLevel"] + (self.second_phase_circles_dict["AlphaLevelTimeGradient"] * delta_time))
             self.second_phase_circles_dict["AlphaSurface"].set_alpha(self.second_phase_circles_dict["CurrentAlphaLevel"])
 
-        # If the timer has finished counting down
+        # If e.g. the first circle has finished growing to the maximum radius and all 3 circles have not been drawn yet
         if self.second_phase_circles_dict["CurrentRadiusList"][self.second_phase_circles_dict["CircleCounterIndex"]] > self.second_phase_circles_dict["MaximumRadius"] \
             and self.second_phase_circles_dict["CircleCounterIndex"] < 2:
+
+            # Reset the alpha level of the surface back to its default values for the next circles
+            self.second_phase_circles_dict["CurrentAlphaLevel"] = self.second_phase_circles_dict["StartingAlphaLevel"]
+            self.second_phase_circles_dict["AlphaSurface"].set_alpha(self.second_phase_circles_dict["CurrentAlphaLevel"])
+
             # Increment the number of circles already drawn
             self.second_phase_circles_dict["CircleCounterIndex"] += 1
 
@@ -1169,7 +1152,7 @@ class GoldenMonkeyBoss(Generic, AI):
             # If the boss is alive
             if self.extra_information_dict["CurrentHealth"] > 0:
 
-                # If the boss has less than 60% of its maximum health
+                # If the boss has less than 40% of its maximum health
                 if self.extra_information_dict["CurrentHealth"] <=  (0.4 * self.extra_information_dict["MaximumHealth"]):
                     # If the boss is not already in phase 2
                     if self.current_phase != 2:
@@ -1185,11 +1168,12 @@ class GoldenMonkeyBoss(Generic, AI):
 
                         # Create a circles dict for the second phase circles effect
                         self.second_phase_circles_dict = {
-                                                    "AliveTime": 3.25,
+                                                    "AliveTime": 1.5,
                                                     "CircleCounterIndex": 0,
                                                     "MinimumRadius": 30,
-                                                    "MaximumRadius": 800,
-                                                    "StartingAlphaLevel": 80
+                                                    "MaximumRadius": 500,
+                                                    "StartingAlphaLevel": 80,
+                                                    "Colours": ((238, 44, 44), (191, 62, 255), (255, 215, 0))
                                                 
                                                     }
 
@@ -1198,16 +1182,13 @@ class GoldenMonkeyBoss(Generic, AI):
                         self.second_phase_circles_dict["CurrentAlphaLevel"] = self.second_phase_circles_dict["StartingAlphaLevel"] 
 
                         # Alpha level / radius time gradients
-                        self.second_phase_circles_dict["AlphaLevelTimeGradient"] = (0 - self.second_phase_circles_dict["StartingAlphaLevel"]) / (self.second_phase_circles_dict["AliveTime"] * 3) # * 3 because there are 3 circles to be drawn
+                        self.second_phase_circles_dict["AlphaLevelTimeGradient"] = (0 - self.second_phase_circles_dict["StartingAlphaLevel"]) / (self.second_phase_circles_dict["AliveTime"] * 1) # * 3 because there are 3 circles to be drawn
                         self.second_phase_circles_dict["RadiusTimeGradient"] = (self.second_phase_circles_dict["MaximumRadius"] - self.second_phase_circles_dict["MinimumRadius"]) / self.second_phase_circles_dict["AliveTime"]
 
-                        # Blending alpha surface to blend all the rgb colours
-                        self.second_phase_circles_dict["BlendingAlphaSurface"] = pygame_Surface(GoldenMonkeyBoss.boss_map_boundaries["EntireTileMapSize"])
-                        self.second_phase_circles_dict["BlendingAlphaSurface"].set_colorkey("black")
-                        self.second_phase_circles_dict["BlendingAlphaSurfaceSize"] = self.second_phase_circles_dict["BlendingAlphaSurface"].get_size()
-                        
                         # Alpha surface
-                        self.second_phase_circles_dict["AlphaSurface"] = pygame_Surface(GoldenMonkeyBoss.boss_map_boundaries["EntireTileMapSize"])
+                        # self.second_phase_circles_dict["AlphaSurface"] = pygame_Surface(GoldenMonkeyBoss.boss_map_boundaries["EntireTileMapSize"])
+
+                        self.second_phase_circles_dict["AlphaSurface"] = pygame_Surface((self.second_phase_circles_dict["MaximumRadius"] * 2, self.second_phase_circles_dict["MaximumRadius"] * 2))
                         self.second_phase_circles_dict["AlphaSurfaceSize"] = self.second_phase_circles_dict["AlphaSurface"].get_size()
                         self.second_phase_circles_dict["AlphaSurface"].set_alpha(self.second_phase_circles_dict["StartingAlphaLevel"])
                         self.second_phase_circles_dict["AlphaSurface"].set_colorkey("black")

@@ -238,8 +238,8 @@ class GameUI:
         # Guide text
 
         self.guide_text_dict = {
-                                "OriginalDisplayTime": 3.25,
-                                "DisplayTime": 3.25,
+                                "OriginalDisplayTime": 3.5,
+                                "DisplayTime": 3.5,
                                 "OriginalPosition": None,
                                 "CurrentPosition": None,
                                 "Displacement": 30,
@@ -256,13 +256,13 @@ class GameUI:
                                                     "SikaDeerReflectProjectiles": ["Build to reflect these projectiles!", False],
                                                     "SikaDeerBuildToStun": ["Blocking the boss with tiles can stun it!", False],
                                                     "BuildToSlowBoss": ["Tiles can slow down the boss! Remember to pick them back up!", False],
-                                                    "SikaDeerIsVulnerable": ["The Sika Deer takes more damage when stunned!", False],
+                                                    "SikaDeerIsVulnerable": ["The Sika Deer receives more damage when stunned!", False],
                                                     "KnockbackImmunity": ["You are temporarily immune to KNOCKBACK attacks", False],
-                                                    "GoldenMonkeyIsVulnerable": ["The Golden Monkey takes more damage when sleeping!", False],
-                                                    "GoldenMonkeyEnterSecondPhase": ["The Golden Monkey is furious and has obtained a new attack!", False],
+                                                    "GoldenMonkeyEnergyCounter": ["This boss gets fatigued, keep an eye on its energy counter!", False],
+                                                    "GoldenMonkeyIsVulnerable": ["The Golden Monkey receives more damage when sleeping!", False],
+                                                    "GoldenMonkeyEnterSecondPhase": ["The Golden Monkey has become enraged and has obtained a new attack!", False],
                                                     "GameCompletion": ["Congratulations for beating the game! Thanks for playing, hope you had fun!", False],
                                                     
-
                                                     }
                                 }
 

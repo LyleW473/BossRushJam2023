@@ -1629,12 +1629,14 @@ class Game:
             - If the boss is not currently stunned 
             - If the player is not invincible (after getting knocked back recently)
             - The boss is the Golden Monkey and they are not currently performing the dive bomb attack, and is currently launching
+            - If the boss' current action is not "Sleep"
             """
             if self.boss_group.sprite.rect.colliderect(self.player.rect) == True and \
                 (self.boss_group.sprite.movement_information_dict["KnockbackCollisionIdleTimer"] == None) and \
                     self.boss_group.sprite.current_action != "Stunned" and \
                         self.player.player_gameplay_info_dict["InvincibilityTimer"] == None and \
-                            (self.boss_group.sprite.current_action == "DiveBomb" and self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Launch") == False:
+                            (self.boss_group.sprite.current_action == "DiveBomb" and self.boss_group.sprite.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"] == "Launch") == False and \
+                                self.boss_group.sprite.current_action != "Sleep":
 
                 # If there is pixel-perfect collision 
                 if pygame_sprite_collide_mask(self.boss_group.sprite, self.player):
@@ -1908,7 +1910,6 @@ class Game:
                         # Set the display time for the guide text (as it should be the spawn boss text) to 0, so that it stops showing
                         self.game_ui.guide_text_dict["DisplayTime"] = 0
 
-
     def find_valid_boss_spawning_position(self, delta_time):
         
         # Method used to spawn the boss (Spawn the boss once the player presses the button at the top of the screen (add a button at the top of the screen that goes to the next boss))
@@ -1925,8 +1926,7 @@ class Game:
             
             # Create a dictionary to hold information regarding bosses
             self.bosses_dict = { 
-                        "CurrentBoss": "SikaDeer", # "SikaDeer"
-
+                        "CurrentBoss": "SikaDeer",
                         "RemainingBossesList": ["SikaDeer", "GoldenMonkey"],
 
                         "NumOfTilesForChecking": number_of_tiles_for_checking, # The number of tiles to the left / right / up, down of the randomly chosen empty tile for the spawning position to be valid
@@ -2556,12 +2556,26 @@ class Game:
                     # Allow the stunned text to be shown again
                     self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][1] = False
 
+                # Resetting the stomp message so that it keeps repeating:
+                if self.boss_group.sprite.current_action != "Stomp" and self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerReflectProjectiles"][1] == True:
+                    # Allow the stunned text to be shown again
+                    self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerReflectProjectiles"][1] = False
 
 
             # -------------------------------------
             # Golden monkey 
             
             if self.bosses_dict["CurrentBoss"] == "GoldenMonkey":
+
+                # Hint to keep a watch on the energy counter
+                # If the boss can start moving (i.e. the camera is not panning)
+                if self.boss_group.sprite.extra_information_dict["CanStartOperating"] == True:
+                    # If this guide message has not been shown before
+                    if self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnergyCounter"][1] == False:
+                        # Add the text to the guide text list
+                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnergyCounter"][0])
+                        # Set the text as shown
+                        self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnergyCounter"][1] = True
 
                 # If the boss' current action is "Sleep"
                 if self.boss_group.sprite.current_action == "Sleep":
@@ -2580,6 +2594,11 @@ class Game:
                         GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnterSecondPhase"][0])
                         # Set the text as shown
                         self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnterSecondPhase"][1] = True
+
+                # Resetting the sleeping message so that it keeps repeating:
+                if self.boss_group.sprite.current_action != "Sleep" and self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyIsVulnerable"][1] == True:
+                    # Allow the stunned text to be shown again
+                    self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyIsVulnerable"][1] = False
 
     # --------------------------------------------------------------------------------------
     # End-game methods

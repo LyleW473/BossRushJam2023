@@ -105,7 +105,7 @@ class Player(Generic):
 
                                         # ------------------------------------------------
                                         # Frenzy mode
-                                        "CurrentFrenzyModeValue": 90, #0, # The starting frenzy mode value
+                                        "CurrentFrenzyModeValue": 0, # The starting frenzy mode value
                                         "MaximumFrenzyModeValue": 100,
                                         
                                         # Values for increasing the current frenzy mode value depending on what the player did
@@ -1757,7 +1757,6 @@ class Player(Generic):
                 self.player_gameplay_info_dict["BlinkingInvincibilityVisualEffectCurrentSinAngle"] = 0 
 
                 # Note: The gradient will be "reset" the next time the player becomes invincible
-
 
     # ---------------------------------------
     # Building 

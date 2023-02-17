@@ -31,8 +31,8 @@ class SikaDeerBoss(Generic, AI):
                 "DefaultDistanceTravelled": 4 * TILE_SIZE,
 
                 # Time to travel the horizontal/vertical distance at the final veloctiy
-                "DefaultHorizontalTimeToTravelDistanceAtFinalVelocity": 0.42,
-                "DefaultVerticalTimeToTravelDistanceAtFinalVelocity": 0.42,
+                "DefaultHorizontalTimeToTravelDistanceAtFinalVelocity": 0.435,
+                "DefaultVerticalTimeToTravelDistanceAtFinalVelocity": 0.435,
 
                 # Time to reach / accelerate to the final horizontal/vertical velocity
                 "DefaultHorizontalTimeToReachFinalVelocity": 0.3,
@@ -92,7 +92,7 @@ class SikaDeerBoss(Generic, AI):
                                             "Duration": 3000, 
                                             "DurationTimer": None, # Timer used to check if the attack is over
 
-                                            "Cooldown": 13000, 
+                                            "Cooldown": 11000, 
                                             "CooldownTimer": 10000, # Delayed cooldown to when the boss can first use the stomp attack
 
                                             # The variation of the stomp for one entire stomp attack
@@ -123,7 +123,7 @@ class SikaDeerBoss(Generic, AI):
 
                                             "Duration": 2000, # The maximum duration that the boss will charge for
                                             "DurationTimer": None,
-                                            "Cooldown": 10000,
+                                            "Cooldown": 9000,
                                             "CooldownTimer": None,
                                             "FullAnimationDuration": 150,
                                             
