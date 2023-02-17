@@ -2,13 +2,18 @@ from pygame import init as pygame_init
 from pygame.display import set_caption as pygame_display_set_caption
 from pygame.time import Clock as pygame_time_Clock
 from pygame.display import update as pygame_display_update
-from Global.settings import *
 from game_states_controller import GameStatesController
 from time import perf_counter
+from pygame.mixer import pre_init as pygame_mixer_pre_init
+from pygame.mixer import init as pygame_mixer_init
 
 
 class Main:
     def __init__(self):
+
+        # Sound
+        pygame_mixer_pre_init(44100, -16, 2, 512)
+        pygame_mixer_init()
 
         # Pygame set-up
         pygame_init()

@@ -24,6 +24,8 @@ from pygame.key import get_pressed as pygame_key_get_pressed
 from pygame import K_f as pygame_K_f
 from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
+from pygame.mixer import Sound as pygame_mixer_Sound
+from pygame.mouse import get_pressed as pygame_mouse_get_pressed
 
 
 class Game:
@@ -153,7 +155,97 @@ class Game:
         self.replaced_empty_tiles_dict = {}
 
         # --------------------------------------------------------------------------------------
-    
+        # Sound
+
+        # [Sound, Timer]
+        self.sounds_dictionary = {os_listdir("sounds")[i].strip(".wav"): [pygame_mixer_Sound(f"sounds/{os_listdir('sounds')[i]}"), None] for i in range(0, len(os_listdir("sounds")))}
+        self.sound_cooldown_timer = None
+
+        # Adjusting volume
+        self.sounds_dictionary["BambooPilePickUp"][0].set_volume(0.15)
+        self.sounds_dictionary["BambooLauncherProjectileExplosion"][0].set_volume(0.05)
+        self.sounds_dictionary["ReflectedProjectile"][0].set_volume(0.15)
+        self.sounds_dictionary["PlayerHurt"][0].set_volume(0.15)
+        self.sounds_dictionary["DiveBomb"][0].set_volume(0.15)
+        self.sounds_dictionary["ChargeTileCollision"][0].set_volume(0.15)
+        self.sounds_dictionary["GoldenMonkeyPhaseTwo"][0].set_volume(0.15)
+        self.sounds_dictionary["BossTileSmallCollision"][0].set_volume(0.15)
+        self.sounds_dictionary["ChilliProjectileTileCollision"][0].set_volume(0.15)
+        
+
+    # --------------------------------------------------------------------------------------
+    # Sound methods
+
+    def play_manual_sound(self, sound_effect, specific_cooldown_timer = None):
+
+        # Plays the sound manually
+        
+        if specific_cooldown_timer == None:
+            # Set the cooldown timer to a small number
+            self.sounds_dictionary[sound_effect][1] = 0.01
+        elif specific_cooldown_timer != None:
+            self.sounds_dictionary[sound_effect][1] = specific_cooldown_timer
+
+        # Play the sound effect
+        self.sounds_dictionary[sound_effect][0].play()
+
+    def detect_sounds(self):
+
+        # ---------------------------------------------------
+        # Player
+
+        players_current_tool= self.player.player_gameplay_info_dict["CurrentToolEquipped"]
+
+        # If the sound cooldown timer has not been set to start counting down and the camera is not panning currently
+        if self.player.player_gameplay_info_dict["CanStartOperating"] == True:
+
+            # If the player is trying to shoot or build and they have enough bamboo resourcesas
+            if pygame_mouse_get_pressed()[0] == True and \
+                self.player.player_gameplay_info_dict["AmountOfBambooResource"] - self.player.tools[players_current_tool]["BambooResourceDepletionAmount"]> 0:
+
+                # If the player is trying to shoot
+                if players_current_tool != "BuildingTool":
+
+                    # If the current tool is the Bamboo AR and there is no cooldown timer set for this sound effect
+                    if players_current_tool == "BambooAssaultRifle" and self.sounds_dictionary["BambooARShoot"][1] == None:
+                        # Set the sound cooldown of the weapon to adapt to the shooting cooldown of the current weapon
+                        self.sounds_dictionary["BambooARShoot"][1] = self.player.tools[players_current_tool]["ShootingCooldown"] / (1000 * self.player.player_gameplay_info_dict["FrenzyModeFireRateBoost"])
+                        # Play the sound effect
+                        self.sounds_dictionary["BambooARShoot"][0].play()
+
+                    # If the current tool is the Bamboo Launcher and there is no cooldown timer set for this sound effect
+                    elif players_current_tool == "BambooLauncher" and self.sounds_dictionary["BambooLauncherShoot"][1] == None:
+                        # Set the sound cooldown of the weapon to adapt to the shooting cooldown of the current weapon
+                        self.sounds_dictionary["BambooLauncherShoot"][1] = self.player.tools[players_current_tool]["ShootingCooldown"] / (1000 * self.player.player_gameplay_info_dict["FrenzyModeFireRateBoost"])
+                        # Play the sound effect
+                        self.sounds_dictionary["BambooLauncherShoot"][0].play()
+
+        # ---------------------------------------------------
+        # Golden monkey second phase
+
+        # If the current boss is the "GoldenMonkey" and they just entered the second phase (and the boss is still alive)
+        if hasattr(self, "bosses_dict") and self.bosses_dict["CurrentBoss"] == "GoldenMonkey" and len(self.boss_group) > 0 and self.boss_group.sprite.current_phase == 2 and self.boss_group.sprite.extra_information_dict["CurrentHealth"] > 0:
+            # If there is no cooldown timer set for this sound effect
+            if hasattr(self.boss_group.sprite, "second_phase_circles_dict") and self.sounds_dictionary["GoldenMonkeyPhaseTwo"][1] == None:
+                # Play the sound effect for when the boss collides with a tile when charging
+                self.play_manual_sound(
+                                        sound_effect = "GoldenMonkeyPhaseTwo", 
+                                        specific_cooldown_timer = (self.boss_group.sprite.second_phase_circles_dict["AliveTime"])
+                                            )
+                        
+    def update_sound_cooldown_timers(self, delta_time):
+        
+        # For all sounds in the sounds dictionary
+        for sound_list in self.sounds_dictionary.values():
+
+            # Updating sound cooldown timer so that audio does not overlap
+            if sound_list[1] != None:
+                # Decrease the timer
+                sound_list[1] -= delta_time
+
+                # If the timer has finished counting down
+                if sound_list[1] <= 0:
+                    sound_list[1] = None
 
     # --------------------------------------------------------------------------------------
     # Camera methods
@@ -874,7 +966,7 @@ class Game:
 
                             # If this bamboo projectile was shot from the bamboo launcher
                             if bamboo_projectile.is_bamboo_launcher_projectile == True:
-                                #  Always (even when the boss is dead) create a bamboo projectiles explosion (shoots projectiles in a circle)
+                                # Always (even when the boss is dead) create a bamboo projectiles explosion (shoots projectiles in a circle)
                                 self.player.create_bamboo_projectiles_explosion(projectile = bamboo_projectile)
 
                                 # Create many shattered bamboo pieces
@@ -883,6 +975,9 @@ class Game:
                                                                             position = (bamboo_projectile.rect.centerx, bamboo_projectile.rect.centery),
                                                                             specified_number_of_pieces = random_randrange(15, 25)
                                                                             )
+                                # Play the bamboo launcher explosion sound effect
+                                self.play_manual_sound(sound_effect = "BambooLauncherProjectileExplosion")
+
                             # If this bamboo projectile was not shot from the bamboo launcher
                             elif bamboo_projectile.is_bamboo_launcher_projectile == False:
                                 # Create a few shattered bamboo pieces
@@ -892,7 +987,8 @@ class Game:
                                                                             angle = bamboo_projectile.angle,
                                                                             specified_number_of_pieces = random_randrange(2, 6)
                                                                             )
-
+                                # Play the bamboo launcher explosion sound effect
+                                self.play_manual_sound(sound_effect = "BambooProjectileHit")
                             # Remove the bamboo projectile
                             self.bamboo_projectiles_group.remove(bamboo_projectile)
            
@@ -983,6 +1079,9 @@ class Game:
             # Remove the bamboo pile from the replaced empty tiles dict
             self.replaced_empty_tiles_dict.pop(player_and_bamboo_piles_collision_list[0])
 
+            # Play the bamboo pile pick up sound effect
+            self.play_manual_sound(sound_effect = "BambooPilePickUp")
+
             # If adding the bamboo pile's replenishment amount exceeds the player's maximum amount of bamboo resource
             if self.player.player_gameplay_info_dict["AmountOfBambooResource"] + BambooPile.bamboo_pile_info_dict["BambooResourceReplenishAmount"] > self.player.player_gameplay_info_dict["MaximumAmountOfBambooResource"]:
                 # Find the amount that we can replenish the player's amount of bamboo resource to the maximum amount
@@ -1071,6 +1170,9 @@ class Game:
                             # If the stomp attack node has not been reflected already
                             # Note: This is so that it does not bounce backwards and forwards when inside a tile
                             if stomp_attack_node.reflected != True:
+                                # Play the reflected projectile sound effect
+                                self.play_manual_sound(sound_effect = "ReflectedProjectile")
+
                                 # Reflect the stomp attack node, increasing its speed by 1.75
                                 stomp_attack_node.horizontal_gradient *= -1.75 
                                 stomp_attack_node.vertical_gradient *= -1.75
@@ -1153,6 +1255,9 @@ class Game:
                         
                         # Damage the player by the stomp attack node damage
                         self.player.player_gameplay_info_dict["CurrentHealth"] -= stomp_attack_node.damage_amount
+
+                        # Play the player hurt sound effect
+                        self.play_manual_sound(sound_effect = "PlayerHurt")
 
                         # If the player is alive / has more than 0 health
                         if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
@@ -1286,6 +1391,13 @@ class Game:
                                     # Remove the building tile
                                     self.player.neighbouring_tiles_dict.pop(collision_result[0])
 
+                                # Play the sound effect for when a chilli projectile breaks a building tile
+                                self.play_manual_sound(
+                                                    sound_effect = "ChilliProjectileTileCollision", 
+                                                    specific_cooldown_timer = self.boss_group.sprite.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldown"]
+                                                    )
+
+
                                 # Create many shattered bamboo pieces
                                 self.game_ui.create_angled_polygons_effects(
                                                                             purpose = "ShatteredBambooPieces",
@@ -1345,6 +1457,9 @@ class Game:
                         
                         # Damage the player by the stomp attack node damage
                         self.player.player_gameplay_info_dict["CurrentHealth"] -= chilli_projectile.damage_amount
+
+                        # Play the player hurt sound effect
+                        self.play_manual_sound(sound_effect = "PlayerHurt")
 
                         # If the player is alive / has more than 0 health
                         if self.player.player_gameplay_info_dict["CurrentHealth"] > 0:
@@ -1432,9 +1547,14 @@ class Game:
                         if self.boss_group.sprite.current_action == "Chase":
                             # Reset the boss' movement acceleration, so that they slow down
                             self.boss_group.sprite.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
+                            # Play the sound effect when the boss runs into a tile
+                            self.play_manual_sound(sound_effect = "BossTileSmallCollision")
 
                         # If the boss is the "SikaDeer" and collided with the player whilst charge attacking
                         elif self.bosses_dict["CurrentBoss"] == "SikaDeer" and self.boss_group.sprite.current_action == "Charge":
+
+                            # Play the sound effect for when the boss collides with a tile when charging
+                            self.play_manual_sound(sound_effect = "ChargeTileCollision")
 
                             # Reset the boss' movement acceleration, so that they slow down
                             self.boss_group.sprite.reset_movement_acceleration(horizontal_reset = True, vertical_reset = True)
@@ -1485,6 +1605,8 @@ class Game:
             if self.bosses_dict["CurrentBoss"] == "SikaDeer" and self.boss_group.sprite.current_action == "Charge":
                     # If there is an x or y world tile collision
                     if self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsX"] == True or self.boss_group.sprite.movement_information_dict["WorldTileCollisionResultsY"] == True:
+                        # Play the sound effect for when the boss collides with a tile when charging
+                        self.play_manual_sound(sound_effect = "ChargeTileCollision")
 
                         # Set the player to change into the "Stunned" state (this will be done inside the SikaDeer class)
                         self.boss_group.sprite.behaviour_patterns_dict["Charge"]["EnterStunnedStateBoolean"] = True
@@ -1509,6 +1631,9 @@ class Game:
                 
                     # Create a camera shake effect for when the boss lands onto the ground
                     self.camera_shake_info_dict["EventsList"].append("DiveBomb")
+
+                    # Play the dive bomb sound effect
+                    self.play_manual_sound(sound_effect = "DiveBomb")
 
                     # --------------------------------------
                     # Building tiles
@@ -1595,6 +1720,8 @@ class Game:
                         self.player.player_gameplay_info_dict["KnockbackHorizontalDistanceTimeGradient"] *= self.boss_group.sprite.dive_bomb_attack_controller.knockback_multiplier
                         self.player.player_gameplay_info_dict["KnockbackVerticalDistanceTimeGradient"] *= self.boss_group.sprite.dive_bomb_attack_controller.knockback_multiplier
 
+                        # Play the player hurt sound effect
+                        self.play_manual_sound(sound_effect = "PlayerHurt")
 
                         # Set the player's invincibility timer to start counting down 
                         self.player.player_gameplay_info_dict["InvincibilityTimer"] = self.player.player_gameplay_info_dict["InvincibilityTime"]
@@ -1675,6 +1802,9 @@ class Game:
                                                         larger_font = False
                                                     )
                     
+                    # Play the player hurt sound effect
+                    self.play_manual_sound(sound_effect = "PlayerHurt")
+
                     # If the boss is the "SikaDeer" and collided with the player whilst charge attacking
                     if self.bosses_dict["CurrentBoss"] == "SikaDeer" and self.boss_group.sprite.current_action == "Charge":
                         # Set the "Charge" duration timer to 0 (to end the charge attack)
@@ -2765,6 +2895,12 @@ class Game:
             self.chilli_projectiles_dict = {}
 
     def run(self, delta_time):
+
+        # Detect sounds for other objects e.g. the player and the boss
+        self.detect_sounds()
+        
+        # Update the sound cooldown timers for each sound
+        self.update_sound_cooldown_timers(delta_time = delta_time)
 
         # Fill the scaled surface with a colour
         self.scaled_surface.fill((20, 20, 20)) # (15, 16, 8)

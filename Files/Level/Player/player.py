@@ -112,7 +112,7 @@ class Player(Generic):
                                         "DealDamageFrenzyModeIncrement": 0.5, 
                                         "TakeDamageFrenzyModeIncrement": 0.5,
                                         "BlockDamageFrenzyModeIncrement": 0.25,
-                                        "ReflectDamageFrenzyModeIncrement": 1.25, 
+                                        "ReflectDamageFrenzyModeIncrement": 0.75, 
                                         "StunEnemyFrenzyModeIncrement": 5,
                                         
                                         # Time 
