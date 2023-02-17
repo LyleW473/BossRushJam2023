@@ -1,4 +1,4 @@
-from Global.settings import *
+from Global.settings import GUIDE_TEXT_LIST, TILE_SIZE, screen_height, screen_width
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
 from Level.game_ui import GameUI
@@ -618,8 +618,6 @@ class Game:
                             player_gameplay_info_dict = self.player.player_gameplay_info_dict,
                             camera_pan_information_dict = self.camera_pan_information_dict
                             )
-        print("Created")
-        self.game_ui.alternative_surface = self.screen
     
     def draw_empty_tiles(self):
         
@@ -1885,6 +1883,9 @@ class Game:
 
             # If a boss has not been spawned yet
             if len(self.boss_group) == 0:
+                # Set the display time for the guide text (as it should be the spawn boss text) to 0, so that it stops showing
+                self.game_ui.guide_text_dict["DisplayTime"] = 0
+            
                 # Find a valid boss spawning position, and continue spawning them
                 self.find_valid_boss_spawning_position(delta_time = delta_time)
 
@@ -1892,10 +1893,15 @@ class Game:
             elif len(self.boss_group) == 1 and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
                 # If there are still remaining bosses left
                 if len(self.bosses_dict["RemainingBossesList"]) > 0:
+
                     # Empty the boss group
                     self.boss_group.empty()
+
                     # Choose the next boss in the list (The current one would have already been removed, when they were first spawned)
                     self.bosses_dict["CurrentBoss"] = self.bosses_dict["RemainingBossesList"][0]
+
+                    # Set the display time for the guide text (as it should be the spawn boss text) to 0, so that it stops showing
+                    self.game_ui.guide_text_dict["DisplayTime"] = 0
 
 
     def find_valid_boss_spawning_position(self, delta_time):
@@ -2261,8 +2267,13 @@ class Game:
 
 
 
-        # Remove the remaining bosses list 
+        # Remove the boss from the remaining bosses list 
         self.bosses_dict["RemainingBossesList"].remove(self.bosses_dict["CurrentBoss"])
+
+        # If there are still remaining bosses after this current boss
+        if len(self.bosses_dict["RemainingBossesList"]) > 0:
+            # Set the display time back to default
+            self.game_ui.guide_text_dict["DisplayTime"] = self.game_ui.guide_text_dict["OriginalDisplayTime"]
 
         # Update the Game UI with the current boss
         # Note: Required so that when the player goes to the next boss, we can draw the correct game UI
@@ -2413,10 +2424,50 @@ class Game:
         # The camera pan information dict
         self.game_ui.camera_pan_information_dict = self.camera_pan_information_dict
     
+    def create_guide_text(self):
+        
+        # ------------------------------------------------------------------------------------
+        # Spawn boss text
+
+        # If the "spawn boss" message has not been displayed before
+        if self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][1] == False:
+            # Add the text to the guide text list
+            GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0])
+            # Set the text as shown
+            self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][1] = True
+
+        # If there is already a boss but they were defeated, and the spawn boss text has not been added to GUIDE_TEXT_LIST yet
+        if len(self.boss_group) > 0 and self.boss_group.sprite.extra_information_dict["CurrentHealth"] < 0 and self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0] not in GUIDE_TEXT_LIST:
+            # If there are also remaining bosses
+            if hasattr(self, "bosses_dict") and len(self.bosses_dict["RemainingBossesList"]) != 0:
+                # Set the spawn boss text as being not shown, so that the spawnboss  text will show again
+                self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][1] = False
+
+        # ------------------------------------------------------------------------------------
+        # Activate Frenzy Mode text
+
+        if self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] == self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]:
+            # If the activate frenzy mode text has not been shown yet
+            if self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][1] == False:
+                # Add the text to the guide text list
+                GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][0])
+                # Set the text as shown
+                self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][1] = True
+
+        # If the player's current frenzy mode value is 0 and it hasn't been set back to be able to be shown again
+        if self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] == 0 and self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][1] == True:
+            # Allow the Activate Frenzy Mode text to be shown again, the next time the player fills up the meter
+            self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][1] = False
+
+
+
     # --------------------------------------------------------------------------------------
     # End-game methods
 
     def reset_level(self):
+
+        # Declare GUIDE_TEXT_LIST as global so it can be reset from the game states controller
+        global GUIDE_TEXT_LIST
 
         # Once the player has returned back to the main menu after dying, the following need to be reset / added back
 
@@ -2489,6 +2540,21 @@ class Game:
         # Height time gradient fo the black bar
         self.game_ui.black_bar_height_time_gradient = self.game_ui.original_black_bar_height_time_gradient
 
+        # ---------------------------
+        # Guide text
+        
+        self.game_ui.guide_text_dict["DisplayTime"] =  self.game_ui.guide_text_dict["OriginalDisplayTime"]
+        self.game_ui.guide_text_dict["OriginalPosition"] = None
+        self.game_ui.guide_text_dict["CurrentPosition"] = None
+        self.game_ui.guide_text_dict["CurrentSinAngle"] = 0
+
+        for purpose in self.game_ui.guide_text_dict["AllGuideTextMessages"].keys():
+            # Set all of the "text shown" boolean values back to False
+            self.game_ui.guide_text_dict["AllGuideTextMessages"][purpose][1] = False
+
+        if len(GUIDE_TEXT_LIST) > 0:
+            GUIDE_TEXT_LIST = []
+        
         # ------------------------------------------------------
         # Building tiles and neighbouring tiles
     
@@ -2612,6 +2678,9 @@ class Game:
                 if hasattr(self.game_ui, "introduction_box_dict") == True and self.game_ui.introduction_box_dict["IntroductionCompleted"] == True:
                     # Look for input to spawn the boss
                     self.look_for_input_to_spawn_boss(delta_time = delta_time)
+
+                    # Create guide text
+                    self.create_guide_text()
 
                 # Spawn bamboo piles if enough time has passed since the last bamboo pile was spawned
                 self.spawn_bamboo_pile(delta_time = delta_time)
@@ -2763,5 +2832,8 @@ class Game:
 
         # Display the introduction box and text if the player has not seen it yet
         self.game_ui.display_introduction(surface = self.screen)
+
+        # Draw the guide text
+        self.game_ui.draw_guide_text(surface = self.screen, delta_time = delta_time)
 
 

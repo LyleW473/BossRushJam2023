@@ -14,7 +14,7 @@ from pygame import K_2 as pygame_K_2
 from pygame import K_3 as pygame_K_3
 from pygame import K_SPACE as pygame_K_SPACE
 from sys import exit as sys_exit
-from Global.settings import *
+from Global.settings import screen_width, screen_height
 from Menu.menu import Menu
 from Level.game import Game
 from pygame.draw import rect as pygame_draw_rect

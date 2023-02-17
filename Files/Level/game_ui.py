@@ -5,8 +5,8 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import line as pygame_draw_line
 from pygame.image import load as load_image
 from Level.display_card import DisplayCard
-from Global.settings import TILE_SIZE, BAR_ALPHA_LEVEL
-from Global.functions import draw_text, sin_change_object_colour
+from Global.settings import TILE_SIZE, BAR_ALPHA_LEVEL, GUIDE_TEXT_LIST
+from Global.functions import draw_text, sin_change_object_colour, move_item_vertically_sin
 from pygame import Surface as pygame_Surface
 from Level.effect_text import EffectText
 from random import randrange as random_randrange
@@ -233,7 +233,32 @@ class GameUI:
         # Note: THe time is in half so that it fades in and out
         self.boss_text_alpha_level_time_gradient = 200 / ((self.camera_pan_information_dict["BossPanLockTime"] / 1000) / 5) # 5 so that at the middle of the timer, the text will be completely opaque
         self.boss_text_new_alpha_level = 0
-    
+
+        # -----------------------------
+        # Guide text
+
+        self.guide_text_dict = {
+                                "OriginalDisplayTime": 5,
+                                "DisplayTime": 5,
+                                "OriginalPosition": None,
+                                "CurrentPosition": None,
+                                "Displacement": 30,
+                                "CurrentSinAngle": 0,
+                                "AngleTimeGradient": 360 / 2.5,
+                                "Font": pygame_font_Font("graphics/Fonts/player_stats_font.ttf", 48),
+
+                                
+                                "AllGuideTextMessages": 
+                                                    # Note: Key is the purpose, The value is a list containing the text and a boolean value as to whether its been shown before
+                                                    {
+                                                    "SpawnBoss": ['Press the "F" key to spawn the boss', False],
+                                                    "ActivateFrenzyMode": ['Press the "Spacebar" key to activate Frenzy Mode!', False]
+                                                    
+
+                                                    }
+                                }
+
+
     # ---------------------------------------------------------------------
     # Resetting methods
 
@@ -255,7 +280,7 @@ class GameUI:
             # Empty the dictionary and reset the amount of polygons created
             self.angled_polygons_controller.polygons_dict = {}
             self.angled_polygons_controller.polygons_created = 0
-
+    
     # ---------------------------------------------------------------------
     # Display methods
 
@@ -823,9 +848,9 @@ class GameUI:
 
     def display_introduction(self, surface):
 
+        # If this dictionary does not exist
         if hasattr(self, "introduction_box_dict") == False:
-
-            # Stages of the introduction tutorial text
+            # Create a dictionary containing info for the introduction box
             self.introduction_box_dict = {
                                                     "Images": (
                                                                     pygame_image_load("graphics/Misc/IntroText1.png").convert_alpha(),
@@ -878,8 +903,69 @@ class GameUI:
                         introduction_box_positions[1]
                         )
                         )
-        
 
+    def draw_guide_text(self, delta_time, surface):
+        
+        # There can only be one guide text being drawn at a time
+    
+        # If there are any guide text to be drawn
+        if len(GUIDE_TEXT_LIST) > 0:
+            
+            # If an original position has not been set yet
+            if self.guide_text_dict["OriginalPosition"] == None:
+
+                # Calculate the size of the font
+                text_font_size = self.guide_text_dict["Font"].size(GUIDE_TEXT_LIST[0])
+
+                # Set the position of the text to be aligned with the mid-top of the screen
+                self.guide_text_dict["OriginalPosition"] = (
+                                                            (surface.get_width() / 2) - (text_font_size[0] / 2),
+                                                            70
+                                                            )
+                self.guide_text_dict["CurrentPosition"] = [self.guide_text_dict["OriginalPosition"][0], self.guide_text_dict["OriginalPosition"][1]]
+
+            # If the display time for the current guide text is greater than 0
+            if self.guide_text_dict["DisplayTime"] > 0:
+                                                    
+                # Change the current position and sin angle
+                self.guide_text_dict["CurrentPosition"], self.guide_text_dict["CurrentSinAngle"] = move_item_vertically_sin(
+                                                                                                                            current_sin_angle = self.guide_text_dict["CurrentSinAngle"],
+                                                                                                                            angle_time_gradient = self.guide_text_dict["AngleTimeGradient"],
+                                                                                                                            displacement = self.guide_text_dict["Displacement"],
+                                                                                                                            original_position = self.guide_text_dict["OriginalPosition"],
+                                                                                                                            current_position = self.guide_text_dict["CurrentPosition"],
+                                                                                                                            delta_time = delta_time,
+
+                                                                                                                            )
+
+                # If the text isn't the spawn boss text
+                if GUIDE_TEXT_LIST[0] != self.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0]:
+                    # Reduce the display time
+                    self.guide_text_dict["DisplayTime"] -= delta_time
+
+                # Draw the text onto the surface
+                draw_text(
+                        text = GUIDE_TEXT_LIST[0], 
+                        text_colour = "white", 
+                        font = self.guide_text_dict["Font"],
+                        x = self.guide_text_dict["CurrentPosition"][0],
+                        y = self.guide_text_dict["CurrentPosition"][1],
+                        surface = surface
+                        )
+            
+            # If the display time for the current guide text is less than or equal to 0
+            elif self.guide_text_dict["DisplayTime"] <= 0:
+                
+                # Set the display time back to its original value
+                self.guide_text_dict["DisplayTime"] = self.guide_text_dict["OriginalDisplayTime"]
+
+                # Reset the position of the guide text so the next guide text is centered properly
+                self.guide_text_dict["OriginalPosition"] = None
+                self.guide_text_dict["CurrentPosition"] = None
+
+                # Remove the first guide text in the list (i.e. the current one)
+                GUIDE_TEXT_LIST.pop(0)
+                        
 
     # -----------------------------------------------------------------------------
     # Visual effects
@@ -1258,6 +1344,7 @@ class GameUI:
 
         # Blit the angled polygons surface onto the main surface
         self.surface.blit(self.angled_polygons_surface, (0, 0))
+
 
     def run(self, camera_position):
 

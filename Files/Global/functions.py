@@ -1,7 +1,6 @@
 from pygame.transform import smoothscale
 from pygame import Surface as pygame_Surface
 from pygame import BLEND_RGB_ADD as pygame_BLEND_RGB_ADD
-
 from math import sin, radians
 
 def draw_text(text, text_colour, font, x, y, surface, scale_multiplier = None):
@@ -100,3 +99,15 @@ def sin_change_object_colour(current_sin_angle, angle_time_gradient, colour_to_c
 
         # Return the changed colour and the changed sin angle
         return colour_to_change, current_sin_angle
+
+def move_item_vertically_sin(current_sin_angle, angle_time_gradient, delta_time, original_position, current_position, displacement):
+    
+    # Increase the sin angle
+    current_sin_angle += angle_time_gradient * delta_time
+
+    # Set the new position based on the current sin angle
+    new_position = current_position
+    new_position[1] = original_position[1] + (displacement * sin(radians(current_sin_angle)))
+
+    # Return the new position and sin angle
+    return new_position, current_sin_angle

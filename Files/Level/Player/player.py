@@ -105,7 +105,7 @@ class Player(Generic):
 
                                         # ------------------------------------------------
                                         # Frenzy mode
-                                        "CurrentFrenzyModeValue": 0, # The starting frenzy mode value
+                                        "CurrentFrenzyModeValue": 90, #0, # The starting frenzy mode value
                                         "MaximumFrenzyModeValue": 100,
                                         
                                         # Values for increasing the current frenzy mode value depending on what the player did
