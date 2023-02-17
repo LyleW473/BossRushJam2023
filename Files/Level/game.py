@@ -1291,7 +1291,7 @@ class Game:
 
                 # Look for tile rect collisions between the stomp attack nodes and the current boss
                 # Only enter if there is a rect collision and the stomp attack node was reflected
-                if stomp_attack_node.rect.colliderect(self.boss_group.sprite.rect) and stomp_attack_node.reflected == True:
+                if self.boss_group.sprite != None and stomp_attack_node.rect.colliderect(self.boss_group.sprite.rect) and stomp_attack_node.reflected == True:
                     
                     # If the stomp attack node image is not the same as the diameter of the attack node 
                     """ Note: This is here instead of inside the stomp attack node's increase_size method to avoid resizing the image everytime the attack node's size is changed
