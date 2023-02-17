@@ -238,8 +238,8 @@ class GameUI:
         # Guide text
 
         self.guide_text_dict = {
-                                "OriginalDisplayTime": 5,
-                                "DisplayTime": 5,
+                                "OriginalDisplayTime": 3.25,
+                                "DisplayTime": 3.25,
                                 "OriginalPosition": None,
                                 "CurrentPosition": None,
                                 "Displacement": 30,
@@ -252,7 +252,15 @@ class GameUI:
                                                     # Note: Key is the purpose, The value is a list containing the text and a boolean value as to whether its been shown before
                                                     {
                                                     "SpawnBoss": ['Press the "F" key to spawn the boss', False],
-                                                    "ActivateFrenzyMode": ['Press the "Spacebar" key to activate Frenzy Mode!', False]
+                                                    "ActivateFrenzyMode": ['Press the "Spacebar" key to activate Frenzy Mode!', False],
+                                                    "SikaDeerReflectProjectiles": ["Build to reflect these projectiles!", False],
+                                                    "SikaDeerBuildToStun": ["Blocking the boss with tiles can stun it!", False],
+                                                    "BuildToSlowBoss": ["Tiles can slow down the boss! Remember to pick them back up!", False],
+                                                    "SikaDeerIsVulnerable": ["The Sika Deer takes more damage when stunned!", False],
+                                                    "KnockbackImmunity": ["You are temporarily immune to KNOCKBACK attacks", False],
+                                                    "GoldenMonkeyIsVulnerable": ["The Golden Monkey takes more damage when sleeping!", False],
+                                                    "GoldenMonkeyEnterSecondPhase": ["The Golden Monkey is furious and has obtained a new attack!", False],
+                                                    "GameCompletion": ["Congratulations for beating the game! Thanks for playing, hope you had fun!", False],
                                                     
 
                                                     }
@@ -917,11 +925,23 @@ class GameUI:
                 # Calculate the size of the font
                 text_font_size = self.guide_text_dict["Font"].size(GUIDE_TEXT_LIST[0])
 
-                # Set the position of the text to be aligned with the mid-top of the screen
-                self.guide_text_dict["OriginalPosition"] = (
-                                                            (surface.get_width() / 2) - (text_font_size[0] / 2),
-                                                            70
-                                                            )
+                # If the current guide text is not the game completion text
+                if GUIDE_TEXT_LIST[0] != self.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0]:
+                    # Set the position of the text to be aligned with the mid-top of the screen
+                    self.guide_text_dict["OriginalPosition"] = (
+                                                                (surface.get_width() / 2) - (text_font_size[0] / 2),
+                                                                70
+                                                                )
+
+                # If the current guide text is the game completion text
+                elif GUIDE_TEXT_LIST[0] == self.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0]:
+                    # Set the game completion text to be in the center of the screen
+                    self.guide_text_dict["OriginalPosition"] = (
+                                                                (surface.get_width() / 2) - (text_font_size[0] / 2),
+                                                                (surface.get_height() / 2) - (text_font_size[1] / 2)
+                                                                )
+
+
                 self.guide_text_dict["CurrentPosition"] = [self.guide_text_dict["OriginalPosition"][0], self.guide_text_dict["OriginalPosition"][1]]
 
             # If the display time for the current guide text is greater than 0
@@ -938,8 +958,10 @@ class GameUI:
 
                                                                                                                             )
 
-                # If the text isn't the spawn boss text
-                if GUIDE_TEXT_LIST[0] != self.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0]:
+                # If the text isn't the spawn boss text or the congratulations text
+                if GUIDE_TEXT_LIST[0] != self.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0] and \
+                    GUIDE_TEXT_LIST[0] != self.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0]:
+
                     # Reduce the display time
                     self.guide_text_dict["DisplayTime"] -= delta_time
 

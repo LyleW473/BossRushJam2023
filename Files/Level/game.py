@@ -1883,8 +1883,11 @@ class Game:
 
             # If a boss has not been spawned yet
             if len(self.boss_group) == 0:
-                # Set the display time for the guide text (as it should be the spawn boss text) to 0, so that it stops showing
-                self.game_ui.guide_text_dict["DisplayTime"] = 0
+                
+                # If the first guide text in the list is the spawn boss text
+                if len(GUIDE_TEXT_LIST) > 0 and GUIDE_TEXT_LIST[0] == self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0]:
+                    # Set the display time for the guide text (as it should be the spawn boss text) to 0, so that it stops showing
+                    self.game_ui.guide_text_dict["DisplayTime"] = 0
             
                 # Find a valid boss spawning position, and continue spawning them
                 self.find_valid_boss_spawning_position(delta_time = delta_time)
@@ -1900,8 +1903,10 @@ class Game:
                     # Choose the next boss in the list (The current one would have already been removed, when they were first spawned)
                     self.bosses_dict["CurrentBoss"] = self.bosses_dict["RemainingBossesList"][0]
 
-                    # Set the display time for the guide text (as it should be the spawn boss text) to 0, so that it stops showing
-                    self.game_ui.guide_text_dict["DisplayTime"] = 0
+                    # If the first guide text in the list is the spawn boss text
+                    if len(GUIDE_TEXT_LIST) > 0 and GUIDE_TEXT_LIST[0] == self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0]:
+                        # Set the display time for the guide text (as it should be the spawn boss text) to 0, so that it stops showing
+                        self.game_ui.guide_text_dict["DisplayTime"] = 0
 
 
     def find_valid_boss_spawning_position(self, delta_time):
@@ -2425,6 +2430,8 @@ class Game:
         self.game_ui.camera_pan_information_dict = self.camera_pan_information_dict
     
     def create_guide_text(self):
+
+        # print(GUIDE_TEXT_LIST)
         
         # ------------------------------------------------------------------------------------
         # Spawn boss text
@@ -2444,6 +2451,22 @@ class Game:
                 self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][1] = False
 
         # ------------------------------------------------------------------------------------
+        # Player
+
+        # ----------------------------
+        # Game completion
+
+        # If there are no more bosses left and the player is still alive
+        if hasattr(self, "bosses_dict") and len(self.bosses_dict["RemainingBossesList"]) == 0 and self.boss_group.sprite.extra_information_dict["CurrentHealth"] <= 0:
+             # If the game completion text has not been shown yet
+            if self.game_ui.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][1] == False:
+                # Add the text to the guide text list
+                GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0])
+                # Set the text as shown
+                self.game_ui.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][1] = True
+
+
+        # ----------------------------
         # Activate Frenzy Mode text
 
         if self.player.player_gameplay_info_dict["CurrentFrenzyModeValue"] == self.player.player_gameplay_info_dict["MaximumFrenzyModeValue"]:
@@ -2459,7 +2482,104 @@ class Game:
             # Allow the Activate Frenzy Mode text to be shown again, the next time the player fills up the meter
             self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][1] = False
 
+        # ----------------------------
+        # Build to slow down the boss
 
+        # If the player's current tool is the "BuildingTool" and there is a current boss and the camera is not currently panning
+        if self.player.player_gameplay_info_dict["CurrentToolEquipped"] == "BuildingTool" and len(self.boss_group) > 0 and self.player.player_gameplay_info_dict["CanStartOperating"] == True:
+            # If this guide message has not been shown before
+            if self.game_ui.guide_text_dict["AllGuideTextMessages"]["BuildToSlowBoss"][1] == False:
+                # Add the text to the guide text list
+                GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["BuildToSlowBoss"][0])
+                # Set the text as shown
+                self.game_ui.guide_text_dict["AllGuideTextMessages"]["BuildToSlowBoss"][1] = True
+
+        # ----------------------------
+        # Knockback immunity
+
+        # If an "invincibility" timer has been set to start counting down
+        if self.player.player_gameplay_info_dict["InvincibilityTimer"] != None:
+
+            # If this guide message has not been shown before
+            if self.game_ui.guide_text_dict["AllGuideTextMessages"]["KnockbackImmunity"][1] == False:
+                # Add the text to the guide text list
+                GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["KnockbackImmunity"][0])
+                # Set the text as shown
+                self.game_ui.guide_text_dict["AllGuideTextMessages"]["KnockbackImmunity"][1] = True
+
+        # If an "invincibility" timer has not been set to start counting down
+        elif self.player.player_gameplay_info_dict["InvincibilityTimer"] == None:
+            # If the guide message has been shown before
+            if self.game_ui.guide_text_dict["AllGuideTextMessages"]["KnockbackImmunity"][1] == True:
+                # Allow the knockback immunity text to be shown again, the next time the player fills up the meter
+                self.game_ui.guide_text_dict["AllGuideTextMessages"]["KnockbackImmunity"][1] = False
+
+        # ------------------------------------------------------------------------------------
+        # Bosses
+
+        if hasattr(self, "bosses_dict") and len(self.boss_group) > 0:
+
+            # -------------------------------------
+            # Sika deer
+            
+            if self.bosses_dict["CurrentBoss"] == "SikaDeer":
+
+                # If the boss' current action is "Stomp"
+                if self.boss_group.sprite.current_action == "Stomp":
+                    # If this guide message has not been shown before
+                    if self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerReflectProjectiles"][1] == False:
+                        # Add the text to the guide text list
+                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerReflectProjectiles"][0])
+                        # Set the text as shown
+                        self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerReflectProjectiles"][1] = True
+
+                # If the boss' current action is "Target"
+                elif self.boss_group.sprite.current_action == "Target":
+                    # If this guide message has not been shown before
+                    if self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerBuildToStun"][1] == False:
+                        # Add the text to the guide text list
+                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerBuildToStun"][0])
+                        # Set the text as shown
+                        self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerBuildToStun"][1] = True
+
+                # If the boss' current action is "Stunned"
+                elif self.boss_group.sprite.current_action == "Stunned":
+                    # If this guide message has not been shown before
+                    if self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][1] == False:
+                        # Add the text to the guide text list
+                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][0])
+                        # Set the text as shown
+                        self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][1] = True
+
+                # Resetting the stunned message so that it keeps repeating:
+                if self.boss_group.sprite.current_action != "Stunned" and self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][1] == True:
+                    # Allow the stunned text to be shown again
+                    self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][1] = False
+
+
+
+            # -------------------------------------
+            # Golden monkey 
+            
+            if self.bosses_dict["CurrentBoss"] == "GoldenMonkey":
+
+                # If the boss' current action is "Sleep"
+                if self.boss_group.sprite.current_action == "Sleep":
+                    # If this guide message has not been shown before
+                    if self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyIsVulnerable"][1] == False:
+                        # Add the text to the guide text list
+                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyIsVulnerable"][0])
+                        # Set the text as shown
+                        self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyIsVulnerable"][1] = True
+
+                # If the boss just entered phase 2
+                if self.boss_group.sprite.current_phase == 2:
+                    # If this guide message has not been shown before
+                    if self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnterSecondPhase"][1] == False:
+                        # Add the text to the guide text list
+                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnterSecondPhase"][0])
+                        # Set the text as shown
+                        self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnterSecondPhase"][1] = True
 
     # --------------------------------------------------------------------------------------
     # End-game methods

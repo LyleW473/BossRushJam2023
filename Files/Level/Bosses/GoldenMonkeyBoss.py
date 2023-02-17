@@ -15,6 +15,7 @@ from Level.effect_text import EffectText
 from pygame import Surface as pygame_Surface
 from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
+from pygame.draw import ellipse as pygame_draw_ellipse
 from pygame import BLEND_RGB_ADD as pygame_BLEND_RGB_ADD
 
 class GoldenMonkeyBoss(Generic, AI):
@@ -79,7 +80,7 @@ class GoldenMonkeyBoss(Generic, AI):
         self.current_action = "Chase"
         
         # The amount of energy that the boss starts with
-        self.energy_amount = GoldenMonkeyBoss.maximum_energy_amount
+        self.energy_amount = 10 #,GoldenMonkeyBoss.maximum_energy_amount
 
         # The current phase the golden monkey is in
         self.current_phase = 1
@@ -1116,6 +1117,16 @@ class GoldenMonkeyBoss(Generic, AI):
                                                                     surface = self.surface
                                                                     )
 
+        # If the boss is not alive
+        if self.current_action == "Death":
+            # Draw a shadow ellipse underneath the boss
+            pygame_draw_ellipse(
+                surface = self.surface, 
+                color = (20, 20, 20), 
+                rect = ((self.rect.centerx - self.camera_position[0]) - 20, 
+                ((self.rect.centery + 20) - self.camera_position[1]) - 20, 40, 40), 
+                width = 0)
+
         # If the boss has spawned and the camera panning has been completed
         if self.extra_information_dict["CanStartOperating"] == True:
             
@@ -1241,8 +1252,8 @@ class GoldenMonkeyBoss(Generic, AI):
             y = (self.rect.y - ((self.image.get_height() / 2) - (self.rect.height / 2))) - self.camera_position[1]
                 )
 
-        # TEMPORARY
-        pygame_draw_rect(self.surface, "green", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 1)
+        # # TEMPORARY
+        # pygame_draw_rect(self.surface, "green", (self.rect.x - self.camera_position[0], self.rect.y - self.camera_position[1], self.rect.width, self.rect.height), 1)
 
-        for tile in self.neighbouring_tiles_dict.keys():
-            pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
+        # for tile in self.neighbouring_tiles_dict.keys():
+        #     pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))

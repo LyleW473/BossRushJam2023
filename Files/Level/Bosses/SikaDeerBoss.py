@@ -759,6 +759,6 @@ class SikaDeerBoss(Generic, AI):
                     # Update the no action timer (meaning the boss cannot perform any other actions other than chasing)
                     self.update_no_action_timer(delta_time = self.delta_time)
 
-                # TEMPORARY
-                for tile in self.neighbouring_tiles_dict.keys():
-                    pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
+                # # TEMPORARY
+                # for tile in self.neighbouring_tiles_dict.keys():
+                #     pygame_draw_rect(self.surface, "white", (tile.rect.x - self.camera_position[0], tile.rect.y - self.camera_position[1], tile.rect.width, tile.rect.height))
