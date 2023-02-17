@@ -2,7 +2,7 @@ from pygame.display import set_mode as pygame_display_set_mode
 from pygame import SCALED as pygame_SCALED
 from pygame import FULLSCREEN as pygame_FULLSCREEN
 from pygame import HWSURFACE as pygame_HWSURFACE
-from pygame.mouse import set_visible as pygame_mouse_set_visible
+from pygame.mouse import set_visible as pygame_mouse_set_visible, get_visible as pygame_mouse_get_visible
 from pygame.event import get as pygame_event_get
 from pygame import QUIT as pygame_QUIT
 from pygame import quit as pygame_quit

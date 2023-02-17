@@ -8,6 +8,9 @@ from pygame.mouse import get_pressed as pygame_mouse_get_pressed
 from pygame import Rect as pygame_Rect
 from pygame import quit as pygame_quit
 from pygame.mouse import set_visible as pygame_mouse_set_visible
+from pygame.draw import rect as pygame_draw_rect
+from pygame.image import load as pygame_image_load
+from Global.functions import draw_text, move_item_vertically_sin
 
 class Menu:
     def __init__(self):
@@ -46,6 +49,27 @@ class Menu:
 
         # Create the buttons
         self.create_buttons()
+
+        # ------------------------------------------------------------------------------------------------------------------------------------------------
+        # Title text    
+
+        self.title_text = "Panda's Wit"
+        self.title_text_font = pygame_font_Font("graphics/Fonts/menu_buttons_font.ttf", 140)
+        self.title_text_font_size = self.title_text_font.size(self.title_text)
+        self.title_text_current_sin_angle = 0
+        self.title_text_displacement = 15
+        self.title_text_original_position = (
+                                            (self.surface.get_width() / 2) - (self.title_text_font_size[0] / 2),
+                                            250 - (self.title_text_font_size[1] / 2)
+                                            )
+        self.title_text_current_position = [self.title_text_original_position[0], self.title_text_original_position[1]]
+        self.title_text_angle_time_gradient = 360 / 3.5
+
+
+        """ 'Hidden' attributes:
+        self.controls_menu_dict
+        """
+
 
     def create_buttons(self):
 
@@ -152,6 +176,29 @@ class Menu:
             # Play the button's border animation
             button.play_border_animations()
 
+    def draw_title(self, delta_time):
+        
+        # Change the current position and sin angle
+        self.title_text_current_position, self.title_text_current_sin_angle = move_item_vertically_sin(
+                                                                                                        current_sin_angle = self.title_text_current_sin_angle,
+                                                                                                        angle_time_gradient = self.title_text_angle_time_gradient,
+                                                                                                        displacement = self.title_text_displacement,
+                                                                                                        original_position = self.title_text_original_position,
+                                                                                                        current_position = self.title_text_current_position,
+                                                                                                        delta_time = delta_time,
+
+                                                                                                        )
+        
+        # Draw the text onto the surface
+        draw_text(
+                text = self.title_text,
+                text_colour = "white", 
+                font = self.title_text_font,
+                x = self.title_text_current_position[0],
+                y = self.title_text_current_position[1],
+                surface = self.surface
+                )
+
     def run(self, delta_time):
 
         # Update delta time 
@@ -171,6 +218,9 @@ class Menu:
         # Main menu
 
         if self.current_menu == "main_menu": 
+
+            # Draw the title
+            self.draw_title(delta_time = delta_time)
 
             # Draw and update the buttons
             self.update_buttons(menu_buttons_list = self.menu_buttons_dict["main_menu"]["ButtonsList"])
@@ -220,6 +270,52 @@ class Menu:
 
             # Draw and update the buttons
             self.update_buttons(menu_buttons_list = self.menu_buttons_dict["controls_menu"]["ButtonsList"])
+
+            # If this dict does not exist yet
+            if hasattr(self, "controls_menu_dict") == False:
+                # Create it
+                self.controls_menu_dict = {
+                                        "Image": pygame_image_load("graphics/Misc/ControlsDisplay.png").convert_alpha(),
+                                        "BoxSize": (1000, 600),
+                                        }
+
+            # Calculate the box positions for the controls
+            controls_box_positions = (
+                                    (self.surface.get_width() / 2) - (self.controls_menu_dict["BoxSize"][0] / 2), 
+                                    (self.surface.get_height() / 2.5) - (self.controls_menu_dict["BoxSize"][1] / 2), 
+                                    )
+
+            # Body
+            pygame_draw_rect(
+                            surface = self.surface, 
+                            color = (113, 179, 64),
+                            rect = (
+                                    controls_box_positions[0],
+                                    controls_box_positions[1],
+                                    self.controls_menu_dict["BoxSize"][0],
+                                    self.controls_menu_dict["BoxSize"][1]
+                                    ), 
+                            width = 0
+                            )
+            
+            # Outline
+            pygame_draw_rect(
+                            surface = self.surface, 
+                            color = "black",
+                            rect = (
+                                    controls_box_positions[0],
+                                    controls_box_positions[1],
+                                    self.controls_menu_dict["BoxSize"][0],
+                                    self.controls_menu_dict["BoxSize"][1]
+                                    ), 
+                            width = 10
+                            )
+
+            self.surface.blit(
+                            self.controls_menu_dict["Image"],
+                            controls_box_positions
+
+                            )
 
             # If the left mouse button is pressed and the left mouse button isn't being pressed already
             if pygame_mouse_get_pressed()[0] == 1 and self.left_mouse_button_released == True:
