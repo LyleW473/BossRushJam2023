@@ -1,18 +1,16 @@
 from Global.generic import Generic
+from Global.functions import change_image_colour, simple_loop_animation, simple_play_animation_once
+from Global.settings import TILE_SIZE, FULL_DEATH_ANIMATION_DURATION
 from Level.Bosses.BossAttacks.stomp import StompController
-from pygame.draw import rect as pygame_draw_rect
-from pygame.draw import line as pygame_draw_line
 from pygame import Rect as pygame_Rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.mask import from_surface as pygame_mask_from_surface
-from Global.functions import change_image_colour
 from random import choice as random_choice
 from Level.Bosses.AI import AI
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from os import listdir as os_listdir
 from pygame.draw import ellipse as pygame_draw_ellipse
-from Global.settings import TILE_SIZE, FULL_DEATH_ANIMATION_DURATION
 from math import degrees, cos, sin
 
 class SikaDeerBoss(Generic, AI):
@@ -92,8 +90,8 @@ class SikaDeerBoss(Generic, AI):
                                             "Duration": 3000, 
                                             "DurationTimer": None, # Timer used to check if the attack is over
 
-                                            "Cooldown": 11000, 
-                                            "CooldownTimer": 10000, # Delayed cooldown to when the boss can first use the stomp attack
+                                            "Cooldown": 3000, #9000, 
+                                            "CooldownTimer": 3000, #9000, # Delayed cooldown to when the boss can first use the stomp attack
 
                                             # The variation of the stomp for one entire stomp attack
                                             "StompAttackVariation": 0,
@@ -288,126 +286,29 @@ class SikaDeerBoss(Generic, AI):
         # -----------------------------------
         # Updating animation
 
-        # Find which action is being performed and update the animation index based on that
+        # Find which action is being performed and playing their animation 
+        match self.current_action:
 
-        # If the current action is to "Stomp"
-        if self.current_action == "Stomp":
+            # Chase, Target, Stunned
+            case _ if self.current_action == "Chase" or self.current_action == "Target" or self.current_action == "Stunned" or self.current_action == "Stomp":
+
+                # Loop the animation continuously
+                self.animation_index, self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] = simple_loop_animation(
+                                                                                                                                        animation_index = self.animation_index,
+                                                                                                                                        animation_list = current_animation_list,
+                                                                                                                                        animation_frame_timer = self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"],
+                                                                                                                                        time_between_anim_frames = self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+                                                                                                                                        )
+            # Charge, Death
+            case _ if self.current_action == "Charge" or self.current_action == "Death":
                 
-                # If the stomp attack has not been completed
-                if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] > 0:
-                    
-                    # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-                    if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
-                        
-                        # If this animation is one of the keyframes where the boss has stomped
-                        if (self.animation_index == 0 and self.behaviour_patterns_dict[self.current_action]["DurationTimer"] != self.behaviour_patterns_dict[self.current_action]["Duration"]) \
-                            or self.animation_index == 5:
-                        
-                            # Start the stomp attack
-                            self.stomp_attack()
-
-                            # print("STOMP", self.animation_index, self.behaviour_patterns_dict[self.current_action]["DurationTimer"], self.behaviour_patterns_dict[self.current_action]["Duration"])
-
-                        # Go the next animation frame
-                        self.animation_index += 1
-
-                        # Reset the timer (adding will help with accuracy)
-                        self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"] 
-
-                    # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
-                    if self.animation_index == (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
-                        # Go the the first animation frame (reset the animation)
-                        self.animation_index = 0
-
-                        # Reset the timer (adding will help with accuracy)
-                        self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-
-                # If the stomp attack has been completed
-                elif self.behaviour_patterns_dict[self.current_action]["DurationTimer"] <= 0:
-                    
-                    # Change to a different behaviour
-
-                    # Reset the animation index
-                    self.animation_index = 0
-
-        # If the current action is to "Chase" 
-        elif self.current_action == "Chase":
-            
-            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
-                # Go the next animation frame
-                self.animation_index += 1
-
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-
-            # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index == (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
-                # Go the the first animation frame (reset the animation)
-                self.animation_index = 0
-
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-
-        # If the current action is to "Target"
-        elif self.current_action == "Target":
-
-            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
-                # Go the next animation frame
-                self.animation_index += 1
-
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-
-            # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index == (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
-                # Go the the first animation frame (reset the animation)
-                self.animation_index = 0
-
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-
-        # If the current action is to "Charge"
-        elif self.current_action == "Charge":
-
-            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
-                # Go the next animation frame
-                self.animation_index += 1
-
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-
-        # If the current action is to "Stunned"
-        elif self.current_action == "Stunned":
-
-            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
-                # Go the next animation frame
-                self.animation_index += 1
-
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-
-            # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index == (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
-                # Go the the first animation frame (reset the animation)
-                self.animation_index = 0
-
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-
-        # If the current action is "Death"
-        elif self.current_action == "Death":
-
-            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
-                # Go the next animation frame
-                self.animation_index += 1
-
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]            
+                # Play the animation once to the end
+                self.animation_index, self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] = simple_play_animation_once(
+                                                                                                                                            animation_index = self.animation_index,
+                                                                                                                                            animation_list = current_animation_list,
+                                                                                                                                            animation_frame_timer = self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"],
+                                                                                                                                            time_between_anim_frames = self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+                                                                                                                                            )
 
         # -----------------------------------
         # Updating timers
@@ -578,10 +479,17 @@ class SikaDeerBoss(Generic, AI):
         # If there are no stomp attack nodes (i.e. the start of the stomp attack)
         if len(StompController.nodes_group) == 0:
             # Choose a random variation of the stomp attack
-            self.extra_information_dict["StompAttackVariation"] = random_choice( (0, 1, 1, 2))
-    
+            self.extra_information_dict["StompAttackVariation"] = random_choice((0, 1, 1, 2))
+        
+
         # Create stomp attack nodes
-        self.stomp_controller.create_stomp_nodes(center_of_boss_position = (self.rect.centerx, self.rect.centery), desired_number_of_nodes = 12, attack_variation =  self.extra_information_dict["StompAttackVariation"])
+        self.stomp_controller.create_stomp_nodes(
+                                                center_of_boss_position = (self.rect.centerx, self.rect.centery), 
+                                                desired_number_of_nodes = 12, 
+                                                attack_variation = self.extra_information_dict["StompAttackVariation"]
+                                                )
+        # Set the new last animation index
+        self.stomp_controller.last_animation_index = self.animation_index
 
         # Add a stomp camera shake event to the camera shake events list
         self.camera_shake_events_list.append("Stomp")
@@ -600,7 +508,7 @@ class SikaDeerBoss(Generic, AI):
 
         # The main "brain" of the deer boss, which will decide on what action to perform
 
-        # If the current action is "Chase"
+        # "Chase"
         if self.current_action == "Chase":
 
             # Create a list of all the actions that the AI can currently perform, if the action's cooldown timer is None
@@ -614,8 +522,6 @@ class SikaDeerBoss(Generic, AI):
 
                 # Choose a random action from the possible actions the boss can perform and set it as the current action
                 self.current_action = random_choice(action_list)
-
-                # print("SET TO", self.current_action, self.animation_index)
 
                 # If the current action that was chosen was "Target", and target duration timer has not been set to start counting down yet
                 if self.current_action == "Target" and self.behaviour_patterns_dict["Target"]["DurationTimer"] == None:
@@ -635,7 +541,19 @@ class SikaDeerBoss(Generic, AI):
                 # Continue chasing the player
                 self.chase_player()
         
-        # If the current action is to charge
+        # "Stomp"
+        elif self.current_action == "Stomp":
+
+            # If the stomp attack has not been completed and the stomp has already been completed for this animation index
+            if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] > 0 and self.stomp_controller.last_animation_index != self.animation_index:
+
+                """ If this is one of the stomp keyframes inside the boss stomp animation (except from when the stomp attack just started)"""
+                if (self.animation_index == 0 and self.behaviour_patterns_dict[self.current_action]["DurationTimer"] != self.behaviour_patterns_dict[self.current_action]["Duration"]) \
+                    or self.animation_index == 5:
+                    # Start the stomp attack
+                    self.stomp_attack()
+
+        # "Charge"
         elif self.current_action == "Charge":
             # Perform the charge attack 
             self.charge_attack()

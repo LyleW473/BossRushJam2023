@@ -1,6 +1,6 @@
 from Global.generic import Generic
 from Global.settings import TILE_SIZE, FULL_DEATH_ANIMATION_DURATION
-from Global.functions import change_image_colour, change_image_colour_v2, sin_change_object_colour, update_generic_timer
+from Global.functions import change_image_colour, change_image_colour_v2, sin_change_object_colour, update_generic_timer, simple_loop_animation, simple_play_animation_once
 from random import choice as random_choice
 from pygame.mask import from_surface as pygame_mask_from_surface
 from pygame.image import load as load_image
@@ -393,52 +393,46 @@ class GoldenMonkeyBoss(Generic, AI):
         # Updating animation
 
         # Find which action is being performed and update the animation index based on that
-        # If the current action is to "Chase" or "SpiralAttack" or "Sleep"
-        if self.current_action == "Chase" or self.current_action == "SpiralAttack" or self.current_action == "Sleep":
-            
-            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
-                # Go the next animation frame
-                self.animation_index += 1
+        match self.current_action:
 
-                # Reset the timer (adding will help with accuracy)
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] += self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+            # Chase, SpiralAttack, Sleep
+            case _ if self.current_action == "Chase" or self.current_action == "SpiralAttack" or self.current_action == "Sleep":
 
-            # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index == (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] <= 0):
-                # Go the the first animation frame (reset the animation)
-                self.animation_index = 0
+                # Loop the animation continuously
+                self.animation_index, self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] = simple_loop_animation(
+                                                                                                                                        animation_index = self.animation_index,
+                                                                                                                                        animation_list = current_animation_list,
+                                                                                                                                        animation_frame_timer = self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"],
+                                                                                                                                        time_between_anim_frames = self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+                                                                                                                                        )
 
-                # Reset the timer
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] = self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+            # Death
+            case _ if self.current_action == "Death":
+                
+                # Play the animation once to the end
+                self.animation_index, self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] = simple_play_animation_once(
+                                                                                                                                            animation_index = self.animation_index,
+                                                                                                                                            animation_list = current_animation_list,
+                                                                                                                                            animation_frame_timer = self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"],
+                                                                                                                                            time_between_anim_frames = self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
+                                                                                                                                            )
 
-        # If the current action is "Death"
-        elif self.current_action == "Death":
+            # Divebomb
+            case _ if self.current_action == "DiveBomb":
 
-            # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-            if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"]) <= 0:
-                # Go the next animation frame
-                self.animation_index += 1
+                # Current divebomb stage
+                current_stage = self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"]
+                
+                # If the current stage is not "Target"
+                if current_stage != "Target":
 
-                # Reset the timer 
-                self.behaviour_patterns_dict[self.current_action]["AnimationFrameTimer"] = self.behaviour_patterns_dict[self.current_action]["TimeBetweenAnimFrames"]
-        
-        # If the current action is "DiveBomb"
-        elif self.current_action == "DiveBomb":
+                    # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
+                    if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action][current_stage]["AnimationFrameTimer"]) <= 0:
+                        # Go the next animation frame
+                        self.animation_index += 1
 
-            # Current divebomb stage
-            current_stage = self.behaviour_patterns_dict["DiveBomb"]["CurrentDiveBombStage"]
-            
-            # If the current stage is not "Target"
-            if current_stage != "Target":
-
-                # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
-                if self.animation_index < (len(current_animation_list) - 1) and (self.behaviour_patterns_dict[self.current_action][current_stage]["AnimationFrameTimer"]) <= 0:
-                    # Go the next animation frame
-                    self.animation_index += 1
-
-                    # Reset the timer 
-                    self.behaviour_patterns_dict[self.current_action][current_stage]["AnimationFrameTimer"] = self.behaviour_patterns_dict[self.current_action][current_stage]["TimeBetweenAnimFrames"]
+                        # Reset the timer 
+                        self.behaviour_patterns_dict[self.current_action][current_stage]["AnimationFrameTimer"] = self.behaviour_patterns_dict[self.current_action][current_stage]["TimeBetweenAnimFrames"]
             
         # --------------------------------------------------------
         # Additional for sleeping

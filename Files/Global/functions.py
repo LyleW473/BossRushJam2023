@@ -129,3 +129,33 @@ def update_generic_timer(current_timer, delta_time):
 
         # Return the updated timer
         return current_timer
+
+def simple_loop_animation(animation_index, animation_list, animation_frame_timer, time_between_anim_frames):
+
+    # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
+    if animation_index < (len(animation_list) - 1) and (animation_frame_timer) <= 0:
+        # Go the next animation frame
+        animation_index += 1
+        # Reset the timer (adding will help with accuracy)
+        animation_frame_timer = time_between_anim_frames
+
+    # If the current animation index is at the last index inside the animation list and the animation frame timer has finished counting
+    elif animation_index == (len(animation_list) - 1) and (animation_frame_timer <= 0):
+        # Go the the first animation frame (reset the animation)
+        animation_index = 0
+        # Reset the timer (adding will help with accuracy)
+        animation_frame_timer = time_between_anim_frames
+    
+    return animation_index, animation_frame_timer
+
+def simple_play_animation_once(animation_index, animation_list, animation_frame_timer, time_between_anim_frames):
+
+    # If the current animation index is not the last index inside the animation list and the animation frame timer has finished counting
+    if animation_index < (len(animation_list) - 1) and (animation_frame_timer) <= 0:
+        # Go the next animation frame
+        animation_index += 1
+
+        # Reset the timer (adding will help with accuracy)
+        animation_frame_timer = time_between_anim_frames
+
+    return animation_index, animation_frame_timer

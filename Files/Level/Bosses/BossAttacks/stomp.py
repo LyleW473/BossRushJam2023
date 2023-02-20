@@ -20,8 +20,12 @@ class StompController:
             
         # Maximum radius of each node
         self.maximum_node_radius = 40 / scale_multiplier
-
+        
+        # Starting angle for the stomp nodes
         self.starting_angle = 0
+
+        # Save the last animation index that the stomp attacks were created, so that only one set of stomp attack nodes are created per stomp
+        self.last_animation_index = None
 
     def create_stomp_nodes(self, center_of_boss_position, desired_number_of_nodes, attack_variation):
 
