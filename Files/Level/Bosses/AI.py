@@ -1,5 +1,5 @@
 from math import atan2, pi, cos, dist, sin, degrees
-from Global.settings import TILE_SIZE
+from Global.functions import update_generic_timer
 from pygame import Rect as pygame_Rect
 
 
@@ -518,53 +518,17 @@ class AI:
     # ---------------------------------------------------------
     # Timers
 
-    def update_knockback_collision_idle_timer(self, delta_time):
-        
-        # Updates the knockback collision idle timer (The period of time the AI will idle after knocking back the player)
-        
-        # If there has been a timer set to count down
-        if self.movement_information_dict["KnockbackCollisionIdleTimer"] != None:
+    def update_generic_timers(self, list_of_timers):
+
+        # Updates the generic timers used (timers with limited functionality other than counting down)
+        for timer_name in list_of_timers:   
             
-            # If the timer has not finished counting
-            if self.movement_information_dict["KnockbackCollisionIdleTimer"] > 0:
-                # Decrease the timer
-                self.movement_information_dict["KnockbackCollisionIdleTimer"] -= 1000  * delta_time
+            # Update the timer (i.e. count down)
+            new_timer = update_generic_timer(
+                                        current_timer = getattr(self, timer_name),
+                                        delta_time = self.delta_time
+                                        
+                                        )
 
-            # If the timer has finished counting
-            if self.movement_information_dict["KnockbackCollisionIdleTimer"] <= 0:
-                # Reset the timer back to None
-                self.movement_information_dict["KnockbackCollisionIdleTimer"] = None
-
-    def update_no_action_timer(self, delta_time):
-        
-        # Updates the no action timer (The period of time the AI cannot do an action (other than "Chase") after performing a different action)
-
-        # If there has been a timer set for no action
-        if self.extra_information_dict["NoActionTimer"] != None:
-
-            # If the timer has not finished counting
-            if self.extra_information_dict["NoActionTimer"] > 0:
-                # Decrease the timer
-                self.extra_information_dict["NoActionTimer"] -= 1000 * delta_time
-            
-            # If the timer has finished counting
-            if self.extra_information_dict["NoActionTimer"] <= 0:
-                # Set the no action timer back to None
-                self.extra_information_dict["NoActionTimer"] = None
-
-    def update_damage_flash_effect_timer(self):
-        
-        # Updates the damage flash effect timer
-
-        # If there has been a timer set for the damage flash effect
-        if self.extra_information_dict["DamagedFlashEffectTimer"] != None:
-
-            # If the timer has not finished counting
-            if self.extra_information_dict["DamagedFlashEffectTimer"] > 0:
-                # Decrease the timer
-                self.extra_information_dict["DamagedFlashEffectTimer"] -= 1000 * self.delta_time
-            
-            # If the timer has finished counting
-            if self.extra_information_dict["DamagedFlashEffectTimer"] <= 0:
-                # Set the damage flash effect timer back to None
-                self.extra_information_dict["DamagedFlashEffectTimer"] = None
+            # Set the new timer 
+            setattr(self, timer_name, new_timer)
