@@ -1,4 +1,4 @@
-from Global.settings import GUIDE_TEXT_LIST, TILE_SIZE, screen_height, screen_width
+from Global.settings import TILE_SIZE, screen_height, screen_width
 from Level.world_tile import WorldTile
 from Level.Player.player import Player
 from Level.game_ui import GameUI
@@ -2017,7 +2017,7 @@ class Game:
             if len(self.boss_group) == 0:
                 
                 # If the first guide text in the list is the spawn boss text
-                if len(GUIDE_TEXT_LIST) > 0 and GUIDE_TEXT_LIST[0] == self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0]:
+                if len(self.game_ui.guide_text_list) > 0 and self.game_ui.guide_text_list[0] == self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0]:
                     # Set the display time for the guide text (as it should be the spawn boss text) to 0, so that it stops showing
                     self.game_ui.guide_text_dict["DisplayTime"] = 0
             
@@ -2036,7 +2036,7 @@ class Game:
                     self.bosses_dict["CurrentBoss"] = self.bosses_dict["RemainingBossesList"][0]
 
                     # If the first guide text in the list is the spawn boss text
-                    if len(GUIDE_TEXT_LIST) > 0 and GUIDE_TEXT_LIST[0] == self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0]:
+                    if len(self.game_ui.guide_text_list) > 0 and self.game_ui.guide_text_list[0] == self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0]:
                         # Set the display time for the guide text (as it should be the spawn boss text) to 0, so that it stops showing
                         self.game_ui.guide_text_dict["DisplayTime"] = 0
 
@@ -2561,7 +2561,7 @@ class Game:
     
     def create_guide_text(self):
 
-        # print(GUIDE_TEXT_LIST)
+        # print(self.game_ui.guide_text_list)
         
         # ------------------------------------------------------------------------------------
         # Spawn boss text
@@ -2569,12 +2569,12 @@ class Game:
         # If the "spawn boss" message has not been displayed before
         if self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][1] == False:
             # Add the text to the guide text list
-            GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0])
+            self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0])
             # Set the text as shown
             self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][1] = True
 
-        # If there is already a boss but they were defeated, and the spawn boss text has not been added to GUIDE_TEXT_LIST yet
-        if len(self.boss_group) > 0 and self.boss_group.sprite.extra_information_dict["CurrentHealth"] < 0 and self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0] not in GUIDE_TEXT_LIST:
+        # If there is already a boss but they were defeated, and the spawn boss text has not been added to self.game_ui.guide_text_list yet
+        if len(self.boss_group) > 0 and self.boss_group.sprite.extra_information_dict["CurrentHealth"] < 0 and self.game_ui.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0] not in self.game_ui.guide_text_list:
             # If there are also remaining bosses
             if hasattr(self, "bosses_dict") and len(self.bosses_dict["RemainingBossesList"]) != 0:
                 # Set the spawn boss text as being not shown, so that the spawnboss  text will show again
@@ -2591,7 +2591,7 @@ class Game:
              # If the game completion text has not been shown yet
             if self.game_ui.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][1] == False:
                 # Add the text to the guide text list
-                GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0])
+                self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0])
                 # Set the text as shown
                 self.game_ui.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][1] = True
 
@@ -2603,7 +2603,7 @@ class Game:
             # If the activate frenzy mode text has not been shown yet
             if self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][1] == False:
                 # Add the text to the guide text list
-                GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][0])
+                self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][0])
                 # Set the text as shown
                 self.game_ui.guide_text_dict["AllGuideTextMessages"]["ActivateFrenzyMode"][1] = True
 
@@ -2620,7 +2620,7 @@ class Game:
             # If this guide message has not been shown before
             if self.game_ui.guide_text_dict["AllGuideTextMessages"]["BuildToSlowBoss"][1] == False:
                 # Add the text to the guide text list
-                GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["BuildToSlowBoss"][0])
+                self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["BuildToSlowBoss"][0])
                 # Set the text as shown
                 self.game_ui.guide_text_dict["AllGuideTextMessages"]["BuildToSlowBoss"][1] = True
 
@@ -2633,7 +2633,7 @@ class Game:
             # If this guide message has not been shown before
             if self.game_ui.guide_text_dict["AllGuideTextMessages"]["KnockbackImmunity"][1] == False:
                 # Add the text to the guide text list
-                GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["KnockbackImmunity"][0])
+                self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["KnockbackImmunity"][0])
                 # Set the text as shown
                 self.game_ui.guide_text_dict["AllGuideTextMessages"]["KnockbackImmunity"][1] = True
 
@@ -2659,7 +2659,7 @@ class Game:
                     # If this guide message has not been shown before
                     if self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerReflectProjectiles"][1] == False:
                         # Add the text to the guide text list
-                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerReflectProjectiles"][0])
+                        self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerReflectProjectiles"][0])
                         # Set the text as shown
                         self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerReflectProjectiles"][1] = True
 
@@ -2668,7 +2668,7 @@ class Game:
                     # If this guide message has not been shown before
                     if self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerBuildToStun"][1] == False:
                         # Add the text to the guide text list
-                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerBuildToStun"][0])
+                        self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerBuildToStun"][0])
                         # Set the text as shown
                         self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerBuildToStun"][1] = True
 
@@ -2677,7 +2677,7 @@ class Game:
                     # If this guide message has not been shown before
                     if self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][1] == False:
                         # Add the text to the guide text list
-                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][0])
+                        self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][0])
                         # Set the text as shown
                         self.game_ui.guide_text_dict["AllGuideTextMessages"]["SikaDeerIsVulnerable"][1] = True
 
@@ -2703,7 +2703,7 @@ class Game:
                     # If this guide message has not been shown before
                     if self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnergyCounter"][1] == False:
                         # Add the text to the guide text list
-                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnergyCounter"][0])
+                        self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnergyCounter"][0])
                         # Set the text as shown
                         self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnergyCounter"][1] = True
 
@@ -2712,7 +2712,7 @@ class Game:
                     # If this guide message has not been shown before
                     if self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyIsVulnerable"][1] == False:
                         # Add the text to the guide text list
-                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyIsVulnerable"][0])
+                        self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyIsVulnerable"][0])
                         # Set the text as shown
                         self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyIsVulnerable"][1] = True
 
@@ -2721,7 +2721,7 @@ class Game:
                     # If this guide message has not been shown before
                     if self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnterSecondPhase"][1] == False:
                         # Add the text to the guide text list
-                        GUIDE_TEXT_LIST.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnterSecondPhase"][0])
+                        self.game_ui.guide_text_list.append(self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnterSecondPhase"][0])
                         # Set the text as shown
                         self.game_ui.guide_text_dict["AllGuideTextMessages"]["GoldenMonkeyEnterSecondPhase"][1] = True
 
@@ -2734,9 +2734,6 @@ class Game:
     # End-game methods
 
     def reset_level(self):
-
-        # Declare GUIDE_TEXT_LIST as global so it can be reset from the game states controller
-        global GUIDE_TEXT_LIST
 
         # Once the player has returned back to the main menu after dying, the following need to be reset / added back
 
@@ -2821,8 +2818,8 @@ class Game:
             # Set all of the "text shown" boolean values back to False
             self.game_ui.guide_text_dict["AllGuideTextMessages"][purpose][1] = False
 
-        if len(GUIDE_TEXT_LIST) > 0:
-            GUIDE_TEXT_LIST = []
+        if len(self.game_ui.guide_text_list) > 0:
+            self.game_ui.guide_text_list = []
         
         # ------------------------------------------------------
         # Building tiles and neighbouring tiles
@@ -2895,6 +2892,9 @@ class Game:
             self.chilli_projectiles_dict = {}
 
     def run(self, delta_time):
+        
+        # -----------------------------------------------------------
+        # Sound
 
         # Detect sounds for other objects e.g. the player and the boss
         self.detect_sounds()

@@ -5,7 +5,7 @@ from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import line as pygame_draw_line
 from pygame.image import load as load_image
 from Level.display_card import DisplayCard
-from Global.settings import TILE_SIZE, BAR_ALPHA_LEVEL, GUIDE_TEXT_LIST
+from Global.settings import TILE_SIZE, BAR_ALPHA_LEVEL
 from Global.functions import draw_text, sin_change_object_colour, move_item_vertically_sin
 from pygame import Surface as pygame_Surface
 from Level.effect_text import EffectText
@@ -266,6 +266,8 @@ class GameUI:
                                                     }
                                 }
 
+        # List of all the current guide text's being shown
+        self.guide_text_list = []
 
     # ---------------------------------------------------------------------
     # Resetting methods
@@ -917,16 +919,16 @@ class GameUI:
         # There can only be one guide text being drawn at a time
     
         # If there are any guide text to be drawn
-        if len(GUIDE_TEXT_LIST) > 0:
+        if len(self.guide_text_list) > 0:
             
             # If an original position has not been set yet
             if self.guide_text_dict["OriginalPosition"] == None:
 
                 # Calculate the size of the font
-                text_font_size = self.guide_text_dict["Font"].size(GUIDE_TEXT_LIST[0])
+                text_font_size = self.guide_text_dict["Font"].size(self.guide_text_list[0])
 
                 # If the current guide text is not the game completion text
-                if GUIDE_TEXT_LIST[0] != self.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0]:
+                if self.guide_text_list[0] != self.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0]:
                     # Set the position of the text to be aligned with the mid-top of the screen
                     self.guide_text_dict["OriginalPosition"] = (
                                                                 (surface.get_width() / 2) - (text_font_size[0] / 2),
@@ -934,7 +936,7 @@ class GameUI:
                                                                 )
 
                 # If the current guide text is the game completion text
-                elif GUIDE_TEXT_LIST[0] == self.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0]:
+                elif self.guide_text_list[0] == self.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0]:
                     # Set the game completion text to be in the center of the screen
                     self.guide_text_dict["OriginalPosition"] = (
                                                                 (surface.get_width() / 2) - (text_font_size[0] / 2),
@@ -959,15 +961,15 @@ class GameUI:
                                                                                                                             )
 
                 # If the text isn't the spawn boss text or the congratulations text
-                if GUIDE_TEXT_LIST[0] != self.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0] and \
-                    GUIDE_TEXT_LIST[0] != self.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0]:
+                if self.guide_text_list[0] != self.guide_text_dict["AllGuideTextMessages"]["SpawnBoss"][0] and \
+                    self.guide_text_list[0] != self.guide_text_dict["AllGuideTextMessages"]["GameCompletion"][0]:
 
                     # Reduce the display time
                     self.guide_text_dict["DisplayTime"] -= delta_time
 
                 # Draw the text onto the surface
                 draw_text(
-                        text = GUIDE_TEXT_LIST[0], 
+                        text = self.guide_text_list[0], 
                         text_colour = "white", 
                         font = self.guide_text_dict["Font"],
                         x = self.guide_text_dict["CurrentPosition"][0],
@@ -986,7 +988,7 @@ class GameUI:
                 self.guide_text_dict["CurrentPosition"] = None
 
                 # Remove the first guide text in the list (i.e. the current one)
-                GUIDE_TEXT_LIST.pop(0)
+                self.guide_text_list.pop(0)
                         
 
     # -----------------------------------------------------------------------------

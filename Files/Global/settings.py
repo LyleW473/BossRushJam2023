@@ -10,6 +10,3 @@ BAR_ALPHA_LEVEL = 200
 
 # The death animation duration for all bosses and the player (in milliseconds)
 FULL_DEATH_ANIMATION_DURATION = 800
-
-# List that holds all the guide text added when events occur
-GUIDE_TEXT_LIST = []

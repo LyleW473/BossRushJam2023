@@ -518,17 +518,32 @@ class AI:
     # ---------------------------------------------------------
     # Timers
 
-    def update_generic_timers(self, list_of_timers):
+    def update_knockback_collision_idle_timer(self):
+        
+        # Updates the knockback collision idle timer (The period of time the AI will idle after knocking back the player)
 
-        # Updates the generic timers used (timers with limited functionality other than counting down)
-        for timer_name in list_of_timers:   
-            
-            # Update the timer (i.e. count down)
-            new_timer = update_generic_timer(
-                                        current_timer = getattr(self, timer_name),
-                                        delta_time = self.delta_time
-                                        
-                                        )
+        self.movement_information_dict["KnockbackCollisionIdleTimer"] = update_generic_timer(
+                                                                                current_timer = self.movement_information_dict["KnockbackCollisionIdleTimer"],
+                                                                                delta_time = self.delta_time
+                                                                                )
 
-            # Set the new timer 
-            setattr(self, timer_name, new_timer)
+    def update_no_action_timer(self):
+
+        # Updates the no action timer (The period of time the AI cannot do an action (other than "Chase") after performing a different action)
+        """ Note: This is separate from the AI timers method because it should only be updated when the boss is not stunned, sleeping, etc."""
+
+        # Updates the no action timer (The period of time the AI cannot do an action (other than "Chase") after performing a different action)
+        self.extra_information_dict["NoActionTimer"] = update_generic_timer(
+                                                                                    current_timer = self.extra_information_dict["NoActionTimer"],
+                                                                                    delta_time = self.delta_time
+                                                                                    )
+
+    def update_damage_flash_effect_timer(self):
+
+        # Updates the damage flash effect timer
+
+        self.extra_information_dict["DamagedFlashEffectTimer"] = update_generic_timer(
+                                                                                    current_timer = self.extra_information_dict["DamagedFlashEffectTimer"],
+                                                                                    delta_time = self.delta_time
+                                                                                    )
+

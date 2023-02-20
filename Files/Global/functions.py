@@ -111,3 +111,21 @@ def move_item_vertically_sin(current_sin_angle, angle_time_gradient, delta_time,
 
     # Return the new position and sin angle
     return new_position, current_sin_angle
+
+def update_generic_timer(current_timer, delta_time):
+
+    # Updates a generic timer
+    
+    # If the timer has been set
+    if current_timer != None:
+
+        # Decrease the timer
+        current_timer -= 1000 * delta_time
+        
+        # If the spawning cooldown timer has finished counting down
+        if current_timer <= 0:
+            # Reset the timer back to None
+            current_timer = None
+
+        # Return the updated timer
+        return current_timer

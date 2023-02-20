@@ -429,11 +429,8 @@ class SikaDeerBoss(Generic, AI):
         # If the current action is not "Chase" (Chase does not have a duration timer)
         if self.current_action != "Chase":
             
-            
-            # If the current action's duration timer has not finished counting down
-            if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] > 0:
-                # Decrease the timer
-                self.behaviour_patterns_dict[self.current_action]["DurationTimer"] -= 1000 * self.delta_time
+            # Decrease the timer
+            self.behaviour_patterns_dict[self.current_action]["DurationTimer"] -= 1000 * self.delta_time
             
             # If the current action's duration timer has finished counting down
             if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] <= 0:
@@ -752,12 +749,12 @@ class SikaDeerBoss(Generic, AI):
                 self.update_cooldown_timers()
 
                 # Update the knockback collision idle timer
-                self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
+                self.update_knockback_collision_idle_timer()
 
                 # If the current action is not "Stunned"
                 if self.current_action != "Stunned":
                     # Update the no action timer (meaning the boss cannot perform any other actions other than chasing)
-                    self.update_no_action_timer(delta_time = self.delta_time)
+                    self.update_no_action_timer()
 
                 # # TEMPORARY
                 # for tile in self.neighbouring_tiles_dict.keys():

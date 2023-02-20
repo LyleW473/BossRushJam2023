@@ -1,23 +1,21 @@
 from Global.generic import Generic
-from Level.Bosses.AI import AI
 from Global.settings import TILE_SIZE, FULL_DEATH_ANIMATION_DURATION
+from Global.functions import change_image_colour, change_image_colour_v2, sin_change_object_colour, update_generic_timer
 from random import choice as random_choice
-from Global.functions import change_image_colour, change_image_colour_v2, sin_change_object_colour
 from pygame.mask import from_surface as pygame_mask_from_surface
 from pygame.image import load as load_image
 from pygame.transform import scale as scale_image
 from os import listdir as os_listdir
+from Level.Bosses.AI import AI
 from Level.Bosses.BossAttacks.chilli_attacks import ChilliProjectileController
 from Level.Bosses.BossAttacks.dive_bomb_attack import DiveBombAttackController
 from math import sin, cos, radians
 from pygame.font import Font as pygame_font_Font
 from Level.effect_text import EffectText
 from pygame import Surface as pygame_Surface
-from pygame.draw import rect as pygame_draw_rect
 from pygame.draw import circle as pygame_draw_circle
 from pygame.draw import ellipse as pygame_draw_ellipse
-from pygame import BLEND_RGB_ADD as pygame_BLEND_RGB_ADD
-from pygame.display import update as pygame_display_update
+
 
 class GoldenMonkeyBoss(Generic, AI):
 
@@ -498,23 +496,6 @@ class GoldenMonkeyBoss(Generic, AI):
             # Set the creation timer cooldown to start
             self.sleep_effect_text_info_dict["CreationCooldownTimer"] = self.sleep_effect_text_info_dict["CreationCooldownTime"]
 
-    def update_sleep_effect_text_timer(self):
-
-        # Timer for the spawning of chillis whilst chasing the plyaer
-
-        # If there is a timer set for the chilli spawning for the spiral attack
-        if self.sleep_effect_text_info_dict["CreationCooldownTimer"] != None:
-
-            # If the spawning cooldown timer has not finished counting down
-            if self.sleep_effect_text_info_dict["CreationCooldownTimer"] > 0:
-                # Decrease the timer
-                self.sleep_effect_text_info_dict["CreationCooldownTimer"] -= 1000 * self.delta_time
-            
-            # If the spawning cooldown timer has finished counting down
-            if self.sleep_effect_text_info_dict["CreationCooldownTimer"] <= 0:
-                # Reset the timer back to None
-                self.sleep_effect_text_info_dict["CreationCooldownTimer"] = None
-
     # ----------------------------------------------------------------------------------
     # Gameplay
 
@@ -868,10 +849,8 @@ class GoldenMonkeyBoss(Generic, AI):
         # If the current action is not "Chase" (Chase does not have a duration timer) or "DiveBomb" (DiveBomb has multiple stages)
         if self.current_action != "Chase" and self.current_action != "DiveBomb":
             
-            # If the current action's duration timer has not finished counting down
-            if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] > 0:
-                # Decrease the timer
-                self.behaviour_patterns_dict[self.current_action]["DurationTimer"] -= 1000 * self.delta_time
+            # Decrease the timer
+            self.behaviour_patterns_dict[self.current_action]["DurationTimer"] -= 1000 * self.delta_time
             
             # If the current action's duration timer has finished counting down
             if self.behaviour_patterns_dict[self.current_action]["DurationTimer"] <= 0:
@@ -1061,36 +1040,29 @@ class GoldenMonkeyBoss(Generic, AI):
 
         # Timer for the spawning of chillis during the spiral attack
 
-        # If there is a timer set for the chilli spawning for the spiral attack
-        if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] != None:
-
-            # If the spawning cooldown timer has not finished counting down
-            if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] > 0:
-                # Decrease the timer
-                self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] -= 1000 * self.delta_time
-            
-            # If the spawning cooldown timer has finished counting down
-            if self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] <= 0:
-                # Reset the timer back to None
-                self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] = None
+        self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"] = update_generic_timer(
+                                                                                                                current_timer = self.behaviour_patterns_dict["SpiralAttack"]["SpiralChilliSpawningCooldownTimer"],
+                                                                                                                delta_time = self.delta_time
+                                                                                                                )
 
     def update_chilli_throwing_cooldown_timer(self):
 
         # Timer for the spawning of chillis whilst chasing the plyaer
 
-        # If there is a timer set for the chilli spawning for the spiral attack
-        if self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] != None:
+        self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] = update_generic_timer(
+                                                                                                    current_timer = self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"],
+                                                                                                    delta_time = self.delta_time
+                                                                                                    )
 
-            # If the spawning cooldown timer has not finished counting down
-            if self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] > 0:
-                # Decrease the timer
-                self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] -= 1000 * self.delta_time
-            
-            # If the spawning cooldown timer has finished counting down
-            if self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] <= 0:
-                # Reset the timer back to None
-                self.behaviour_patterns_dict["Chase"]["ChilliThrowingCooldownTimer"] = None
+    def update_sleep_effect_text_timer(self):
 
+        # Timer for the creation of sleep effect text
+
+        self.sleep_effect_text_info_dict["CreationCooldownTimer"] = update_generic_timer(
+                                                                                        current_timer = self.sleep_effect_text_info_dict["CreationCooldownTimer"],
+                                                                                        delta_time = self.delta_time
+                                                                                        )
+    
     def run(self):
          
         # Always update / move / draw the chilli projectiles
@@ -1152,8 +1124,8 @@ class GoldenMonkeyBoss(Generic, AI):
             # If the boss is alive
             if self.extra_information_dict["CurrentHealth"] > 0:
 
-                # If the boss has less than 40% of its maximum health
-                if self.extra_information_dict["CurrentHealth"] <=  (0.4 * self.extra_information_dict["MaximumHealth"]):
+                # If the boss has less than 40% of its maximum health and is currently chasing the player
+                if self.extra_information_dict["CurrentHealth"] <=  (0.4 * self.extra_information_dict["MaximumHealth"]) and self.current_action == "Chase":
                     # If the boss is not already in phase 2
                     if self.current_phase != 2:
 
@@ -1210,12 +1182,12 @@ class GoldenMonkeyBoss(Generic, AI):
                 self.update_cooldown_timers()
 
                 # Update the knockback collision idle timer
-                self.update_knockback_collision_idle_timer(delta_time = self.delta_time)
+                self.update_knockback_collision_idle_timer()
 
                 # If the current action is not "Sleep"
                 if self.current_action != "Sleep":
                     # Update the no action timer (meaning the boss cannot perform any other actions other than chasing)
-                    self.update_no_action_timer(delta_time = self.delta_time)
+                    self.update_no_action_timer()
 
                 # If the current action is "Sleep"
                 elif self.current_action == "Sleep":
